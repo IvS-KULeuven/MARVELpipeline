@@ -22,11 +22,11 @@ to it, which is also added to the MARVEL database. A block is created using a li
  as input. PipelineComponents are isolated blocks in that they do not depend on other components. This implies that two blocks 
 that have the same input should also have the same output (within the same version of the pipeline).
 
-Once we have created a block the output is generated and added to the MARVEL database by running the runBlock() method on a PipelineComponent instance. 
+Once we have created a block the output is generated and added to the MARVEL database by running the runComponent() method on a PipelineComponent instance. 
 
 Example:
     masterBlock = MasterBias(hash_list)
-    masterBlock.runBlock()
+    masterBlock.runComponent()
 """
 
 
@@ -46,7 +46,7 @@ class PipelineComponent():
     def checkInput(self, input):
         return True
 
-    def runBlock(self):
+    def runComponent(self):
         img = self.make()
         self.saveImage(img)
         print("Block Generated!")
@@ -319,16 +319,15 @@ Whenever we want to execute a block from the pipeline.
 if __name__ == "__main__":
     # hash_list = ['900515b630b9787e4ab5032242228ac21dda537355de1a790270a7871a407652', 'a4880b4ce9510679210561bff9432ac6c42b243d995c7d4adf23902d77757662', '8afd899dc50f8532c9a44d8637ced940eaa702e30e3ec7c8e3adde5119b7c07b', '9b5f55279418cf54c90432d45319b6e7d5c74d9b03ccd444483f4ac0893c4b83', '21f289581264659eaeb76ec2163bc521575a444b1a00628a870302c847242053', '80baf7fd974a26b3d3f66627b4e150aa814e9bdd92b190dc2715d03257e60633', 'a947d1cdd89cfc7241bf0fa528357bc7a6f34e48fd9d1820d059ec270abcff49', 'fbfd5d76908a512a07cce993688c583b4b68729d5baba14b6107998619f4f16b', '652c6fcce89348d34195f06fddce1d35e63d3fdd5c633637d80b13d6f4c6a49d', '12b9a41a8c577a369b1513035426edf5372210c96051a4b18a7c868add87a30c']
     # masterB = MasterBias(hash_list)
-    # # TODO: runBlock 
-    # masterB.runBlock()
+    # masterB.runComponent()
     
     # calibration = CalibratedScienceFrames(["5e323082bef426f425d01c05436f68f09a3d19158590a410cf975e3670b38663", "642393b786ede43436654b9fd477d7f72cbd30b389edb6cafc5ac5e45fc94554", "84762ec2e7393bfffa3ea505692d33b599a5dfa2cda1efa3f791726c20c2df5d"])
-    # calibration.runBlock()
+    # calibration.runComponent()
                                           
 
 
     # Flat
     # hash_list = ["1440a24e48f0e043da26dfbb26595f263aee42ecfeb13b540c38b6418a8351d3", "40e031729d8131b9605b7feecd8f96bc95febcb39faa40f5b427d814de726eff", "9fb0578e82514a3b73b7fef554363ea16b1bf8aed1347511b4475fe4f9d79b6e", "7b3e72779ae2fc29b22761cddf4cf3d2b4d2803882e87fdfc7fa99c506abcf88", "50359821613eca4a88daed91be15356011a87d98a506bbe0d072970a4f764534"]
     # masterF = MasterFlat(hash_list)
-    # masterF.runBlock()
+    # masterF.runComponent()
     ...
