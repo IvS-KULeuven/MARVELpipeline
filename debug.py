@@ -11,7 +11,7 @@ first order (left on the flatfield) and ending at the last order (right on the f
 def plotOrdersWithSlider(orders):
     # The parametrized function to be plotted
     def f(t, m):
-        m = int(m-1)
+        m = int(m)
         mth_order = orders[m]
         
         return mth_order[t]
@@ -45,7 +45,7 @@ def plotOrdersWithSlider(orders):
 
     # The function to be called anytime a slider's value changes
     def update(val):
-        line.set_ydata(f(t, amp_slider.val))
+        line.set_ydata(f(t, amp_slider.val-1))
         fig.canvas.draw_idle()        
 
 
@@ -54,4 +54,11 @@ def plotOrdersWithSlider(orders):
 
     plt.show()
 
+
+def plotGIF(figures, background):
+
+    for i in np.arange(5):
+        plt.imshow(background, origin='lower')
+        plt.imshow(figures[i], alpha=0.1, origin='lower')
+        plt.show()
 
