@@ -73,8 +73,10 @@ class OrderExtraction(PipelineComponent):
         orders = [0]*len(peak_idx)
         values = [0]*len(peak_idx)
 
+        previous_idx = 0
         for m, row_max in tqdm(enumerate(peak_idx)):
-            values[m], orders[m] = followOrders(row_max, image)
+            values[m], orders[m] = followOrders(row_max, previous_idx, image)
+            previous_idx = row_max
 
         if self.debug > 2:
             print("{} number of peaks found".format(len(peak_idx)))
@@ -236,17 +238,23 @@ class OrderExtraction(PipelineComponent):
         
 
         
-        
+
 
     
+@njit()
+def getSignalToNoise(signal, background):
+    gain = tools.getGain(" ")
+    tExposure = tools.getExposureTime(" ")
+    darkRate = tools.getDarkRate(" ")
 
+    return (signal * gain) / np.sqrt((signal * gain + background * gain + tExposure * darkRate))
 
         
             
 
 
 @njit()
-def followOrders(max_row_0, image):
+def followOrders(max_row_0, previous_row, image):
     # Starting at the central peak, walk right/left and select the brightest pixel
     
     nx, ny = image.shape
@@ -262,7 +270,7 @@ def followOrders(max_row_0, image):
     # Add center value to order/value
     value[column] = image[column, row_max]
     order[column] = row_max
-    
+    dark_value    = image[column, int((row_max + previous_row)/2)]
     # Walk to right left
     while column+1 < nx:
         column += 1
@@ -273,15 +281,17 @@ def followOrders(max_row_0, image):
         row_max = rows[values == np.max(values)][0]
         value[column] = image[column, row_max]
         order[column] = row_max
-
+        dark_value    = image[column, int((row_max + previous_row)/2)]
+        
 
 
         if (row_max == 1) or (row_max == nx):
             break
         
-        if (value[column] < 2070):
-            print(value[column])
+        if getSignalToNoise(value[column], dark_value) < 100:
             break
+
+        
 
     # Reset column and row_max and walk to the left
     column = int(nx/2)
@@ -296,12 +306,12 @@ def followOrders(max_row_0, image):
         row_max = rows[values == np.max(values)][0]
         value[column] = image[column, row_max]
         order[column] = row_max
+        dark_value    = image[column, int((row_max + previous_row)/2)]        
 
         if (row_max == 1) or (row_max == nx):
             break
 
-        if (value[column] < 2070):
-            print(value[column])
+        if getSignalToNoise(value[column], dark_value) < 100:
             break
 
     return value, order
