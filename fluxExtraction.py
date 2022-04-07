@@ -38,21 +38,22 @@ class OrderExtraction(PipelineComponent):
             paths = [ x["path"] for x in instances ]
         image = tools.getImage(paths[0]).astype('float64')
 
-        # 2. Locatand and polynomial fit the orders 
+        # 2. Locate the orders on the return a polynomial fit of them
         print("Find the stripes:")
         polynomials = self.getStripes(image, debug=True)
 
-        # identify stripes
+        # 3. Identify the stripes
         print("\nIdentify the Stripes")
         id_p = self.identifyStripes(image, polynomials )
 
+        # 4. Extract the stripes
         print("\nExtract the Stripes")
         flat_stripes, index_fiber, index_order = self.extractFlatStripes(image, id_p)
         
 
 
 
-    def getStripes(self, image, deg_polynomial=5, median_filter=1, gauss_filter_sigma=3.,  min_peak=0.25, debug=False):
+    def getStripes(self, image, deg_polynomial=5, median_filter=1, gauss_filter_sigma=3.,  min_peak=0.125, debug=False):
         start = time.time()
         nx, ny = image.shape
 
@@ -60,10 +61,12 @@ class OrderExtraction(PipelineComponent):
         image = ndimage.median_filter(image, median_filter)
         image = ndimage.gaussian_filter(image, gauss_filter_sigma)
 
-        # Central column
+        # Central row of the CCD
         centRow  = image[int(nx/2),:]
         peaks    = np.r_[True, (centRow[1:-1] >= centRow[:-2]) & (centRow[1:-1] > centRow[2:]), True]
-        
+
+        # Identify the maxima along the central row, as these are the stripes
+        # We only keep maxima that are larger then min_peak * maximum_central_row
         peak_idx = np.arange(ny)[np.logical_and(peaks, centRow > min_peak * np.max(centRow))]
 
         # Exclude peaks too close to the border
@@ -73,8 +76,10 @@ class OrderExtraction(PipelineComponent):
         orders = [0]*len(peak_idx)
         values = [0]*len(peak_idx)
 
+        previous_idx = 0
         for m, row_max in tqdm(enumerate(peak_idx)):
-            values[m], orders[m] = followOrders(row_max, image)
+            values[m], orders[m] = followOrders(row_max, previous_idx, image)
+            previous_idx = row_max
 
         if self.debug > 2:
             print("{} number of peaks found".format(len(peak_idx)))
@@ -84,21 +89,24 @@ class OrderExtraction(PipelineComponent):
 
             plotOrdersWithSlider(values)
 
-            # Plot the selected pixels 
+            # Plot the selected pixels
+            plt.imshow(image, origin='lower')
             for i in np.arange(320):
                 ords = orders[i]
                 mask = (ords != 0)
-                plt.plot(ords[mask], np.arange(nx)[mask])
+                plt.plot(ords[mask], np.arange(nx)[mask], alpha=0.5)
             plt.show()
         
 
         polynomials = [np.poly1d(np.polyfit(np.arange(nx)[order != 0], order[order != 0], deg_polynomial)) for order in orders]
         end = time.time()
-        print("Time for the function GetStripes is {}".format(end-start))
+        
         if self.debug > 2:
+            print("Time for the function GetStripes is {}".format(end-start))
             xx = np.arange(nx)
             for p in polynomials:
                 plt.plot(p(xx), xx)
+            plt.imshow(image, alpha=1, origin='lower')
             plt.xlim([0, nx])
             plt.ylim([0, ny])
             plt.show()
@@ -115,7 +123,6 @@ class OrderExtraction(PipelineComponent):
 
     def identifyStripes(self, image, polynomials, positions=None, selected_fibers=None):
         start = time.time()
-        print("Identify stripes ...")
         nx, ny = image.shape
 
         useAllFibers = selected_fibers is None
@@ -236,17 +243,23 @@ class OrderExtraction(PipelineComponent):
         
 
         
-        
+
 
     
+@njit()
+def getSignalToNoise(signal, background):
+    gain = tools.getGain(" ")
+    tExposure = tools.getExposureTime(" ")
+    darkRate = tools.getDarkRate(" ")
 
+    return (signal * gain) / np.sqrt((signal * gain + background * gain + tExposure * darkRate))
 
         
             
 
 
 @njit()
-def followOrders(max_row_0, image):
+def followOrders(max_row_0, previous_row, image):
     # Starting at the central peak, walk right/left and select the brightest pixel
     
     nx, ny = image.shape
@@ -262,7 +275,7 @@ def followOrders(max_row_0, image):
     # Add center value to order/value
     value[column] = image[column, row_max]
     order[column] = row_max
-    
+    dark_value    = image[column, int((row_max + previous_row)/2)]
     # Walk to right left
     while column+1 < nx:
         column += 1
@@ -273,15 +286,17 @@ def followOrders(max_row_0, image):
         row_max = rows[values == np.max(values)][0]
         value[column] = image[column, row_max]
         order[column] = row_max
-
+        dark_value    = image[column, int((row_max + previous_row)/2)]
+        
 
 
         if (row_max == 1) or (row_max == nx):
             break
         
-        if (value[column] < 2070):
-            print(value[column])
+        if getSignalToNoise(value[column], dark_value) < 100:
             break
+
+        
 
     # Reset column and row_max and walk to the left
     column = int(nx/2)
@@ -296,12 +311,12 @@ def followOrders(max_row_0, image):
         row_max = rows[values == np.max(values)][0]
         value[column] = image[column, row_max]
         order[column] = row_max
+        dark_value    = image[column, int((row_max + previous_row)/2)]        
 
         if (row_max == 1) or (row_max == nx):
             break
 
-        if (value[column] < 2070):
-            print(value[column])
+        if getSignalToNoise(value[column], dark_value) < 100:
             break
 
     return value, order
