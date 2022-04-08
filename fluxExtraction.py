@@ -82,7 +82,7 @@ class OrderExtraction(PipelineComponent):
             previous_idx = row_max
 
         if self.debug > 2:
-            print("{} number of peaks found".format(len(peak_idx)))
+            print("\t{} number of peaks found".format(len(peak_idx)))
             plt.plot(centRow, "r")
             plt.plot(peak_idx, [centRow[i] for i in peak_idx], "bo")
             plt.show()           
@@ -102,7 +102,6 @@ class OrderExtraction(PipelineComponent):
         end = time.time()
         
         if self.debug > 2:
-            print("Time for the function GetStripes is {}".format(end-start))
             xx = np.arange(nx)
             for p in polynomials:
                 plt.plot(p(xx), xx)
@@ -110,7 +109,6 @@ class OrderExtraction(PipelineComponent):
             plt.xlim([0, nx])
             plt.ylim([0, ny])
             plt.show()
-
         return polynomials
 
 
@@ -166,30 +164,42 @@ class OrderExtraction(PipelineComponent):
 
         polynomials = np.array([ p.coefficients for p in polynomials ])
         end = time.time()
-        print("Time for the function identifyStripes is {}".format(end-start))
+        print("\tTime for the function identifyStripes is {}".format(end-start))
         return identify(yPositions, yObserved, polynomials, fibers, orders, shift_calculated)
 
 
-    def extractFlatStripes(self, flat, p_id, slit_height=10):
+    def extractFlatStripes(self, flat, p_id):
+
         start = time.time()
-        print("extract flat field stipes...")
         nx, ny = flat.shape
         xx = np.arange(nx)
 
         index_fiber = np.zeros_like(flat, dtype=np.int8)
         index_order = np.zeros_like(flat, dtype=np.int8)
 
-        slit_indices_y = np.arange(-slit_height, slit_height).repeat(nx).reshape((2 * slit_height, nx))
-        slit_indices_x = np.tile(np.arange(nx), 2 * slit_height).reshape((2 * slit_height, nx))
+        slit_heights = {}
 
+        previous_idx = 0
         for f in p_id.keys():
             for o, p in p_id[f].items():
                 y = np.poly1d(p)(xx)
+                slit_height = getSlitHeight(flat, int(np.poly1d(p)([int(nx)/2])), previous_idx)
+
+                slit_indices_y = np.arange(-slit_height, slit_height).repeat(nx).reshape((2 * slit_height, nx))
+                slit_indices_x = np.tile(np.arange(nx), 2 * slit_height).reshape((2 * slit_height, nx))                
+
                 indices = np.rint(slit_indices_y + y).astype(int)
                 # Exclude the indices that are no longer on the CCD 
                 valid_indices = np.logical_and(indices < ny, indices > 0)
                 index_fiber[slit_indices_x[valid_indices], indices[valid_indices]] = f
                 index_order[slit_indices_x[valid_indices], indices[valid_indices]] = o
+                previous_idx = int(np.poly1d(p)([int(nx)/2]))
+
+
+                if f in slit_heights:
+                    slit_heights[f].update({o: slit_height})
+                else:
+                    slit_heights[f] = {o: slit_height}
 
         # image with only values within stripes, 0 elsewhere
         cleaned_image = np.where(index_order > 0, flat, 0)
@@ -202,16 +212,16 @@ class OrderExtraction(PipelineComponent):
             plt.show()
 
         end = time.time()
-        print("Time for first part of the function extractFlatStripes is {}".format(end-start))
+        print("\tTime for first part of the function extractFlatStripes is {}".format(end-start))
         start = time.time()
-        flat_stripes = self.extractStripes(flat, p_id)
+        flat_stripes = self.extractStripes(flat, p_id, slit_heights)
         end = time.time()
-        print("Time for second part of the function extractFlatStripes is {}".format(end-start))
+        print("\tTime for second part of the function extractFlatStripes is {}".format(end-start))
 
         return flat_stripes, index_fiber, index_order
         
 
-    def extractStripes(self, image, p_id):
+    def extractStripes(self, image, p_id, slit_heights):
         
         start = time.time()
         stripes = {}
@@ -224,13 +234,14 @@ class OrderExtraction(PipelineComponent):
         
         for f in p_id.keys():
 
-            print(i)
             i += 1
+            print(i)
             ind_img = np.zeros_like(image.transpose())
-
+            heights = slit_heights[f]
             for o, p in p_id[f].items():
                 y  = np.poly1d(p)(xx)
-                ind_img += extractSingleStripe(y, image)
+
+                ind_img += extractSingleStripe(y, image, slit_height=heights[o])
             images.append(ind_img)
         if self.debug > 2:
             plotGIF(images, image)
@@ -240,19 +251,21 @@ class OrderExtraction(PipelineComponent):
 
 
 
-        
-
-        
 
 
-    
+
+
+
+
 @njit()
-def getSignalToNoise(signal, background):
+def getSignalToNoiseSinglePixel(signal, background):
     gain = tools.getGain(" ")
     tExposure = tools.getExposureTime(" ")
     darkRate = tools.getDarkRate(" ")
 
     return (signal * gain) / np.sqrt((signal * gain + background * gain + tExposure * darkRate))
+
+
 
         
             
@@ -293,7 +306,7 @@ def followOrders(max_row_0, previous_row, image):
         if (row_max == 1) or (row_max == nx):
             break
         
-        if getSignalToNoise(value[column], dark_value) < 100:
+        if getSignalToNoiseSinglePixel(value[column], dark_value) < 100:
             break
 
         
@@ -316,7 +329,7 @@ def followOrders(max_row_0, previous_row, image):
         if (row_max == 1) or (row_max == nx):
             break
 
-        if getSignalToNoise(value[column], dark_value) < 100:
+        if getSignalToNoiseSinglePixel(value[column], dark_value) < 100:
             break
 
     return value, order
@@ -343,7 +356,6 @@ def getShift(positions, observed, useAllFibers=True):
     
 
 def identify(positions, observed, polynomials, fibers, orders, shift):
-    print("Beginning of identify")
 
     p_id = {}
             
@@ -366,7 +378,6 @@ def identify(positions, observed, polynomials, fibers, orders, shift):
                 print("WARNING: Stripe at {} could not be identified unambiguously".format(observed[i]))
         else:
             print("Stripe at {} could not be identified.".format(observed[i]))
-    print("End of identify")
     return p_id
 
 
@@ -374,7 +385,7 @@ def identify(positions, observed, polynomials, fibers, orders, shift):
 
 
 @njit()
-def extractSingleStripe(y, image, slit_height=10):
+def extractSingleStripe(y, image, slit_height=15):
 
     ny, nx = image.shape
 
@@ -395,11 +406,38 @@ def extractSingleStripe(y, image, slit_height=10):
     return ind_img.transpose()
     
 
+#@njit()
+def getSlitHeight(image, idx, idx_previous):
+    # Get the optimal slith height (<20, >0) that maximaizes S/N
+
+    nx, ny = image.shape
+    centralRow = image[int(nx/2),:]
+
+    background = centralRow[int((idx_previous + idx)/2)]
+    previousSignalToNoise = 0
+
+    for width in np.arange(15):
+        
+        signal     = sum(centralRow[idx-width:idx+width+1])
+        background = background * (width * 2 + 1)
+
+        currentSignalToNoise = getSignalToNoise(signal, background, (2 * width + 1))
+
+        if (currentSignalToNoise >= previousSignalToNoise):
+            previousSignalToNoise = currentSignalToNoise
+        else:
+            return width
+    return 15
 
 
 
+@njit()
+def getSignalToNoise(signal, background, Npixels):
+    gain = tools.getGain(" ")
+    tExposure = tools.getExposureTime(" ")
+    darkRate = tools.getDarkRate(" ")
 
-
+    return (signal * gain) / np.sqrt((signal * gain + background * gain + tExposure * darkRate * Npixels))
 
 
 if __name__ == "__main__":
