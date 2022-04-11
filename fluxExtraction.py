@@ -177,16 +177,16 @@ class OrderExtraction(PipelineComponent):
         index_fiber = np.zeros_like(flat, dtype=np.int8)
         index_order = np.zeros_like(flat, dtype=np.int8)
 
-        slit_heights = {}
+        cross_widths = {}
 
         previous_idx = 0
         for f in p_id.keys():
             for o, p in p_id[f].items():
                 y = np.poly1d(p)(xx)
-                slit_height = getSlitHeight(flat, int(np.poly1d(p)([int(nx)/2])), previous_idx)
+                cross_width = getCrossOrderWidth(flat, int(np.poly1d(p)([int(nx)/2])), previous_idx)
 
-                slit_indices_y = np.arange(-slit_height, slit_height).repeat(nx).reshape((2 * slit_height, nx))
-                slit_indices_x = np.tile(np.arange(nx), 2 * slit_height).reshape((2 * slit_height, nx))                
+                slit_indices_y = np.arange(-cross_width, cross_width).repeat(nx).reshape((2 * cross_width, nx))
+                slit_indices_x = np.tile(np.arange(nx), 2 * cross_width).reshape((2 * cross_width, nx))                
 
                 indices = np.rint(slit_indices_y + y).astype(int)
                 # Exclude the indices that are no longer on the CCD 
@@ -196,10 +196,10 @@ class OrderExtraction(PipelineComponent):
                 previous_idx = int(np.poly1d(p)([int(nx)/2]))
 
 
-                if f in slit_heights:
-                    slit_heights[f].update({o: slit_height})
+                if f in cross_widths:
+                    cross_widths[f].update({o: cross_width})
                 else:
-                    slit_heights[f] = {o: slit_height}
+                    cross_widths[f] = {o: cross_width}
 
         # image with only values within stripes, 0 elsewhere
         cleaned_image = np.where(index_order > 0, flat, 0)
@@ -214,7 +214,7 @@ class OrderExtraction(PipelineComponent):
         end = time.time()
         print("\tTime for first part of the function extractFlatStripes is {}".format(end-start))
         start = time.time()
-        flat_stripes = self.extractStripes(flat, p_id, slit_heights)
+        flat_stripes = self.extractStripes(flat, p_id, cross_widths)
         end = time.time()
         print("\tTime for second part of the function extractFlatStripes is {}".format(end-start))
 
@@ -407,7 +407,7 @@ def extractSingleStripe(y, image, slit_height=15):
     
 
 #@njit()
-def getSlitHeight(image, idx, idx_previous):
+def getCrossOrderWidth(image, idx, idx_previous):
     # Get the optimal slith height (<20, >0) that maximaizes S/N
 
     nx, ny = image.shape
@@ -415,16 +415,19 @@ def getSlitHeight(image, idx, idx_previous):
 
     background = centralRow[int((idx_previous + idx)/2)]
     previousSignalToNoise = 0
-
+    noise = []
     for width in np.arange(15):
         
         signal     = sum(centralRow[idx-width:idx+width+1])
         background = background * (width * 2 + 1)
 
-        currentSignalToNoise = getSignalToNoise(signal, background, (2 * width + 1))
 
+        currentSignalToNoise = getSignalToNoise(signal, background, (2 * width + 1))
+        noise.append(currentSignalToNoise)
         if (currentSignalToNoise >= previousSignalToNoise):
             previousSignalToNoise = currentSignalToNoise
+
+            
         else:
             return width
     return 15
@@ -442,5 +445,5 @@ def getSignalToNoise(signal, background, Npixels):
 
 if __name__ == "__main__":
     hash = ["e5577b3329caa7c3b98143a6dc0593b89ab5e11ee95b4d065f2cee210f81644e"]
-    FExtra = OrderExtraction(hash, debug=3)
+    FExtra = OrderExtraction(hash, debug=2)
     FExtra.make()
