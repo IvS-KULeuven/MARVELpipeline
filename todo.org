@@ -1,0 +1,19 @@
+#+title:Changes that still should happen
+
+* in tools.py:
+- gain/exposureTime/darkRate should be read from fitsFile (if this is in the file)
+
+* Include gain/exposureTime/darkRate in .fits header
+
+* Should use S/N to find the correct #pixels around the polynomial fit to inlcude
+Maxize S/N wrp amound of pixels around:
+- [ ] where orders is verticall
+- [ ] where the value is maximal
+- [X] when we are in the middle row
+
+=> Check which one of these gives better results
+
+
+* (Flat field) Responce of instrument (in horizontal direction)
+- Check background between orders and see how they vary, depending on position. This gives a idea of the _responce_ of the detector. (See p.38 of the thesis of Nicholas)
+- TODO: At some point, check how much this influences our respults

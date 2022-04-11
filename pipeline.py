@@ -66,8 +66,7 @@ class PipelineComponent():
 
         hdu = fits.PrimaryHDU(image, header=hdr)
         hdu.writeto(path, overwrite=True)
-        print(path)
-        print(image)
+
 
         # Add Mast Bias Image to database
         dict = {"_id" : hash, "path" : path, "type" : self.type}
@@ -82,7 +81,7 @@ class MasterBias(PipelineComponent):
     def __init__(self, input):
         super().__init__(input)
         self.col = self.setCollection(input)
-        self.outputPath = "/lhome/driess/MARVEL/MARVELpipe/Data/ProcessedData/MasterBias/"
+        self.outputPath = "/lhome/driess/MARVEL/MARVELpipeline/Data/ProcessedData/MasterBias/"
         self.type = "Master Bias Image"
 
 
@@ -133,7 +132,7 @@ class MasterDark(PipelineComponent):
     def __init__(self, input):
         super().__init__(input)
         self.col = self.setCollection(input)
-        self.outputPath = "/lhome/driess/MARVEL/MARVELpipe/Data/ProcessedData/MaterDark/"
+        self.outputPath = "/lhome/driess/MARVEL/MARVELpipeline/Data/ProcessedData/MaterDark/"
         self.type = "Master Dark Image"
 
 
@@ -173,7 +172,7 @@ class MasterFlat(PipelineComponent):
     def __init__(self, input):
         super().__init__(input)
         self.col = self.setCollection(input)
-        self.outputPath = "/lhome/driess/MARVEL/MARVELpipe/Data/ProcessedData/MasterFlat/"
+        self.outputPath = "/lhome/driess/MARVEL/MARVELpipeline/Data/ProcessedData/MasterFlat/"
         self.type = "Master Flat Image"
 
 
@@ -219,7 +218,7 @@ class CalibratedScienceFrames(PipelineComponent):
         super().__init__(input)
         self.col = self.setCollection(input)
         self.input = self.createInputDirectory(input)
-        self.outputPath = "/lhome/driess/MARVEL/MARVELpipe/Data/ProcessedData/CalibratedScience/"
+        self.outputPath = "/lhome/driess/MARVEL/MARVELpipeline/Data/ProcessedData/CalibratedScience/"
         self.type = "Calibrated Science Image"
 
     def setCollection(self, input):
@@ -327,7 +326,7 @@ if __name__ == "__main__":
 
 
     # Flat
-    # hash_list = ["1440a24e48f0e043da26dfbb26595f263aee42ecfeb13b540c38b6418a8351d3", "40e031729d8131b9605b7feecd8f96bc95febcb39faa40f5b427d814de726eff", "9fb0578e82514a3b73b7fef554363ea16b1bf8aed1347511b4475fe4f9d79b6e", "7b3e72779ae2fc29b22761cddf4cf3d2b4d2803882e87fdfc7fa99c506abcf88", "50359821613eca4a88daed91be15356011a87d98a506bbe0d072970a4f764534"]
-    # masterF = MasterFlat(hash_list)
-    # masterF.runComponent()
+    hash_list = ["1440a24e48f0e043da26dfbb26595f263aee42ecfeb13b540c38b6418a8351d3", "40e031729d8131b9605b7feecd8f96bc95febcb39faa40f5b427d814de726eff", "9fb0578e82514a3b73b7fef554363ea16b1bf8aed1347511b4475fe4f9d79b6e", "7b3e72779ae2fc29b22761cddf4cf3d2b4d2803882e87fdfc7fa99c506abcf88", "50359821613eca4a88daed91be15356011a87d98a506bbe0d072970a4f764534"]
+    masterF = MasterFlat(hash_list)
+    masterF.runComponent()
     ...

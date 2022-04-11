@@ -21,7 +21,7 @@ def createDataBase(makeIfExist=False):
     db = client["databaseMARVEL"]
 
     # If database already exist, we make sure it is empty before we start 
-    if makeIfExist:
+    if  ("databaseMARVEL" in client.list_database_names() and makeIfExist):
         db["BiasImages"].drop()
         db["DarkImages"].drop()
         db["ScienceImages"].drop()
