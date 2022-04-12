@@ -13,6 +13,7 @@ def createDataBase(makeIfExist=False):
     client = MongoClient()
 
     # Check if database already exist
+
     if ("databaseMARVEL" in client.list_database_names() and not makeIfExist):
         print("There already exist a Database for MARVEL. To explitly remake the database run:")
         print("createDataBase(makeIfExist=True)")
@@ -21,7 +22,8 @@ def createDataBase(makeIfExist=False):
     db = client["databaseMARVEL"]
 
     # If database already exist, we make sure it is empty before we start 
-    if  ("databaseMARVEL" in client.list_database_names() and makeIfExist):
+
+    if ("databaseMARVEL" in client.list_database_names() and makeIfExist):
         db["BiasImages"].drop()
         db["DarkImages"].drop()
         db["ScienceImages"].drop()
@@ -32,21 +34,26 @@ def createDataBase(makeIfExist=False):
 
 
     # Add the Bias images to the DataBase
+
     biasImagePath  = pathToRaw + "CalibrationImages/Bias"
     biasImages     = os.listdir(biasImagePath)
-    biasCollection = db["BiasImages"]
-    biases = [addBiasImage(image, biasImagePath + "/" + image, biasCollection) for image in biasImages]
-    biasCollection.insert_many(biases)
+    if len(biasImages) != 0:
+        biasCollection = db["BiasImages"]
+        biases = [addBiasImage(image, biasImagePath + "/" + image, biasCollection) for image in biasImages]
+        biasCollection.insert_many(biases)
     
 
     # Add the Dark images to the DataBase
+    
     darkImagePath  = pathToRaw + "/CalibrationImages/Dark"
     darkImages     = os.listdir(darkImagePath)
-    darkCollection = db["DarkImages"]
-    darks = [addDarkImage(image, darkImagePath + "/" + image , darkCollection) for image in darkImages]
-    darkCollection.insert_many(darks)
+    if len(darkImages) != 0:
+        darkCollection = db["DarkImages"]
+        darks = [addDarkImage(image, darkImagePath + "/" + image , darkCollection) for image in darkImages]
+        darkCollection.insert_many(darks)
 
     # Add the Flat images to the Database
+
     flatImagePath  = pathToRaw + "/CalibrationImages/Flat"
     flatImages     = os.listdir(flatImagePath)
     flatCollection = db["FlatImages"]
@@ -55,11 +62,13 @@ def createDataBase(makeIfExist=False):
 
 
     # Add the Science images to the DataBase
+
     scienceImagePath = pathToRaw + "/ScienceFrames"
     scienceImages = os.listdir(scienceImagePath)
-    scienceCollection = db["ScienceImages"]
-    sciences = [addScienceImage(image, scienceImagePath + "/" + image, scienceCollection) for image in scienceImages]
-    scienceCollection.insert_many(sciences)
+    if len(scienceImages) != 0:
+        scienceCollection = db["ScienceImages"]
+        sciences = [addScienceImage(image, scienceImagePath + "/" + image, scienceCollection) for image in scienceImages]
+        scienceCollection.insert_many(sciences)
 
 
 
