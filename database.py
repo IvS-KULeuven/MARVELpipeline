@@ -25,6 +25,7 @@ def createDataBase(makeIfExist=False):
     # If database already exist, we make sure it is empty before we start 
 
     if ("databaseMARVEL" in client.list_database_names() and makeIfExist):
+        print("Clearing existing database")
         db["BiasImages"].drop()
         db["DarkImages"].drop()
         db["ScienceImages"].drop()
@@ -32,7 +33,6 @@ def createDataBase(makeIfExist=False):
 
     pathToRaw  = os.getcwd() + "/Data/RawData/"
     pathToPros = os.getcwd() + "/Data/ProcessedData/Data/"
-
 
     # Add the Bias images to the DataBase
 
