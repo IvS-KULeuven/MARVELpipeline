@@ -6,6 +6,7 @@
 from pymongo import MongoClient
 import hashlib
 import os
+from glob import glob
 
 
 def createDataBase(makeIfExist=False):
@@ -35,68 +36,72 @@ def createDataBase(makeIfExist=False):
 
     # Add the Bias images to the DataBase
 
-    biasImagePath  = pathToRaw + "CalibrationImages/Bias"
-    biasImages     = os.listdir(biasImagePath)
-    if len(biasImages) != 0:
+    biasImageDirectory = pathToRaw + "CalibrationImages/Bias"
+    biasImagePaths = glob(biasImageDirectory + "/*.fits")
+    print("Found {0} bias frames to be inserted in MongoDB".format(len(biasImagePaths)))
+    if len(biasImagePaths) != 0:
+        biasImageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in biasImagePaths]
         biasCollection = db["BiasImages"]
-        biases = [addBiasImage(image, biasImagePath + "/" + image, biasCollection) for image in biasImages]
-        biasCollection.insert_many(biases)
-    
+        biasImages = [addBiasImage(biasImageBaseNames[n], biasImagePaths[n], biasCollection) for n in range(len(biasImagePaths))]
+        biasCollection.insert_many(biasImages)
+
 
     # Add the Dark images to the DataBase
     
-    darkImagePath  = pathToRaw + "/CalibrationImages/Dark"
-    darkImages     = os.listdir(darkImagePath)
-    if len(darkImages) != 0:
+    darkImageDirectory = pathToRaw + "/CalibrationImages/Dark"
+    darkImagePaths = glob(darkImageDirectory + "/*.fits")
+    print("Found {0} dark frames to be inserted in MongoDB".format(len(darkImagePaths)))
+    if len(darkImagePaths) != 0:
+        darkImageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in darkImagePaths]
         darkCollection = db["DarkImages"]
-        darks = [addDarkImage(image, darkImagePath + "/" + image , darkCollection) for image in darkImages]
-        darkCollection.insert_many(darks)
+        darkImages = [addDarkImage(darkImageBaseNames[n], darkImagePaths[n], darkCollection) for n in range(len(darkImagePaths))]
+        darkCollection.insert_many(darkImages)
 
     # Add the Flat images to the Database
 
-    flatImagePath  = pathToRaw + "/CalibrationImages/Flat"
-    flatImages     = os.listdir(flatImagePath)
-    flatCollection = db["FlatImages"]
-    flats = [addFlatImage(image, flatImagePath + "/" + image, flatCollection) for image in flatImages]
-    flatCollection.insert_many(flats)
+    flatImageDirectory = pathToRaw + "/CalibrationImages/Flat"
+    flatImagePaths = glob(flatImageDirectory + "/*.fits")
+    print("Found {0} flat frames to be inserted in MongoDB".format(len(flatImagePaths)))
+    if len(flatImagePaths) != 0:
+        flatImageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in flatImagePaths]
+        flatCollection = db["FlatImages"]
+        flatImages = [addFlatImage(flatImageBaseNames[n], flatImagePaths[n], flatCollection) for n in range(len(flatImagePaths))]
+        flatCollection.insert_many(flatImages)
 
 
     # Add the Science images to the DataBase
 
-    scienceImagePath = pathToRaw + "/ScienceFrames"
-    scienceImages = os.listdir(scienceImagePath)
-    if len(scienceImages) != 0:
+    scienceImageDirectory = pathToRaw + "/ScienceFrames"
+    scienceImagePaths = glob(scienceImageDirectory + "/*.fits")
+    print("Found {0} science frames to be inserted in MongoDB".format(len(scienceImagePaths)))
+    if len(scienceImagePaths) != 0:
+        scienceImageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in scienceImagePaths]
         scienceCollection = db["ScienceImages"]
-        sciences = [addScienceImage(image, scienceImagePath + "/" + image, scienceCollection) for image in scienceImages]
-        scienceCollection.insert_many(sciences)
+        scienceImages = [addScienceImage(scienceImageBaseNames[n], scienceImagePaths[n], scienceCollection) for n in range(len(scienceImagePaths))]
+        scienceCollection.insert_many(scienceImages)
 
 
 
-def addBiasImage(image, path, collection):
-    # Should think about what information form the file should be included in the hasInput
-    hashInput = image + "Raw Bias Image"
+def addBiasImage(imageName, path, collection):
+    hashInput = imageName + "Raw Bias Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
-    
     return {"_id" : hash, "path" : path, "type" : "Raw Bias Image"}
 
 
-def addDarkImage(image, path, collection):
-    # Should think about what information form the file should be included in the hasInput
-    hashInput = image + "Raw Dark Image"
+def addDarkImage(imageName, path, collection):
+    hashInput = imageName + "Raw Dark Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
     return {"_id": hash, "path": path, "type": "Raw Dark Image"}
 
 
-def addFlatImage(image, path, collection):
-    # Should think about what information form the file should be included in the hasInput
-    hashInput = image + "Raw Flat Image"
+def addFlatImage(imageName, path, collection):
+    hashInput = imageName + "Raw Flat Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
     return {"_id": hash, "path": path, "type": "Raw Flat Image"}
 
 
-def addScienceImage(image, path, collection):
-
-    hashInput = image + "Raw Science Image"
+def addScienceImage(imageName, path, collection):
+    hashInput = imageName + "Raw Science Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
     return {"_id": hash, "path": path, "type": "Raw Science Image"}
 
@@ -109,6 +114,7 @@ def addScienceImage(image, path, collection):
 
 
 if __name__ == "__main__":
+
     createDataBase(makeIfExist=True)
     
     
