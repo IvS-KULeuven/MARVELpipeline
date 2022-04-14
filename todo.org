@@ -1,7 +1,15 @@
 #+title:Changes that still should happen
 
+<<<<<<< HEAD
+
+
+* Speed up flux-extraction
+
+* Save coordinates, flux, order/fiber 
+=======
 * in pipeline.py:
 - Master flats should taken into account the S/N of each of the flats (cf HERMES pipeline description)
+>>>>>>> upstream/main
 
 * in tools.py:
 - gain/exposureTime/darkRate should be read from fitsFile (if this is in the file)
@@ -20,3 +28,9 @@ Maxize S/N wrp amound of pixels around:
 * (Flat field) Responce of instrument (in horizontal direction)
 - Check background between orders and see how they vary, depending on position. This gives a idea of the _responce_ of the detector. (See p.38 of the thesis of Nicholas)
 - TODO: At some point, check how much this influences our respults
+
+
+* Make a README file that explains installing/starting the pipeline
+
+
+* Include input hash in output fits file

@@ -8,6 +8,9 @@ from scipy import ndimage
 from tqdm import tqdm
 from numba import njit, jit, vectorize
 import numba
+import hashlib
+from astropy.io import fits
+import os
 
 
 class OrderExtraction(PipelineComponent):
@@ -17,6 +20,12 @@ class OrderExtraction(PipelineComponent):
         super().__init__(input)
         self.col = self.setCollection(input)
         self.debug = debug
+        self.outputPath = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/"
+
+        if not os.path.isdir(self.outputPath):
+            os.mkdir(self.outputPath)
+
+        self.type = "Extracted Flat Orders"
     
     def setCollection(self, input):
         return self.db["FlatImages"]
@@ -48,9 +57,8 @@ class OrderExtraction(PipelineComponent):
 
         # 4. Extract the stripes
         print("\nExtract the Stripes")
-        flat_stripes, index_fiber, index_order = self.extractFlatStripes(image, id_p)
+        return self.extractFlatStripes(image, id_p)
         
-
 
 
     def getStripes(self, image, deg_polynomial=5, median_filter=1, gauss_filter_sigma=3.,  min_peak=0.125, debug=False):
@@ -114,9 +122,56 @@ class OrderExtraction(PipelineComponent):
 
 
 
+    def runComponent(self):
+        xCoordinates, yCoordinates, fluxValues, orders = self.make()
+        self.saveImage(xCoordinates, yCoordinates, fluxValues, orders)
+        print("Block Generated!")
+
+    def saveImage(self, xValues, yValues, flux, orders):
+        hash = hashlib.sha256(bytes("".join(self.input), 'utf-8')).hexdigest()
+
+        path = self.outputPath + self.getFileName()
+        orders, fibers = zip(*orders)
 
 
+        # Save Extracted Flat Orders as FITS file for primary HDU
+        primary_hdr = fits.Header()
+        primary_hdr["hash"] = hash
+        primary_hdr["path"] = path
+        primary_hdr["type"] = self.type
+        #hdr["input"] = self.input
 
+        hdu = fits.PrimaryHDU(header=primary_hdr)
+        hdul = fits.HDUList([hdu])
+
+        for i in np.arange(np.size(flux)):
+            hdr1 = fits.Header()
+            hdr1["order"]= orders[i]
+            hdr1["fiber"]= fibers[i]            
+
+            xValue = np.array(xValues[i], dtype=np.int16)
+            col1 = fits.Column(name="X", format='J', array=xValue)
+
+            yValue = np.array(yValues[i], dtype=np.int16)
+            col2 = fits.Column(name="Y", format='J', array=yValue)
+
+            fluxValues = np.array(flux[i], dtype=np.int16)
+            col3 = fits.Column(name="flux", format='D', array=fluxValues)
+
+            cols = fits.ColDefs([col1, col2, col3])
+            hdu1 = fits.BinTableHDU.from_columns(cols, header=hdr1)
+
+            hdul.append(hdu1)
+
+        
+        hdul.writeto(path, overwrite=True)
+
+        # Add image to the database
+        dict = {"_id" : hash, "path" : path, "type" : self.type}
+        tools.addToDataBase(dict, overWrite = True)
+
+    def getFileName(self):
+        return "extracted_flat_orders.fits"
 
 
     def identifyStripes(self, image, polynomials, positions=None, selected_fibers=None):
@@ -195,13 +250,13 @@ class OrderExtraction(PipelineComponent):
                 index_order[slit_indices_x[valid_indices], indices[valid_indices]] = o
                 previous_idx = int(np.poly1d(p)([int(nx)/2]))
 
-
                 if f in cross_widths:
                     cross_widths[f].update({o: cross_width})
                 else:
                     cross_widths[f] = {o: cross_width}
 
         # image with only values within stripes, 0 elsewhere
+        # TODO: Check if we need cleaned image
         cleaned_image = np.where(index_order > 0, flat, 0)
 
         if self.debug > 2:
@@ -214,41 +269,41 @@ class OrderExtraction(PipelineComponent):
         end = time.time()
         print("\tTime for first part of the function extractFlatStripes is {}".format(end-start))
         start = time.time()
-        flat_stripes = self.extractStripes(flat, p_id, cross_widths)
+        #flat_stripes = self.extractStripes(flat, p_id, cross_widths)
+        xCoordinates, yCoordinates, fluxValues, orders = extractStripes(flat, index_fiber, index_order)
         end = time.time()
         print("\tTime for second part of the function extractFlatStripes is {}".format(end-start))
 
-        return flat_stripes, index_fiber, index_order
+        return xCoordinates, yCoordinates, fluxValues, orders
         
 
-    def extractStripes(self, image, p_id, slit_heights):
-        
-        start = time.time()
-        stripes = {}
-        nx, ny = image.shape
-        xx = np.arange(nx)
 
-        images = []
-        i = 0
-
-        
-        for f in p_id.keys():
-
-            i += 1
-            print(i)
-            ind_img = np.zeros_like(image.transpose())
-            heights = slit_heights[f]
-            for o, p in p_id[f].items():
-                y  = np.poly1d(p)(xx)
-
-                ind_img += extractSingleStripe(y, image, slit_height=heights[o])
-            images.append(ind_img)
-        if self.debug > 2:
-            plotGIF(images, image)
-
-        return images
+            
+            
 
 
+
+    
+#@njit()
+def extractStripes(image, fiber_indexes, order_indexes):
+    xCoordinates = [] 
+    yCoordinates = []
+    fluxValues   = []
+    orders       = []
+
+    for o in np.arange(1, np.max(order_indexes)+1):
+        order_mask = order_indexes == o
+        for f in np.arange(1, np.max(fiber_indexes[order_mask])+1):
+            fiber_mask = fiber_indexes == f
+            combined_mask = fiber_mask * order_mask
+            xValues, yValues = np.where(combined_mask)
+
+            xCoordinates.append(xValues)
+            yCoordinates.append(yValues)
+            fluxValues.append(image[combined_mask])
+            orders.append((o,f))
+
+    return xCoordinates, yCoordinates, fluxValues, orders
 
 
 
@@ -446,4 +501,4 @@ def getSignalToNoise(signal, background, Npixels):
 if __name__ == "__main__":
     hash = ["e5577b3329caa7c3b98143a6dc0593b89ab5e11ee95b4d065f2cee210f81644e"]
     FExtra = OrderExtraction(hash, debug=2)
-    FExtra.make()
+    FExtra.runComponent()

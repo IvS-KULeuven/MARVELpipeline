@@ -51,7 +51,7 @@ def addToDataBase(dict, overWrite=False):
     # 2. image is not in the dictornary
     # 3. Check that dict is in the right format 
 
-    images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages", "Calibrated Science Image" : "ScienceImages"}
+    images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages", "Calibrated Science Image" : "ScienceImages", "Extracted Flat Orders" : "ExtractedOrders"}
     typeImage  = dict["type"]
     collection = db[images[typeImage]]
 
