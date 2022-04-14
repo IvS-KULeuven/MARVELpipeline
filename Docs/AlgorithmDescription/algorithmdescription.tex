@@ -1,0 +1,204 @@
+\documentclass[10pt,a4paper]{article}
+
+%-- LaTeX packages to be included
+
+\usepackage[left=2cm,right=2cm,top=1.6cm,bottom=5.0cm]{geometry}
+\usepackage{wallpaper}             % To set background of each page
+\usepackage{lastpage}              % To print the total number of pages
+\usepackage{sectsty}               % To change color section titles
+\usepackage{xcolor}                % To specify colors by name
+\usepackage{fancyhdr}              % To customize headers
+\usepackage{array}                 % To customize columns widths
+\usepackage{amssymb}               % Math symbols
+\usepackage{amsmath}               % Align environment
+\usepackage{enumitem}              % To specify easier spacings in itemize
+\usepackage{tabularx}              % For page wide tables
+\usepackage{bm}                    % For boldface math symbols
+
+%\usepackage{draftwatermark}
+%\SetWatermarkText{Draft}
+%\SetWatermarkScale{8}
+%\SetWatermarkColor[gray]{0.95}
+
+
+%-- Settings and definitions
+
+\definecolor{myBlue}{rgb}{0.33,0.55,0.83}
+\sectionfont{\color{myBlue}}       % Color of section titles
+\subsectionfont{\color{myBlue}}    % Color of subsection titles
+\setlength{\headheight}{90pt}      % Size of the header
+\pagestyle{fancy}\fancyhf{}        % Use the custom header specified below
+\renewcommand{\headrulewidth}{0pt} % Remove the line under the header
+\setlength{\parindent}{0mm}        % Remove paragraph indentation
+\setlength{\parskip}{1ex}          % Vertical spacing betweens paragraphs
+
+
+%-- Define abbreviations
+
+\newcommand{\bH}{\boldsymbol{H}}
+\newcommand{\bh}{\boldsymbol{h}}
+\newcommand{\bx}{\boldsymbol{x}}
+\newcommand{\bSigma}{\boldsymbol{\Sigma}}
+
+
+
+%-- Define the header box that should be displayed on every page
+
+\newcommand\HeaderFrame{
+    \setlength{\unitlength}{1mm}
+    \setlength\fboxsep{0mm}     % Distance between framebox and borderlines
+    \setlength\fboxrule{0.1mm}  % Increase the thickness of the border line
+    \put(20, 262){\fcolorbox{black}{white!10}{\framebox(170, 20){}}} % Header box
+    \put(21, 263){\includegraphics[height=18mm,keepaspectratio]{KUL_logo}} % Logo
+}
+
+
+%-- Specify the information in the header
+
+\fancyhead[R]{
+    \begin{minipage}[c]{0.35\textwidth}
+        \textbf{MARVEL RV Pipeline \\ Algorithm Descriptions}
+    \end{minipage}
+    \begin{tabular}{l l}
+    \textbf{Ref:} & \texttt{MARVEL-KUL-TN-00?} \\
+    \textbf{Issue:} & 1 \hspace*{10mm} \textbf{Revision:} 0  \\
+    \textbf{Date:} & 2022-08-01 \\
+    \textbf{Page:} & \thepage/\pageref{LastPage}  \\
+    \end{tabular}
+}
+
+
+
+%-- Specify the information in the footer
+
+\fancyfoot[C]{Institute of Astronomy - KU Leuven}
+
+
+%-- Define new column types to easily specify the width of a column in a table
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+
+
+
+%--
+%-- Beginning of document
+%--
+
+\begin{document}
+
+%-- Set the background of each page to that specified above
+
+\AddToShipoutPicture{\HeaderFrame}
+
+
+%---------------
+% The title page
+%---------------
+
+\vspace*{80mm}
+\begin{center}
+\textbf{\huge The MARVEL RV Pipeline \\[5mm] Algorithm Descriptions}
+\end{center}
+
+\vfill
+{
+\renewcommand{\arraystretch}{1.8}
+\begin{tabularx}{\textwidth}{l  l  l  X  c}
+                & \textbf{Name} & \textbf{Affiliation} & \hspace{10mm} \textbf{Signature} & \textbf{Date} \\
+    \hline
+    \textbf{Author(s)}   & & KU Leuven   &  & 2022-08-01  \\
+    \textbf{Reviewer(s)} & & KU Leuven   &  & \\
+                         & & KU Leuven   &  & \\
+    \textbf{Approved}    & Bart Vandenbussche & KU Leuven   &  &             \\
+    \hline
+\end{tabularx}
+}
+
+
+%---------------------
+% The document history
+%---------------------
+
+\newpage
+\section*{Document History}
+
+{
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabularx}{\textwidth}{ c  c  c  X }
+        \hline
+        \textbf{Issue} & \textbf{Rev.} & \textbf{Date} & \textbf{Change description} \\
+        \hline
+        1 & 0 & 2022-08-01 & Initial version. \\
+    \end{tabularx}
+}
+
+
+
+%------------------
+% Table of Contents
+%------------------
+
+\vspace*{10mm}
+\renewcommand{\contentsname}{Table of Contents}
+{
+    \setlength{\parskip}{0ex}          % Vertical spacing betweens paragraphs
+    \tableofcontents
+}
+\newpage
+
+
+
+%-- The next page(s) should contain a brief introduction, and a list
+%-- of applicable and reference documents, as well as a list of acronyms
+
+
+%------------------
+\section{Abstract}
+%------------------
+
+
+
+
+%-------------------------------
+\section{Documents and Acronyms}
+%-------------------------------
+
+%--------------------------------
+\subsection{Applicable Documents}
+%--------------------------------
+
+
+
+%-------------------------------
+\subsection{Reference Documents}
+%-------------------------------
+
+
+
+%--------------------
+\subsection{Acronyms}
+%--------------------
+
+{
+    \renewcommand{\arraystretch}{1.2}
+    \begin{tabularx}{\textwidth}{| l | X |}
+        \hline
+        CCD   & Charge-coupled device                \\ \hline
+        FWHM  & Full Width at Half Maximum           \\ \hline
+        RMS   & Root mean square                     \\ \hline
+        RV    & Radial Velocity                     \\ \hline
+    \end{tabularx}
+}
+
+%-- The actual contents starts here.
+
+\newpage
+
+%---------------------
+\section{Introduction}
+%---------------------
+
+\end{document}
