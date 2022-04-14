@@ -1,4 +1,7 @@
 
 tags
 Data/
+Docs/*/*.toc
+Docs/*/*.aux
+Docs/*/*.log
 __pycache__/

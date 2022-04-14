@@ -1,5 +1,8 @@
 #+title:Changes that still should happen
 
+* in pipeline.py:
+- Master flats should taken into account the S/N of each of the flats (cf HERMES pipeline description)
+
 * in tools.py:
 - gain/exposureTime/darkRate should be read from fitsFile (if this is in the file)
 
