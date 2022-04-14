@@ -14,9 +14,14 @@ import os
 
 
 class OrderExtraction(PipelineComponent):
-
+    """
+    Docstring
+    """
 
     def __init__(self, input, debug=0):
+        """
+        Docstring
+        """
         super().__init__(input)
         self.col = self.setCollection(input)
         self.debug = debug
@@ -27,10 +32,18 @@ class OrderExtraction(PipelineComponent):
 
         self.type = "Extracted Flat Orders"
     
+
     def setCollection(self, input):
+        """
+        Docstring
+        """
         return self.db["FlatImages"]
 
+
     def checkInput(self, input):
+        """
+        Docstring
+        """
         isCorrect = []
         collection = self.db["FlatImages"]
         for hash in input:
@@ -40,7 +53,9 @@ class OrderExtraction(PipelineComponent):
 
 
     def make(self):
-
+        """
+        Docstring
+        """
         # 1. We should get the image
         for hash in self.input:
             instances = self.col.find({"_id": hash})
@@ -60,8 +75,10 @@ class OrderExtraction(PipelineComponent):
         return self.extractFlatStripes(image, id_p)
         
 
-
     def getStripes(self, image, deg_polynomial=5, median_filter=1, gauss_filter_sigma=3.,  min_peak=0.125, debug=False):
+        """
+        Docstring
+        """
         start = time.time()
         nx, ny = image.shape
 
@@ -123,16 +140,21 @@ class OrderExtraction(PipelineComponent):
 
 
     def runComponent(self):
+        """
+        Docstring
+        """
         xCoordinates, yCoordinates, fluxValues, orders = self.make()
         self.saveImage(xCoordinates, yCoordinates, fluxValues, orders)
         print("Block Generated!")
 
-    def saveImage(self, xValues, yValues, flux, orders):
-        hash = hashlib.sha256(bytes("".join(self.input), 'utf-8')).hexdigest()
 
+    def saveImage(self, xValues, yValues, flux, orders):
+        """
+        Docstring
+        """
+        hash = hashlib.sha256(bytes("".join(self.input), 'utf-8')).hexdigest()
         path = self.outputPath + self.getFileName()
         orders, fibers = zip(*orders)
-
 
         # Save Extracted Flat Orders as FITS file for primary HDU
         primary_hdr = fits.Header()
@@ -162,7 +184,6 @@ class OrderExtraction(PipelineComponent):
             hdu1 = fits.BinTableHDU.from_columns(cols, header=hdr1)
 
             hdul.append(hdu1)
-
         
         hdul.writeto(path, overwrite=True)
 
@@ -170,11 +191,18 @@ class OrderExtraction(PipelineComponent):
         dict = {"_id" : hash, "path" : path, "type" : self.type}
         tools.addToDataBase(dict, overWrite = True)
 
+
     def getFileName(self):
+        """
+        Docstring
+        """
         return "extracted_flat_orders.fits"
 
 
     def identifyStripes(self, image, polynomials, positions=None, selected_fibers=None):
+        """
+        Docstring
+        """
         start = time.time()
         nx, ny = image.shape
 
@@ -204,8 +232,6 @@ class OrderExtraction(PipelineComponent):
 
         shift_calculated = getShift(yPositions, yObserved, useAllFibers=useAllFibers)
 
-
-
         if self.debug > 2:
             
             plt.figure()
@@ -223,8 +249,11 @@ class OrderExtraction(PipelineComponent):
         return identify(yPositions, yObserved, polynomials, fibers, orders, shift_calculated)
 
 
-    def extractFlatStripes(self, flat, p_id):
 
+    def extractFlatStripes(self, flat, p_id):
+        """
+        Docstring
+        """
         start = time.time()
         nx, ny = flat.shape
         xx = np.arange(nx)
@@ -286,6 +315,9 @@ class OrderExtraction(PipelineComponent):
     
 #@njit()
 def extractStripes(image, fiber_indexes, order_indexes):
+    """
+    Docstring
+    """
     xCoordinates = [] 
     yCoordinates = []
     fluxValues   = []
@@ -314,6 +346,9 @@ def extractStripes(image, fiber_indexes, order_indexes):
 
 @njit()
 def getSignalToNoiseSinglePixel(signal, background):
+    """
+    Docstring
+    """
     gain = tools.getGain(" ")
     tExposure = tools.getExposureTime(" ")
     darkRate = tools.getDarkRate(" ")
@@ -328,6 +363,9 @@ def getSignalToNoiseSinglePixel(signal, background):
 
 @njit()
 def followOrders(max_row_0, previous_row, image):
+    """
+    Docstring
+    """
     # Starting at the central peak, walk right/left and select the brightest pixel
     
     nx, ny = image.shape
@@ -355,16 +393,12 @@ def followOrders(max_row_0, previous_row, image):
         value[column] = image[column, row_max]
         order[column] = row_max
         dark_value    = image[column, int((row_max + previous_row)/2)]
-        
-
 
         if (row_max == 1) or (row_max == nx):
             break
         
         if getSignalToNoiseSinglePixel(value[column], dark_value) < 100:
             break
-
-        
 
     # Reset column and row_max and walk to the left
     column = int(nx/2)
@@ -390,9 +424,13 @@ def followOrders(max_row_0, previous_row, image):
     return value, order
 
 
+
+
 @njit()
 def getShift(positions, observed, useAllFibers=True):
-
+    """
+    Docstring
+    """
     shifts = np.linspace(-200, 200, 20000)
     distanceForShift = lambda shift : np.array([ np.min( np.abs(positions + shift - y)) for y in observed])
     distanceForAllShifts = np.array( [ distanceForShift(shift).sum() for shift in shifts])
@@ -411,7 +449,9 @@ def getShift(positions, observed, useAllFibers=True):
     
 
 def identify(positions, observed, polynomials, fibers, orders, shift):
-
+    """
+    Docstring
+    """
     p_id = {}
             
     # Keeps track of the orders that have been identified
@@ -441,7 +481,9 @@ def identify(positions, observed, polynomials, fibers, orders, shift):
 
 @njit()
 def extractSingleStripe(y, image, slit_height=15):
-
+    """
+    Docstring
+    """
     ny, nx = image.shape
 
     split_indices_y = np.arange(-slit_height, slit_height).repeat(nx).reshape((2 * slit_height, nx))
@@ -461,8 +503,13 @@ def extractSingleStripe(y, image, slit_height=15):
     return ind_img.transpose()
     
 
+
+
 #@njit()
 def getCrossOrderWidth(image, idx, idx_previous):
+    """
+    Docstring
+    """
     # Get the optimal slith height (<20, >0) that maximaizes S/N
 
     nx, ny = image.shape
@@ -491,6 +538,9 @@ def getCrossOrderWidth(image, idx, idx_previous):
 
 @njit()
 def getSignalToNoise(signal, background, Npixels):
+    """
+    Docstring
+    """
     gain = tools.getGain(" ")
     tExposure = tools.getExposureTime(" ")
     darkRate = tools.getDarkRate(" ")
@@ -498,7 +548,17 @@ def getSignalToNoise(signal, background, Npixels):
     return (signal * gain) / np.sqrt((signal * gain + background * gain + tExposure * darkRate * Npixels))
 
 
+
+
+
+
+
 if __name__ == "__main__":
     hash = ["e5577b3329caa7c3b98143a6dc0593b89ab5e11ee95b4d065f2cee210f81644e"]
     FExtra = OrderExtraction(hash, debug=2)
     FExtra.runComponent()
+
+
+
+
+
