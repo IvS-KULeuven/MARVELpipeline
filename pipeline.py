@@ -68,7 +68,7 @@ class PipelineComponent():
         hdu.writeto(path, overwrite=True)
 
 
-        # Add Mast Bias Image to database
+        # Add Master Bias Image to database
         dict = {"_id" : hash, "path" : path, "type" : self.type}
         tools.addToDataBase(dict, overWrite = True)
 
