@@ -45,7 +45,7 @@ def createDataBase(makeIfExist=False):
 
     # Add the Dark images to the DataBase
     
-    darkImageDirectory = pathToRaw + "/CalibrationImages/Dark"
+    darkImageDirectory = pathToRaw + "CalibrationImages/Dark"
     darkImagePaths = glob(darkImageDirectory + "/*.fits")
     print("Found {0} dark frames to be inserted in MongoDB".format(len(darkImagePaths)))
     if len(darkImagePaths) != 0:
@@ -56,7 +56,7 @@ def createDataBase(makeIfExist=False):
 
     # Add the Flat images to the Database
 
-    flatImageDirectory = pathToRaw + "/CalibrationImages/Flat"
+    flatImageDirectory = pathToRaw + "CalibrationImages/Flat"
     flatImagePaths = glob(flatImageDirectory + "/*.fits")
     print("Found {0} flat frames to be inserted in MongoDB".format(len(flatImagePaths)))
     if len(flatImagePaths) != 0:
@@ -68,7 +68,8 @@ def createDataBase(makeIfExist=False):
 
     # Add the Science images to the DataBase
 
-    scienceImageDirectory = pathToRaw + "/ScienceFrames"
+    scienceImageDirectory = pathToRaw + "ScienceFrames"
+    print(scienceImageDirectory)
     scienceImagePaths = glob(scienceImageDirectory + "/*.fits")
     print("Found {0} science frames to be inserted in MongoDB".format(len(scienceImagePaths)))
     if len(scienceImagePaths) != 0:
