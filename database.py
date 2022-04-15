@@ -69,7 +69,6 @@ def createDataBase(makeIfExist=False):
     # Add the Science images to the DataBase
 
     scienceImageDirectory = pathToRaw + "ScienceFrames"
-    print(scienceImageDirectory)
     scienceImagePaths = glob(scienceImageDirectory + "/*.fits")
     print("Found {0} science frames to be inserted in MongoDB".format(len(scienceImagePaths)))
     if len(scienceImagePaths) != 0:
