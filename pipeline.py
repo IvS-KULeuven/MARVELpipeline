@@ -132,7 +132,7 @@ class MasterDark(PipelineComponent):
     def __init__(self, input):
         super().__init__(input)
         self.col = self.setCollection(input)
-        self.outputPath = os.getcwd() + "/Data/ProcessedData/MaterDark/"
+        self.outputPath = os.getcwd() + "/Data/ProcessedData/MasterDark/"
         self.type = "Master Dark Image"
 
 
@@ -222,7 +222,7 @@ class CalibratedScienceFrames(PipelineComponent):
         self.type = "Calibrated Science Image"
 
     def setCollection(self, input):
-        return { "science": super().db["ScienceImages"], "dark": super().db["DarkImages"], "bias": super().db["BiasImages"]}
+        return { "science": self.db["ScienceImages"], "dark": self.db["DarkImages"], "bias": self.db["BiasImages"]}
 
     def checkInput(self, input):
         # We should have as input, one raw science image, one master bias frame and one master dark frame
@@ -281,9 +281,9 @@ class CalibratedScienceFrames(PipelineComponent):
         biasPath    = [ [x["path"] for x in self.col["bias"].find({"_id" : hash})] for hash in self.input["bias"] ]
 
         # Get all the files fits files corresponding to these hashes
-        science = tools.getImages(sciencePath)[0]
-        dark = tools.getImages(darkPath)[0]
-        bias = tools.getImages(biasPath)[0]
+        science = tools.getImages(sciencePath[0])
+        dark = tools.getImages(darkPath[0])
+        bias = tools.getImages(biasPath[0])
 
         # Use the image in the fits files, and generate the calibrated science frames.
         return science - dark - bias
