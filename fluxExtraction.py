@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from scipy import ndimage
 from tqdm import tqdm
 from numba import njit, jit, vectorize
-import numba
 import hashlib
 from astropy.io import fits
 import os
