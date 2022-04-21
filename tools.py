@@ -52,7 +52,7 @@ def addToDataBase(dict, overWrite=False):
     # 2. image is not in the dictornary
     # 3. Check that dict is in the right format 
 
-    images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages", "Calibrated Science Image" : "ScienceImages", "Extracted Flat Orders" : "ExtractedOrders"}
+    images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages", "Calibrated Science Image" : "ScienceImages", "Extracted Flat Orders" : "ExtractedOrders", "Extracted Science Orders" : "ExtractedOrders"}
     typeImage  = dict["type"]
     collection = db[images[typeImage]]
 
@@ -234,11 +234,38 @@ def getExtractedFlux(path, order, fiber):
     else:
         return table.data["Flux"]
 
+def getFibersAndOrders(path):
+    """
+    This function returns the fibers and orders that are in the extracted data. 
+    INPUT: path of the extracted flux fits file 
+    OUTPUT: list of fibers, list of fibers 
+    """
+    # Check that path exist
+    if not os.path.isfile(path):
+        print("Error: path does not exist")
+        return
+
+    # Check that type of fits file is Extracted Flux
+    hdul = fits.open(path)
+
+    fileType = hdul[0].header["type"]
+
+    if not (("Extracted" in fileType) and ("Orders" in fileType)):
+        print("Error: filetype {} is not a type of Extracted Orders".format(fileType))
+        return
+
+    orders = hdul[0].header["orders"]
+    orders = [int(i) for i in orders[1:-1].split(", ")]
+
+    fibers = hdul[0].header["fibers"]
+    fibers = [int(i) for i in fibers[1:-1].split(", ")]
+
+    return fibers, orders
+    
+
 
 
 
 if __name__ == "__main__":
     path = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/extracted_flat_orders.fits"
-
-    print(type(getExtractedPosition(path, 3, 2)[:5]))
-    print(type(getExtractedFlux(path, 3, 2)[:5]))
+    print(getFibersAndOrders(path))

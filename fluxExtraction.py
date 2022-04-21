@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 from scipy import ndimage
 from tqdm import tqdm
 from numba import njit, jit, vectorize
-import numba
 import hashlib
 from astropy.io import fits
 import os
@@ -161,12 +160,16 @@ class OrderExtraction(PipelineComponent):
         primary_hdr["hash"] = hash
         primary_hdr["path"] = path
         primary_hdr["type"] = self.type
-        #hdr["input"] = self.input
+        primary_hdr["orders"] = str(set(orders))
+        primary_hdr["fibers"] = str(set(fibers))
+        primary_hdr["input"] = str(self.input)
+
 
         hdu = fits.PrimaryHDU(header=primary_hdr)
         hdul = fits.HDUList([hdu])
+        
+        for i in np.arange(len(flux)):
 
-        for i in np.arange(np.size(flux)):
             hdr1 = fits.Header()
             hdr1["order"]= orders[i]
             hdr1["fiber"]= fibers[i]            
@@ -554,7 +557,7 @@ def getSignalToNoise(signal, background, Npixels):
 
 
 if __name__ == "__main__":
-    hash = ["e5577b3329caa7c3b98143a6dc0593b89ab5e11ee95b4d065f2cee210f81644e"]
+    hash = ["6e77ce1495e4e4500ce670d38ccb96d94b7001a01902ef1b4abb1af0305c8e0a"]
     FExtra = OrderExtraction(hash, debug=2)
     FExtra.runComponent()
 
