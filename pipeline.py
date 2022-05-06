@@ -316,7 +316,8 @@ Whenever we want to execute a block from the pipeline.
 
 
 if __name__ == "__main__":
-     # Master Bias Image 
+
+    # Master Bias Image 
     raw_bias_hashes = ['f2753cdd3370f5596a6c574a5e837fb2837e04bc4b2bbb1dc4bd26f270849d45', '6d6187e691a99e49aa54fef06bfa289867ee36bb0c70ad1845f3a2ec1354b0f6',
                        '2ae6d82c0628c26af27553d7ba33c1121e32c755ef93c4fad13e66fb475c2127', '4e1b127813b2b8bd6a6f90285fbbc87cbdba697503606ea96eddbe5ec4affdbc', 
                        '3e947c38dee83746b746031d8dae57fa2d6a6f31c7fb0be31ad7f14b1f37b99b', '1902162ddc57a095c10a4571922cc3d76ead46eedeed3eefaac88c882097172a', 

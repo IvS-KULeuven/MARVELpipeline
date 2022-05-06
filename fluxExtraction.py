@@ -12,7 +12,7 @@ from astropy.io import fits
 import os
 
 
-class OrderExtraction(PipelineComponent):
+class MasterFlatOrderExtraction(PipelineComponent):
     """
     Docstring
     """
@@ -557,9 +557,9 @@ def getSignalToNoise(signal, background, Npixels):
 
 
 if __name__ == "__main__":
-    hash = ["6e77ce1495e4e4500ce670d38ccb96d94b7001a01902ef1b4abb1af0305c8e0a"]
-    FExtra = OrderExtraction(hash, debug=2)
-    FExtra.runComponent()
+    masterflat_hash = ["6e77ce1495e4e4500ce670d38ccb96d94b7001a01902ef1b4abb1af0305c8e0a"]             
+    fluxExtraction = MasterFlatOrderExtraction(masterflat_hash, debug=2)
+    fluxExtraction.runComponent()
 
 
 
