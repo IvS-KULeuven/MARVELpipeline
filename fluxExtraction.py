@@ -180,7 +180,7 @@ class MasterFlatOrderExtraction(PipelineComponent):
             yValue = np.array(yValues[i], dtype=np.int16)
             col2 = fits.Column(name="Y", format='J', array=yValue)
 
-            fluxValues = np.array(flux[i], dtype=np.int16)
+            fluxValues = np.array(flux[i], dtype=np.float64)
             col3 = fits.Column(name="flux", format='D', array=fluxValues)
 
             cols = fits.ColDefs([col1, col2, col3])
@@ -534,7 +534,7 @@ def getCrossOrderWidth(image, idx, idx_previous):
 
             
         else:
-            return width
+            return width + 2
     return 15
 
 

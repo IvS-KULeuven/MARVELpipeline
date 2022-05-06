@@ -316,6 +316,7 @@ Whenever we want to execute a block from the pipeline.
 
 
 if __name__ == "__main__":
+
     # Master Bias Image 
     raw_bias_hashes = ['f2753cdd3370f5596a6c574a5e837fb2837e04bc4b2bbb1dc4bd26f270849d45', '6d6187e691a99e49aa54fef06bfa289867ee36bb0c70ad1845f3a2ec1354b0f6',
                        '2ae6d82c0628c26af27553d7ba33c1121e32c755ef93c4fad13e66fb475c2127', '4e1b127813b2b8bd6a6f90285fbbc87cbdba697503606ea96eddbe5ec4affdbc', 
@@ -331,7 +332,6 @@ if __name__ == "__main__":
     masterD.runComponent()
 
     # Calibrated Science Image
-    # Bias <->  Dark <-> Science
     raw_scienceimage_hashes = ["9b0c4e6cad3771c6f1a74186f2e7a3fa689a85a43f15b73067c23b6e8c64aa0d", 
                                "edf0482526e97a6eb087d267b12af6fa7756c9709fb09c4f136a65ffc48ebaf1",
                                "3704c9e675cb7e438c4f2eb4e097b923f46e31d38f4466ef6d620cd643356735"]
@@ -346,7 +346,6 @@ if __name__ == "__main__":
     masterF = MasterFlat(raw_flat_hashes)
     masterF.runComponent()
     
-
 
 
 
