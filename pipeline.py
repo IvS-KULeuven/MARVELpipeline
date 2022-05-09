@@ -179,38 +179,71 @@ class MasterDark(PipelineComponent):
 
 
 
+
 class MasterFlat(PipelineComponent):
 
     def __init__(self, input):
         super().__init__(input)
         self.col = self.setCollection(input)
+        self.input = self.createInputDirectory(input)
         self.outputPath = os.getcwd() + "/Data/ProcessedData/MasterFlat/"
         self.type = "Master Flat Image"
 
 
+
     def setCollection(self, input):
-        return self.db["FlatImages"]
+        return {"flat" : self.db["FlatImages"], "bias" : self.db["BiasImages"]}
+
 
 
     def checkInput(self, input):
-        isCorrect = []
-        collection = self.db["FlatImages"]
+        # We should have as input, one master Bias image, and more then one flat images.
+        biasFrames = self.db["BiasImages"]
+        flatFrames = self.db["FlatImages"]
+        
         for hash in input:
-            instances = collection.find({"_id" : hash})
-            isCorrect.append(np.all([( x["type"] == "Raw Flat Image") for x in instances]))
+            isBias = len([x for x in biasFrames.find({"_id" : hash})]) == 1
+            isFlat = len([x for x in flatFrames.find({"_id" : hash})]) == 1
 
-        return np.all(isCorrect)
+            if isBias:
+                isMasterImage = np.all([x["type"] == "Master Bias Image" for x in biasFrames.find({"_id" : hash})])
+                if not isMasterImage:
+                    print("Bias image with hash {} is not Master Image".format(hash))
+                    return False
+            elif isFlat:
+                isRawImage = np.all([x["type"] == "Raw Flat Image" for x in flatFrames.find({"_id" : hash})])
+                if not isRawImage:
+                    print("Flat image with hash {} is not Image".format(hash))
+                    return False
+            else:
+                print("Image with hash {} is not bias or flat image".format(hash))
+        return True
+
+
+
+    def createInputDirectory(self, input):
+        sortedInput = {"flat" : [], "bias" : []}
+        for hash in input:
+            if len([x for x in self.db["BiasImages"].find({"_id" : hash})]) == 1:
+                sortedInput["bias"].append(hash)
+            elif len([x for x in self.db["FlatImages"].find({"_id" : hash})]) == 1:
+                sortedInput["flat"].append(hash)
+        return sortedInput
+
+
 
     def make(self):
+
         # Get all the paths of the files corresponding to these hashes
-        paths = [[x["path"] for x in self.col.find({"_id" : hash})] for hash in self.input]
-        paths = [ x[0] for x in paths]
+        flatPaths = [([x["path"] for x in self.col["flat"].find({"_id" : hash})])[0] for hash in self.input["flat"]]
+        biasPaths = [([x["path"] for x in self.col["bias"].find({"_id" : hash})])[0] for hash in self.input["bias"]]
 
         # Get all the files fits files corresponding to these hashes
-        flats = tools.getImages(paths)
- 
+        flats = tools.getImages(flatPaths)
+        bias  = tools.getImages(biasPaths)
+
         # Use the image in the fits files, and use mean_combining to obtain the the master image
-        MasterFlat = np.median(flats, axis=0)
+        MasterFlat = np.median(flats, axis=0) - np.median(bias, axis=0)
         return MasterFlat
 
 
