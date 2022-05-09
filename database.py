@@ -1,10 +1,12 @@
 # This function creates/resets a database from the raw input images.
-# 
+ 
 
 from pymongo import MongoClient
 import hashlib
 import os
 from glob import glob
+
+
 
 def createDataBase(makeIfExist=False):
 
@@ -88,16 +90,19 @@ def addBiasImage(imageName, path, collection):
     return {"_id" : hash, "path" : path, "type" : "Raw Bias Image"}
 
 
+
 def addDarkImage(imageName, path, collection):
     hashInput = imageName + "Raw Dark Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
     return {"_id": hash, "path": path, "type": "Raw Dark Image"}
 
 
+
 def addFlatImage(imageName, path, collection):
     hashInput = imageName + "Raw Flat Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
     return {"_id": hash, "path": path, "type": "Raw Flat Image"}
+
 
 
 def addScienceImage(imageName, path, collection):

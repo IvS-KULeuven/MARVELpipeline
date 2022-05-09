@@ -43,16 +43,24 @@ class PipelineComponent():
             else:
                 raise Exception("Input is not correct format")
 
+
+
     def checkInput(self, input):
         return True
+
+
 
     def runComponent(self):
         img = self.make()
         self.saveImage(img)
         print("Block Generated!")
 
+
+
     def make(self):
         ...
+
+
 
     def saveImage(self, image):
         hash = hashlib.sha256(bytes("".join(self.input), 'utf-8')).hexdigest()
@@ -76,6 +84,7 @@ class PipelineComponent():
 
 
 
+
 class MasterBias(PipelineComponent):
 
     def __init__(self, input):
@@ -85,8 +94,11 @@ class MasterBias(PipelineComponent):
         self.type = "Master Bias Image"
 
 
+
     def setCollection(self, input):
         return self.db["BiasImages"]
+
+
 
     def checkInput(self, input):
         isCorrect = []
@@ -95,6 +107,7 @@ class MasterBias(PipelineComponent):
             instances = collection.find({"_id" : hash})
             isCorrect.append(np.all([( x["type"] == "Raw Bias Image") for x in instances]))
         return np.all(isCorrect)
+
 
 
     def make(self):
@@ -109,6 +122,8 @@ class MasterBias(PipelineComponent):
         MasterBias = np.median(biases, axis=0)
         return MasterBias
 
+
+
     def getFileName(self):
         return "master_bias.fits"
 
@@ -117,17 +132,7 @@ class MasterBias(PipelineComponent):
         
 
 
-
-
-
-
-
-
-
-
-
 class MasterDark(PipelineComponent):
-
 
     def __init__(self, input):
         super().__init__(input)
@@ -136,8 +141,11 @@ class MasterDark(PipelineComponent):
         self.type = "Master Dark Image"
 
 
+
     def setCollection(self, input):
         return self.db["DarkImages"]
+
+
 
     def checkInput(self, input):
         isCorrect = []
@@ -147,6 +155,8 @@ class MasterDark(PipelineComponent):
             isCorrect.append(np.all([( x["type"] == "Raw Dark Image") for x in instances]))
 
         return np.all(isCorrect)
+
+
     
     def make(self):
         # Get all the paths of the files corresponding to these hashes
@@ -159,6 +169,8 @@ class MasterDark(PipelineComponent):
         # Use the image in the fits files, and use mean_combining to obtain the the master image
         MasterDark = np.median(darks, axis=0)
         return MasterDark
+
+
 
     def getFileName(self):
         return "master_dark.fits"
@@ -210,8 +222,6 @@ class MasterFlat(PipelineComponent):
 
 
 
-
-
 class CalibratedScienceFrames(PipelineComponent):
 
     def __init__(self, input):
@@ -221,8 +231,12 @@ class CalibratedScienceFrames(PipelineComponent):
         self.outputPath = os.getcwd() + "/Data/ProcessedData/CalibratedScience/"
         self.type = "Calibrated Science Image"
 
+
+
     def setCollection(self, input):
         return { "science": self.db["ScienceImages"], "dark": self.db["DarkImages"], "bias": self.db["BiasImages"]}
+
+
 
     def checkInput(self, input):
         # We should have as input, one raw science image, one master bias frame and one master dark frame
@@ -261,6 +275,7 @@ class CalibratedScienceFrames(PipelineComponent):
         return True
 
 
+
     def createInputDirectory(self, input):
         sortedInput = {"science" : [], "bias" : [], "dark" : []}
         for hash in input:
@@ -288,8 +303,10 @@ class CalibratedScienceFrames(PipelineComponent):
         # Use the image in the fits files, and generate the calibrated science frames.
         return science - bias
 
+
+
     def getFileName(self):
-        return "calibrated_science_frames.yaml"
+        return "calibrated_science_frames.fits"
 
 
 
