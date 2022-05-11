@@ -244,6 +244,10 @@ class MasterFlat(PipelineComponent):
 
         # Use the image in the fits files, and use mean_combining to obtain the the master image
         MasterFlat = np.median(flats, axis=0) - np.median(bias, axis=0)
+
+        # Add offset so that all the values in the MasterFlat are positive
+        if np.min(MasterFlat) < 0:
+                  MasterFlat = MasterFlat -np.min(MasterFlat)
         return MasterFlat
 
 
@@ -334,7 +338,11 @@ class CalibratedScienceFrames(PipelineComponent):
         bias = tools.getImages(biasPath[0])
 
         # Use the image in the fits files, and generate the calibrated science frames.
-        return science - bias
+        CalibratedScience = science - bias
+
+        if np.min(CalibratedScience) < 0:
+            CalibratedScience = CalibratedScience - np.min(CalibratedScience)
+        return CalibratedScience
 
 
 
