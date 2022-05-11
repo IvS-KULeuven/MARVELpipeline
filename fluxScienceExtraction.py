@@ -85,8 +85,7 @@ class ScienceOrderExtraction(PipelineComponent):
         # 1. We should get the image of the SF
         sciencePath = [[x["path"] for x in self.col["science"].find({"_id" : hash})] for hash in self.input["science"]]
         image = tools.getImage((sciencePath[0])[0]).astype('float64')[0]
-        
-        
+
         # 2. We obtain the mask from the Extracted Flat Orders
         mask = self.getMaskFromExtractedFlat()
 
@@ -96,6 +95,7 @@ class ScienceOrderExtraction(PipelineComponent):
 
     def runComponent(self):
         xCoordinates, yCoordinates, fluxValues, orders = self.make()
+
         self.saveImage(xCoordinates, yCoordinates, fluxValues, orders)
         print("Block Generated")
 
@@ -134,7 +134,7 @@ class ScienceOrderExtraction(PipelineComponent):
             yValue = np.array(yValues[i], dtype=np.int16)
             col2 = fits.Column(name="Y", format='J', array=yValue)
 
-            fluxValues = np.array(flux[i], dtype=np.int16)
+            fluxValues = np.array(flux[i], dtype=np.float64)
             col3 = fits.Column(name="flux", format='D', array=fluxValues)
 
             cols = fits.ColDefs([col1, col2, col3])
@@ -161,6 +161,7 @@ class ScienceOrderExtraction(PipelineComponent):
         orders       = []
         xCoordinates = []
         yCoordinates = []
+        
         mask_image = np.zeros(image.shape)
         for f in mask.keys():
             for o in mask[f].keys():

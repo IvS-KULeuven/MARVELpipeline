@@ -14,12 +14,25 @@ import os
 
 class MasterFlatOrderExtraction(PipelineComponent):
     """
-    Docstring
+    DESCRIPTION: This modules identifies the correct pixels and their
+                 corresponding flux values for every fiber and order.
+
+    INPUT: Input hashes correspond to one Master Flat image.
+
+    ALGORITHM:
+    1. Take the middel row of the flat field and identifies the stripes
+       by finding the maxima of the flux.
+    2. Follow these maxima in the upwards and downwards direction and save
+       the relevant (high enough S/N) positions.
+    3. Estimate these lines on the flatfield with 5th order polynomial.
+    4. Label the lines with their corresponding fiber and order.
+    5. For every order, extract the relevant pixels around this polynomial
+       fit and save x-values, y-values and flux values.
     """
 
     def __init__(self, input, debug=0):
         """
-        Docstring
+        Initialize the componont
         """
         super().__init__(input)
         self.col = self.setCollection(input)
@@ -30,19 +43,18 @@ class MasterFlatOrderExtraction(PipelineComponent):
             os.mkdir(self.outputPath)
 
         self.type = "Extracted Flat Orders"
-    
+
+
 
     def setCollection(self, input):
         """
-        Docstring
+        Where in the database we should look for the input hashes
         """
         return self.db["FlatImages"]
 
 
+
     def checkInput(self, input):
-        """
-        Docstring
-        """
         isCorrect = []
         collection = self.db["FlatImages"]
         for hash in input:
@@ -51,9 +63,10 @@ class MasterFlatOrderExtraction(PipelineComponent):
         return np.all(isCorrect)
 
 
+
     def make(self):
         """
-        Docstring
+        Runs the algorithm described after the class defenition.
         """
         # 1. We should get the image
         for hash in self.input:
@@ -62,21 +75,35 @@ class MasterFlatOrderExtraction(PipelineComponent):
         image = tools.getImage(paths[0]).astype('float64')
 
         # 2. Locate the orders on the return a polynomial fit of them
-        print("Find the stripes:")
+        if (self.debug > 2):
+            print("Find the stripes:")
         polynomials = self.getStripes(image, debug=True)
 
         # 3. Identify the stripes
-        print("\nIdentify the Stripes")
+        if (self.debug > 2):
+            print("\nIdentify the Stripes")
         id_p = self.identifyStripes(image, polynomials )
 
         # 4. Extract the stripes
-        print("\nExtract the Stripes")
+        if (self.debug > 2):
+            print("\nExtract the Stripes")
         return self.extractFlatStripes(image, id_p)
-        
 
-    def getStripes(self, image, deg_polynomial=5, median_filter=1, gauss_filter_sigma=3.,  min_peak=0.125, debug=False):
+
+
+    def getStripes(self, image, deg_polynomial=5, median_filter=1, gauss_filter_sigma=3.,  min_peak=0.05, debug=False):
         """
-        Docstring
+        DESCRIPTION: Find the maxima values of the middle line of the flat image. Follows the image to the top and bottem 
+                     and saves the position of the brightest (relevant) pixels. Returns a polynomial fit of degree 
+                     deg_polynomials of the lines.
+
+        INPUT: - image: Flat field image 
+               - deg_polynomial: degree of the polynomial to fit the lines with 
+               - median_filter=1, gauss_filter_sigma=3 = value of median filter and gaussian filter sigma that we apply to 
+                                                         image to reduce noise. 
+               - min_peak: maxima of the middle line lower then min_peak * max_value will not be taken into account in order 
+                           to avoid false maxima. 
+                           
         """
         start = time.time()
         nx, ny = image.shape
@@ -124,7 +151,7 @@ class MasterFlatOrderExtraction(PipelineComponent):
 
         polynomials = [np.poly1d(np.polyfit(np.arange(nx)[order != 0], order[order != 0], deg_polynomial)) for order in orders]
         end = time.time()
-        
+
         if self.debug > 2:
             xx = np.arange(nx)
             for p in polynomials:
@@ -137,19 +164,19 @@ class MasterFlatOrderExtraction(PipelineComponent):
 
 
 
-
     def runComponent(self):
         """
-        Docstring
+        Ruins the alghoritm in main and saves the values in fits file and adds the image to the database. 
         """
         xCoordinates, yCoordinates, fluxValues, orders = self.make()
         self.saveImage(xCoordinates, yCoordinates, fluxValues, orders)
         print("Block Generated!")
 
 
+
     def saveImage(self, xValues, yValues, flux, orders):
         """
-        Docstring
+        Save the image and add to the database. 
         """
         hash = hashlib.sha256(bytes("".join(self.input), 'utf-8')).hexdigest()
         path = self.outputPath + self.getFileName()
@@ -195,16 +222,15 @@ class MasterFlatOrderExtraction(PipelineComponent):
         tools.addToDataBase(dict, overWrite = True)
 
 
+
     def getFileName(self):
-        """
-        Docstring
-        """
         return "extracted_flat_orders.fits"
+
 
 
     def identifyStripes(self, image, polynomials, positions=None, selected_fibers=None):
         """
-        Docstring
+        Identify the stripes with their correct fiber and order label.
         """
         start = time.time()
         nx, ny = image.shape
@@ -236,26 +262,27 @@ class MasterFlatOrderExtraction(PipelineComponent):
         shift_calculated = getShift(yPositions, yObserved, useAllFibers=useAllFibers)
 
         if self.debug > 2:
-            
             plt.figure()
             plt.title("Stripe positions from configuration file")
             plt.imshow(image, origin='lower', vmin=np.min(image), vmax=0.5 * np.max(image))
-            plt.plot(yObserved, np.repeat(nx / 2, len(yPositions)), 'b+', label='original stripe positions')
+            plt.plot(yObserved, np.repeat(nx / 2, len(yObserved)), 'b+', label='original stripe positions')
             plt.plot(yPositions + shift_calculated, np.repeat(nx / 2, len(yPositions)), 'g+',
                      label=f'corrected stripe positions ({shift_calculated:+.2f})')
             plt.legend()
             plt.show()
 
         polynomials = np.array([ p.coefficients for p in polynomials ])
-        end = time.time()
-        print("\tTime for the function identifyStripes is {}".format(end-start))
+
+        if self.debug > 2:
+            end = time.time()
+            print("\tTime for the function identifyStripes is {}".format(end-start))
         return identify(yPositions, yObserved, polynomials, fibers, orders, shift_calculated)
 
 
 
     def extractFlatStripes(self, flat, p_id):
         """
-        Docstring
+        Extract the relevant values of the image for every order and fiber.
         """
         start = time.time()
         nx, ny = flat.shape
@@ -298,13 +325,18 @@ class MasterFlatOrderExtraction(PipelineComponent):
             ax[2].imshow(cleaned_image, origin='lower')
             plt.show()
 
-        end = time.time()
-        print("\tTime for first part of the function extractFlatStripes is {}".format(end-start))
-        start = time.time()
+
+        if self.debug > 2:
+            end = time.time()
+            print("\tTime for first part of the function extractFlatStripes is {}".format(end-start))
+            start = time.time()
+
         #flat_stripes = self.extractStripes(flat, p_id, cross_widths)
         xCoordinates, yCoordinates, fluxValues, orders = extractStripes(flat, index_fiber, index_order)
-        end = time.time()
-        print("\tTime for second part of the function extractFlatStripes is {}".format(end-start))
+
+        if self.debug > 2:
+            end = time.time()
+            print("\tTime for second part of the function extractFlatStripes is {}".format(end-start))
 
         return xCoordinates, yCoordinates, fluxValues, orders
         
@@ -367,17 +399,16 @@ def getSignalToNoiseSinglePixel(signal, background):
 @njit()
 def followOrders(max_row_0, previous_row, image):
     """
-    Docstring
+    Starting at the central peak, walk right/left and select the brightest pixel
     """
-    # Starting at the central peak, walk right/left and select the brightest pixel
-    
+
     nx, ny = image.shape
     value = np.zeros(nx)
     order = np.zeros(nx)
-    
+
     row_max  = max_row_0
     column = int(nx/2)
-
+    
     getNeighbourIndices = lambda x : np.array([x-1, x, x+1]) if (x>1 and x<ny-2) else (np.array([x-1, x]) if x>1 else np.array([x, x+1]) )
 
 
@@ -385,17 +416,19 @@ def followOrders(max_row_0, previous_row, image):
     value[column] = image[column, row_max]
     order[column] = row_max
     dark_value    = image[column, int((row_max + previous_row)/2)]
+    
     # Walk to right left
     while column+1 < nx:
         column += 1
-
         rows   = getNeighbourIndices(row_max)
         values = np.array([image[column, row] for row in rows])
-
+ 
         row_max = rows[values == np.max(values)][0]
+            
         value[column] = image[column, row_max]
         order[column] = row_max
         dark_value    = image[column, int((row_max + previous_row)/2)]
+        
 
         if (row_max == 1) or (row_max == nx):
             break
@@ -414,6 +447,7 @@ def followOrders(max_row_0, previous_row, image):
         values = np.array([image[column, row] for row in rows])
 
         row_max = rows[values == np.max(values)][0]
+
         value[column] = image[column, row_max]
         order[column] = row_max
         dark_value    = image[column, int((row_max + previous_row)/2)]        
@@ -531,8 +565,6 @@ def getCrossOrderWidth(image, idx, idx_previous):
         noise.append(currentSignalToNoise)
         if (currentSignalToNoise >= previousSignalToNoise):
             previousSignalToNoise = currentSignalToNoise
-
-            
         else:
             return width + 2
     return 15
