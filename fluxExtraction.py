@@ -142,7 +142,7 @@ class MasterFlatOrderExtraction(PipelineComponent):
 
             # Plot the selected pixels
             plt.imshow(image, origin='lower')
-            for i in np.arange(320):
+            for i in np.arange(330):
                 ords = orders[i]
                 mask = (ords != 0)
                 plt.plot(ords[mask], np.arange(nx)[mask], alpha=0.5)
@@ -256,7 +256,7 @@ class MasterFlatOrderExtraction(PipelineComponent):
                 fibers     = fibers[idx]
                 orders     = orders[idx]
 
-        # Store the oberserved y_values of the middle column
+        # Store the oberserved y_values of the middle colum.
         yObserved = np.array([np.poly1d(p)(int(nx/2)) for p in polynomials])
 
         shift_calculated = getShift(yPositions, yObserved, useAllFibers=useAllFibers)
@@ -455,7 +455,7 @@ def followOrders(max_row_0, previous_row, image):
         if (row_max == 1) or (row_max == nx):
             break
 
-        if getSignalToNoiseSinglePixel(value[column], dark_value) < 100:
+        if getSignalToNoiseSinglePixel(value[column], dark_value) < 40:
             break
 
     return value, order
