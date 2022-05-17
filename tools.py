@@ -334,13 +334,112 @@ def getFibersAndOrders(path):
 
 
 if __name__ == "__main__":
-    path = os.getcwd() + "/Data/ProcessedData/MasterFlat/master_flat.fits"
-    image = getImage(path)
+    path = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/extracted_flat_orders.fits"
+    path_flat = os.getcwd() + "/Data/ProcessedData/MasterFlat/master_flat.fits"
+    full_image = getImage(path_flat)
 
+    positions = getExtractedPosition(path, 20, 4)
+    flux      = getExtractedFlux(path, 20, 4)
+
+    xx, yy = zip(*positions)
+    ofst = np.min(xx)
+    mask = [ True if x in np.arange(4440 + ofst, 4460 + ofst) else False for x in xx]
+
+    x_mask = np.array(xx)[mask]
+    y_mask = np.array(yy)[mask]
+
+    x0 = np.min(x_mask)
+    y0 = np.min(y_mask)
 
     
-    for i in np.arange(8765, 8778):
-        plt.plot(image[:,i])
+        
+    buffr = 20
+
+    print(np.max(x_mask))
+    print(x0)
+    print("==========")
+    print(np.max(y_mask))
+    print(y0)
+    print("==========")
+    print(np.min(yy), np.max(yy))
+
+    image = np.zeros((np.max(x_mask)-x0+1, np.max(y_mask)-y0+1))
+    mask_image = np.empty((np.max(x_mask)-x0+1, np.max(y_mask)-y0+1+2*buffr), dtype=bool)
+    mask_image.fill(False)
+
+    buffer1 = np.zeros((np.max(x_mask)-x0-1, buffr))
+    buffer2 = np.zeros((np.max(x_mask)-x0-1, buffr))
+    
+    for x, y in zip(x_mask, y_mask):
+        mask_image[x-x0, y-y0+buffr] = True
+
+    image = full_image[x0:np.max(x_mask)+1, y0-buffr:np.max(y_mask)+buffr+1]
+    extracted_img = image[mask_image]
+
+    
+    x_max = np.max(y_mask)+2*buffr + 1 - y0 
+    cm = plt.cm.get_cmap("RdYlBu")
+    
+    plt.plot(np.transpose(image))
+    
+    plt.fill_between(np.arange(buffr), 30000, 0, color='grey')
+    plt.fill_between(np.arange(x_max-buffr, x_max), 30000, 0, color='grey')
     plt.show()
 
+    plt.imshow(np.transpose(image))
+    plt.show()
+
+        
+    a = int(len(image[0][buffr:-buffr])/2)+1
+
+
+    plt.plot([np.mean(x[buffr:-buffr]) for x in image])
+    plt.show()
+
+
+        
+        
+
+
+
     
+
+
+
+
+    """
+    image = getExtractedPosition(path, 20, 4)
+    flux = getExtractedFlux(path, 20, 4)
+
+    xx, yy = zip(*image)
+
+    yy = np.array(yy)
+    xx = np.array(xx)
+
+    mask = [True if x in np.arange(4430, 4470) else False for x in xx ]
+
+    x_mask = xx[mask]
+    y_mask = yy[mask]
+
+    image = np.zeros((10, 13))
+
+    for x in np.arange(4445, 4455):
+        x = x-4445
+        for y in y_mask[x_mask == x+4445]:
+            y = y-4390
+
+            image[x,y] = flux[[True if ((xt == x+4445) and (yt == y+4390)) else False for xt, yt in zip(xx, yy)]][0]
+            
+    print(image[3:6])
+    plt.plot(np.transpose(image[3:6]))
+    plt.show()
+
+    flux_t = []
+    for t in image[3:6]:
+        flux_t.append(np.sum(t))
+
+    print(" ")
+    print(flux_t)
+    plt.plot(flux_t)
+    plt.show() 
+    """

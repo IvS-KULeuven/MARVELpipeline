@@ -220,7 +220,13 @@ class ScienceOrderExtraction(PipelineComponent):
 
 if __name__ == "__main__":
     
-    # CalibratedScience <-> Extracted Flat Orders
-    hash = ["b0ef6a99bde7cdbc968a46fcd7a57e450a554c548d9cc89d7a9555e7236fe05f", "f90954c06fb77bb3f5594bba9a4da19a98c0ae13bff8eb4cfe5bc30c88b26f66"]
+    # # CalibratedScience <-> Extracted Flat Orders
+    # hash = ["b0ef6a99bde7cdbc968a46fcd7a57e450a554c548d9cc89d7a9555e7236fe05f", "f90954c06fb77bb3f5594bba9a4da19a98c0ae13bff8eb4cfe5bc30c88b26f66"]
+    # FExtra = ScienceOrderExtraction(hash, debug=3)
+    # FExtra.runComponent()
+
+    # RawScience <-> Extracted Flat Orders
+    hash = ["b0ef6a99bde7cdbc968a46fcd7a57e450a554c548d9cc89d7a9555e7236fe05f", "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"]
+
     FExtra = ScienceOrderExtraction(hash, debug=2)
-    FExtra.runComponent()    
+    FExtra.runComponent()

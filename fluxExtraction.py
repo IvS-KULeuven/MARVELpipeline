@@ -77,12 +77,12 @@ class MasterFlatOrderExtraction(PipelineComponent):
         # 2. Locate the orders on the return a polynomial fit of them
         if (self.debug > 2):
             print("Find the stripes:")
-        polynomials = self.getStripes(image, debug=True)
+        x_values, polynomials = self.getStripes(image, debug=True)
 
         # 3. Identify the stripes
         if (self.debug > 2):
             print("\nIdentify the Stripes")
-        id_p = self.identifyStripes(image, polynomials )
+        id_p = self.identifyStripes(image, polynomials, x_values)
 
         # 4. Extract the stripes
         if (self.debug > 2):
@@ -127,10 +127,16 @@ class MasterFlatOrderExtraction(PipelineComponent):
         orders = [0]*len(peak_idx)
         values = [0]*len(peak_idx)
 
-        previous_idx = 0
+        first_fiber_idx = peak_idx[::5]
+        final_fiber_idx = np.concatenate((np.zeros(1), peak_idx[4::5]))[:-1]
+
         for m, row_max in tqdm(enumerate(peak_idx)):
-            values[m], orders[m] = followOrders(row_max, previous_idx, image)
-            previous_idx = row_max
+            if (row_max in first_fiber_idx):
+                dark_idx = int((row_max + final_fiber_idx[first_fiber_idx == row_max])/2)
+
+            values[m], orders[m] = followOrders(row_max, dark_idx, image)
+
+        x_values = [ np.arange(nx)[ordr != 0] for ordr in orders]
 
         if self.debug > 2:
             print("\t{} number of peaks found".format(len(peak_idx)))
@@ -142,7 +148,7 @@ class MasterFlatOrderExtraction(PipelineComponent):
 
             # Plot the selected pixels
             plt.imshow(image, origin='lower')
-            for i in np.arange(320):
+            for i in np.arange(330):
                 ords = orders[i]
                 mask = (ords != 0)
                 plt.plot(ords[mask], np.arange(nx)[mask], alpha=0.5)
@@ -154,13 +160,13 @@ class MasterFlatOrderExtraction(PipelineComponent):
 
         if self.debug > 2:
             xx = np.arange(nx)
-            for p in polynomials:
-                plt.plot(p(xx), xx)
+            for x, p in zip(x_values, polynomials):
+                plt.plot(p(x), x)
             plt.imshow(image, alpha=1, origin='lower')
             plt.xlim([0, nx])
             plt.ylim([0, ny])
             plt.show()
-        return polynomials
+        return x_values, polynomials
 
 
 
@@ -228,7 +234,7 @@ class MasterFlatOrderExtraction(PipelineComponent):
 
 
 
-    def identifyStripes(self, image, polynomials, positions=None, selected_fibers=None):
+    def identifyStripes(self, image, polynomials, xValues, positions=None, selected_fibers=None):
         """
         Identify the stripes with their correct fiber and order label.
         """
@@ -256,7 +262,7 @@ class MasterFlatOrderExtraction(PipelineComponent):
                 fibers     = fibers[idx]
                 orders     = orders[idx]
 
-        # Store the oberserved y_values of the middle column
+        # Store the oberserved y_values of the middle column.
         yObserved = np.array([np.poly1d(p)(int(nx/2)) for p in polynomials])
 
         shift_calculated = getShift(yPositions, yObserved, useAllFibers=useAllFibers)
@@ -276,7 +282,7 @@ class MasterFlatOrderExtraction(PipelineComponent):
         if self.debug > 2:
             end = time.time()
             print("\tTime for the function identifyStripes is {}".format(end-start))
-        return identify(yPositions, yObserved, polynomials, fibers, orders, shift_calculated)
+        return identify(yPositions, yObserved, polynomials, xValues, fibers, orders, shift_calculated)
 
 
 
@@ -286,7 +292,6 @@ class MasterFlatOrderExtraction(PipelineComponent):
         """
         start = time.time()
         nx, ny = flat.shape
-        xx = np.arange(nx)
 
         index_fiber = np.zeros_like(flat, dtype=np.int8)
         index_order = np.zeros_like(flat, dtype=np.int8)
@@ -295,14 +300,17 @@ class MasterFlatOrderExtraction(PipelineComponent):
 
         previous_idx = 0
         for f in p_id.keys():
-            for o, p in p_id[f].items():
+            for o, (xx, p) in p_id[f].items():
+                xSize = np.size(xx)
                 y = np.poly1d(p)(xx)
-                cross_width = getCrossOrderWidth(flat, int(np.poly1d(p)([int(nx)/2])), previous_idx)
+                #cross_width = getCrossOrderWidth(flat, int(np.poly1d(p)([int(nx)/2])), previous_idx)
+                cross_width = 6
 
-                slit_indices_y = np.arange(-cross_width, cross_width).repeat(nx).reshape((2 * cross_width, nx))
-                slit_indices_x = np.tile(np.arange(nx), 2 * cross_width).reshape((2 * cross_width, nx))                
+                slit_indices_y = np.arange(-cross_width, cross_width+1).repeat(xSize).reshape((2 * cross_width+1, xSize))
+                slit_indices_x = np.tile(xx, 2 * cross_width+1).reshape((2 * cross_width+1, xSize))                
 
                 indices = np.rint(slit_indices_y + y).astype(int)
+
                 # Exclude the indices that are no longer on the CCD 
                 valid_indices = np.logical_and(indices < ny, indices > 0)
                 index_fiber[slit_indices_x[valid_indices], indices[valid_indices]] = f
@@ -397,7 +405,7 @@ def getSignalToNoiseSinglePixel(signal, background):
 
 
 @njit()
-def followOrders(max_row_0, previous_row, image):
+def followOrders(max_row_0, dark_column, image):
     """
     Starting at the central peak, walk right/left and select the brightest pixel
     """
@@ -415,31 +423,31 @@ def followOrders(max_row_0, previous_row, image):
     # Add center value to order/value
     value[column] = image[column, row_max]
     order[column] = row_max
-    dark_value    = image[column, int((row_max + previous_row)/2)]
+    dark_value    = image[column, dark_column]
     
     # Walk to right left
     while column+1 < nx:
         column += 1
         rows   = getNeighbourIndices(row_max)
         values = np.array([image[column, row] for row in rows])
- 
+
         row_max = rows[values == np.max(values)][0]
-            
+
         value[column] = image[column, row_max]
         order[column] = row_max
-        dark_value    = image[column, int((row_max + previous_row)/2)]
-        
+        dark_value    = image[column, dark_column]
+
 
         if (row_max == 1) or (row_max == nx):
             break
-        
-        if getSignalToNoiseSinglePixel(value[column], dark_value) < 100:
+
+        if getSignalToNoiseSinglePixel(value[column], dark_value) < 40:
             break
 
     # Reset column and row_max and walk to the left
     column = int(nx/2)
     row_max = max_row_0
-        
+
     while column > 0:
         column += -1
 
@@ -450,12 +458,12 @@ def followOrders(max_row_0, previous_row, image):
 
         value[column] = image[column, row_max]
         order[column] = row_max
-        dark_value    = image[column, int((row_max + previous_row)/2)]        
+        dark_value    = image[column, dark_column]
 
         if (row_max == 1) or (row_max == nx):
             break
 
-        if getSignalToNoiseSinglePixel(value[column], dark_value) < 100:
+        if getSignalToNoiseSinglePixel(value[column], dark_value) < 40:
             break
 
     return value, order
@@ -485,7 +493,7 @@ def getShift(positions, observed, useAllFibers=True):
 
     
 
-def identify(positions, observed, polynomials, fibers, orders, shift):
+def identify(positions, observed, polynomials, xValues, fibers, orders, shift):
     """
     Docstring
     """
@@ -494,7 +502,7 @@ def identify(positions, observed, polynomials, fibers, orders, shift):
     # Keeps track of the orders that have been identified
     used = np.zeros_like(positions)
 
-    for i, p in enumerate(polynomials):
+    for i, (x, p) in enumerate(zip(xValues, polynomials)):
         closest_stripe_idx = np.argmin( np.abs(positions + shift - observed[i]) )
         if np.abs(positions[closest_stripe_idx] + shift - observed[i]) < 7:
             if used[closest_stripe_idx] == 0:
@@ -503,9 +511,9 @@ def identify(positions, observed, polynomials, fibers, orders, shift):
                 order = orders[closest_stripe_idx]
                 
                 if fiber in p_id:
-                    p_id[fiber].update({order: p})
+                    p_id[fiber].update({order: (x, p)})
                 else:
-                    p_id[fiber] = {order: p}
+                    p_id[fiber] = {order: (x, p)}
             else:
                 print("WARNING: Stripe at {} could not be identified unambiguously".format(observed[i]))
         else:
@@ -589,8 +597,11 @@ def getSignalToNoise(signal, background, Npixels):
 
 
 if __name__ == "__main__":
-    masterflat_hash = ["6e77ce1495e4e4500ce670d38ccb96d94b7001a01902ef1b4abb1af0305c8e0a"]             
+
+    masterflat_hash = ["641f2b56be1a8a86848c29abbd81858ddd15e42359ae84473050962efb9dea06"]
     fluxExtraction = MasterFlatOrderExtraction(masterflat_hash, debug=2)
+
+
     fluxExtraction.runComponent()
 
 

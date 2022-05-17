@@ -8,7 +8,7 @@ The plot starts by plotting the 0th order, other orders can be shown by changing
 the slider. The gives an interactive idea of how the orders change staring from the 
 first order (left on the flatfield) and ending at the last order (right on the flatfield).
 """
-def plotOrdersWithSlider(orders, xMax=10560, yMax=45000):
+def plotOrdersWithSlider(orders, xMax=10560, yMax=30000):
     # The parametrized function to be plotted
     def f(t, m):
         m = int(m)
