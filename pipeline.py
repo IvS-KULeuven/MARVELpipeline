@@ -383,26 +383,36 @@ if __name__ == "__main__":
     masterB = MasterBias(raw_bias_hashes)
     masterB.runComponent()
 
+
+
     # Master Dark Image
     raw_dark_hashes =  ['e547b0390ddcc6e0ec3b32bb85f2abf7c8f9f869edb45c068ec90e693883300c', '8161836c875b139b922fa3b0ca3dedd38a22474421846d6018ae1cdc0913cd86', 
                         '6846f7a8550ecf62f09ba4258097b5e2876ce5d70f831636b7144560958cdbc8']
     masterD = MasterDark(raw_dark_hashes)
     masterD.runComponent()
 
+
+
+    # Flat
+    # 5flats <-> 1 master bias 
+    raw_flat_hashes = ["9c43630b8c8865f9040ebf8938ece78b72849b4435a897e16291eed222801305", "e68a7f29ce87fb61d2aa58add658d18e08c78f679f3bbcc43071672c351fa6d6",
+                      "cd1e1ffd95b22875a79163ab977e5f96bb0eab9d0f22574374176e1c5ed605ee", "74bb4c8de06386600d1f99f6bdc390aa84edd99c11fbc648c12d0a039f4dee47",
+                       "6a6a2a048ea9c1c2fffd5fb3ca0f26df77866973300cf2de223d63dd9df32f93", "9b0c4e6cad3771c6f1a74186f2e7a3fa689a85a43f15b73067c23b6e8c64aa0d"]
+
+    masterF = MasterFlat(raw_flat_hashes)
+    masterF.runComponent()
+
+
+
     # Calibrated Science Image
-    raw_scienceimage_hashes = ["9b0c4e6cad3771c6f1a74186f2e7a3fa689a85a43f15b73067c23b6e8c64aa0d", 
+    raw_scienceimage_hashes = ["9b0c4e6cad3771c6f1a74186f2e7a3fa689a85a43f15b73067c23b6e8c64aa0d",
                                "edf0482526e97a6eb087d267b12af6fa7756c9709fb09c4f136a65ffc48ebaf1",
                                "3704c9e675cb7e438c4f2eb4e097b923f46e31d38f4466ef6d620cd643356735"]
     calibration = CalibratedScienceFrames(raw_scienceimage_hashes)
     calibration.runComponent()
                                           
 
-    # Flat
-    raw_flat_hashes = ["74bb4c8de06386600d1f99f6bdc390aa84edd99c11fbc648c12d0a039f4dee47", "e68a7f29ce87fb61d2aa58add658d18e08c78f679f3bbcc43071672c351fa6d6", 
-                       "9c43630b8c8865f9040ebf8938ece78b72849b4435a897e16291eed222801305", "6a6a2a048ea9c1c2fffd5fb3ca0f26df77866973300cf2de223d63dd9df32f93", 
-                       "cd1e1ffd95b22875a79163ab977e5f96bb0eab9d0f22574374176e1c5ed605ee"]
-    masterF = MasterFlat(raw_flat_hashes)
-    masterF.runComponent()
+
     
 
 
