@@ -2,8 +2,10 @@ from pipeline import PipelineComponent
 from pymongo import MongoClient
 from numba import njit, jit, vectorize
 from tqdm import tqdm
+from astropy.io import fits
 import matplotlib.pyplot as plt
 import numpy as np
+import hashlib
 import os
 import tools
 import debug
@@ -23,7 +25,7 @@ class OptimalExtraction(PipelineComponent):
         super().__init__(input)
         self.col = self.setCollection(input)
         self.debug = debug
-        self.outputPath = os.getcwd() + "/Data/ProcessedData/OptimalExtraction"
+        self.outputPath = os.getcwd() + "/Data/ProcessedData/OptimalExtraction/"
 
         if not os.path.isdir(self.outputPath):
             os.mkdir(self.outputPath)
@@ -36,6 +38,12 @@ class OptimalExtraction(PipelineComponent):
         returns the collection in the database where the input hashes should be.
         """
         return self.db["ExtractedOrders"]
+
+
+    def getFileName(self):
+        return "optimal_extracted_flux.fits"
+
+
 
     def checkInput(self, input):
         """
@@ -79,50 +87,107 @@ class OptimalExtraction(PipelineComponent):
         """
 
         getPath = lambda x : ([x["path"] for x in self.col.find({"_id" : self.inputDict[x]})])[0]
-        
-        
-        spectrum = self.extractSpectrum(getPath("flat"), getPath("science"))
-       
+
+        # Obtain and return the optimal extracted spectrum 
+        return self.extractSpectrum(getPath("flat"), getPath("science"))
+
 
 
     def extractSpectrum(self, flatPath, sciencePath):
 
+        fiberAndOrder   = []
         sSpectra = []
         fSpectra = []
         oSpectra = []
+
+        fibers, orders = tools.getFibersAndOrders(flatPath)
+
+        flatInfo = tools.getAllExtractedInfo(flatPath)
+        scienceInfo = tools.getAllExtractedInfo(sciencePath)
+        
+        for o in tqdm(orders):
+            for f in fibers:
+                xFlat, yFlat, flat = (flatInfo[o])[f]
+                xPosition, yPosition, science = (scienceInfo[o])[f]
+
+                # We check that for the same order/fiber that the extracted positions for the science and flat image are the same.
+                if not np.all(xFlat == xPosition) and np.all(yFlat == yPosition):
+                    print("Order: {}, fiber: {} do not have matching coordinates for flat {} and science {}".format(o, f, flatPath, sciencePath))
+
+                if f == 1:
+                    continue
+                flats, science, optim = getSpectrum(science, flat, xPosition, yPosition)
+
+                fiberAndOrder.append((o, f))
+                fSpectra.append(flats)
+                sSpectra.append(science)
+                oSpectra.append(optim)
+
+        if self.debug > 2:
+            debug.plotOrdersWithSlider(fSpectra, yMax=20000)
+            debug.plotOrdersWithSlider(sSpectra, yMax=2000)
+            debug.plotOrdersWithSlider(oSpectra, yMax=0.4)
+
+        return oSpectra, fiberAndOrder
+
+
+
+    def runComponent(self):
+        """
+        ...
+        """
+        spectrum, orders = self.make()
+        self.saveImage(spectrum, orders)
+        print("Block Generated!")
+
+
+
+    def saveImage(self, spectrum, orders):
+        """
+        Save the image and add it to the database
+        """
+        hash = hashlib.sha256(bytes("".join(self.input), 'utf-8' )).hexdigest()
+        path = self.outputPath + self.getFileName()
+        orders, fibers = zip(*orders)
+
+        # Save Optimal Extracted as FITS file
+        primary_hdr = fits.Header()
+        primary_hdr["hash"] = hash
+        primary_hdr["path"] = path
+        primary_hdr["type"] = self.type
+        primary_hdr["orders"] = str(set(orders))
+        primary_hdr["fibers"] = str(set(fibers))
+        primary_hdr["input"] = str(self.input)
+
+        hdu = fits.PrimaryHDU(header=primary_hdr)
+        hdul = fits.HDUList([hdu])
+
+        for i in np.arange(len(spectrum)):
+
+            hdr1 = fits.Header()
+            hdr1["order"] = orders[i]
+            hdr1["fiber"] = orders[i]
+
+            spect1 = np.array(spectrum[i], dtype=np.float64)
+            col = fits.Column(name="Spectrum", format='D', array=spect1)
+
+            cols = fits.ColDefs([col])
+            hdu1 = fits.BinTableHDU.from_columns(cols, header=hdr1)
+
+            hdul.append(hdu1)
+
+        hdul.writeto(path, overwrite=True)
+
+        # Add image to the database
+        dict = {"_id" : hash, "path" : path, "type" : self.type}
+        tools.addToDataBase(dict, overWrite = True)
         
 
-        for o in tqdm(np.arange(19, 26)):
-            for f in np.arange(1, 6):
-                if f == 1:
-                    continue;
-                # Make sure that flatPositions and sciencePositions are the same 
-                position = tools.getExtractedPosition(flatPath, o, f)
-                #haveSamePosition = np.all(position == tools.getExtractedPosition(sciencePath, o, f))
-
-                science = tools.getExtractedFlux(sciencePath, o, f)
-                flat    = tools.getExtractedFlux(flatPath, o, f)
-                
-                xPosition, yPosition = zip(*position)
-                xPosition = np.array(xPosition)
-                yPosition = np.array(yPosition)
-
-                flats, scien, optim = getSpectrum(science, flat, xPosition, yPosition)
-
-                sSpectra.append(scien)
-                fSpectra.append(flats)
-                oSpectra.append(optim)
-                                
-        debug.plotOrdersWithSlider(fSpectra, yMax=25000)
-        debug.plotOrdersWithSlider(sSpectra, yMax=3000)
-        debug.plotOrdersWithSlider(oSpectra, yMax=0.5)
-        print("done")
-
-
+        
 
         
      
-#@njit()
+@njit()
 def getSpectrum(sFlux, fFlux, xPos, yPos, readout=2000):
 
     flats = np.zeros_like(np.unique(xPos), dtype=np.float32)
@@ -167,5 +232,5 @@ if __name__ == "__main__":
 
     # Extracted flat <-> Extracted science
     hash_list = ["2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b", "626de973a22fe042b8355bfdb868260e1dc13cbbc411f4baaf6730b813e3a26d"]
-    oExtracted = OptimalExtraction(hash_list)
-    oExtracted.make()
+    oExtracted = OptimalExtraction(hash_list, debug=2)
+    oExtracted.runComponent()
