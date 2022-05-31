@@ -132,7 +132,7 @@ class OptimalExtraction(PipelineComponent):
 
 
 
-    def runComponent(self):
+    def run(self):
         """
         ...
         """
@@ -232,5 +232,5 @@ if __name__ == "__main__":
 
     # Extracted flat <-> Extracted science
     hash_list = ["2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b", "626de973a22fe042b8355bfdb868260e1dc13cbbc411f4baaf6730b813e3a26d"]
-    oExtracted = OptimalExtraction(hash_list, debug=2)
-    oExtracted.runComponent()
+    oExtracted = OptimalExtraction(hash_list, debug=3)
+    oExtracted.run()

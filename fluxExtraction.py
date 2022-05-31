@@ -170,7 +170,7 @@ class MasterFlatOrderExtraction(PipelineComponent):
 
 
 
-    def runComponent(self):
+    def run(self):
         """
         Ruins the alghoritm in main and saves the values in fits file and adds the image to the database. 
         """
@@ -339,7 +339,6 @@ class MasterFlatOrderExtraction(PipelineComponent):
             print("\tTime for first part of the function extractFlatStripes is {}".format(end-start))
             start = time.time()
 
-        #flat_stripes = self.extractStripes(flat, p_id, cross_widths)
         xCoordinates, yCoordinates, fluxValues, orders = extractStripes(flat, index_fiber, index_order)
 
         if self.debug > 2:
@@ -348,10 +347,6 @@ class MasterFlatOrderExtraction(PipelineComponent):
 
         return xCoordinates, yCoordinates, fluxValues, orders
         
-
-
-            
-            
 
 
 
