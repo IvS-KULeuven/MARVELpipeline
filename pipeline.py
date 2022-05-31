@@ -26,7 +26,7 @@ Once we have created a block the output is generated and added to the MARVEL dat
 
 Example:
     masterBlock = MasterBias(hash_list)
-    masterBlock.runComponent()
+    masterBlock.run()
 """
 
 
@@ -50,7 +50,7 @@ class PipelineComponent():
 
 
 
-    def runComponent(self):
+    def run(self):
         img = self.make()
         self.saveImage(img)
         print("Block Generated!")
@@ -381,7 +381,7 @@ if __name__ == "__main__":
                        '3e947c38dee83746b746031d8dae57fa2d6a6f31c7fb0be31ad7f14b1f37b99b', '1902162ddc57a095c10a4571922cc3d76ead46eedeed3eefaac88c882097172a', 
                        '53fa9f81ffba0b3916bcb90603e49becb4e77eef0e73d6f8073132d8b585c703']
     masterB = MasterBias(raw_bias_hashes)
-    masterB.runComponent()
+    masterB.run()
 
 
 
@@ -389,7 +389,7 @@ if __name__ == "__main__":
     raw_dark_hashes =  ['e547b0390ddcc6e0ec3b32bb85f2abf7c8f9f869edb45c068ec90e693883300c', '8161836c875b139b922fa3b0ca3dedd38a22474421846d6018ae1cdc0913cd86', 
                         '6846f7a8550ecf62f09ba4258097b5e2876ce5d70f831636b7144560958cdbc8']
     masterD = MasterDark(raw_dark_hashes)
-    masterD.runComponent()
+    masterD.run()
 
 
 
@@ -400,7 +400,7 @@ if __name__ == "__main__":
                        "6a6a2a048ea9c1c2fffd5fb3ca0f26df77866973300cf2de223d63dd9df32f93", "9b0c4e6cad3771c6f1a74186f2e7a3fa689a85a43f15b73067c23b6e8c64aa0d"]
 
     masterF = MasterFlat(raw_flat_hashes)
-    masterF.runComponent()
+    masterF.run()
 
 
 
@@ -409,7 +409,7 @@ if __name__ == "__main__":
                                "edf0482526e97a6eb087d267b12af6fa7756c9709fb09c4f136a65ffc48ebaf1",
                                "3704c9e675cb7e438c4f2eb4e097b923f46e31d38f4466ef6d620cd643356735"]
     calibration = CalibratedScienceFrames(raw_scienceimage_hashes)
-    calibration.runComponent()
+    calibration.run()
                                           
 
 
