@@ -9,6 +9,8 @@ from numba import njit
 from pymongo import MongoClient
 import matplotlib.pyplot as plt
 import os
+import pandas as pd
+import h5py
 
 client = MongoClient()
 db = client["databaseMARVEL"]
@@ -161,10 +163,56 @@ def getPositionsOfOrders():
 
 
 
+def checkInputOptimalExtractedData(path, order, fiber):
+    """
+    Tis function checks that for the functions getExtractedPosition and getExtractedFlux the input
+    that is specified is sensible. If this is the case the function returns the specified table, if
+    not the function return None.
+    """
+    # Check that path exist
+    if not os.path.isfile(path):
+        print("Error: path does not exist")
+        return
+
+    # Check that type of fits file is Extracted Flux
+    hdul = fits.open(path)
+
+    fileType = hdul[0].header["type"]
+
+    if not (fileType == "Optimal Extracted"):
+        print("Error: filetype {} is not a type of Optimal Extracted".format(fileType))
+        return
+
+    # Try to find order/fiber:
+    # First try find correct table at expect location
+    idx = (order-1)*5 + fiber
+
+    if ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber)):
+        table = hdul[idx]
+    else:
+        # If the correct table is not at the expected location, we loop over every order
+        # and check if the correct table among them.
+        locationFound = False
+        for idx in np.arange(np.size(hdul)):
+            try:
+                correctLocation = ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber))
+            except:
+                continue
+            if correctLocation:
+                locationFound = True
+                table = hdul[idx]
+                break
+        if not locationFound:
+            print("order {o} and fiber {f} not found in file {file}.".format(o=order, f=fiber, file=path))
+            return
+    return table
+
+
+
+
 
 
 def checkInputExtractedData(path, order, fiber):
-
     """
     Tis function checks that for the functions getExtractedPosition and getExtractedFlux the input
     that is specified is sensible. If this is the case the function returns the specified table, if
@@ -251,7 +299,7 @@ def getFibersAndOrders(path):
 
     fileType = hdul[0].header["type"]
 
-    if not (("Extracted" in fileType) and ("Orders" in fileType)):
+    if not (("Extracted" in fileType)):
         print("Error: filetype {} is not a type of Extracted Orders".format(fileType))
         return
 
@@ -339,73 +387,115 @@ def getAllExtractedInfo(path):
 
     return fluxes
 
+
+
+def createReferenceList(path="Data/MARVEL_2021_11_22.hdf"):
+    hdrs = ["translation_x", "translation_y", "wavelength", "Fiber", "Orders"]
+    fibers = [1, 2, 3, 4, 5]
+    orders = np.arange(30, 99)
+    h5file = h5py.File(path)
+
+    df = pd.DataFrame(columns=hdrs)
+
+    for fE, fP in zip(fibers[::-1], fibers):
+        fbr = "fiber_{}".format(fE)
+        f1 = h5file[fbr]
+        for oE, oP in zip(orders[::-1], orders):
+            f1o = f1["order{}".format(oE)]
+            x = f1o.fields(hdrs[:-2])
+            x = [list(i)+[fP, oP-29] for i in x]
+            x = np.array(x)
+            df = pd.concat([df, pd.DataFrame(data=x, index=None, columns=hdrs)])
+
+    
+    df.to_csv("Data/ReferenceLineList.csv")
+    print("done")
+
+
+
+
+def getOptimalExtractedSpectrum(path):
+
+    fibers, orders = getFibersAndOrders(path)
+
+    # Check that path exist
+    if not os.path.isfile(path):
+        print("Error: path does not exist")
+        return
+    # Check that type of fits file is Extracted Flux
+    hdul = fits.open(path)
+    fileType = hdul[0].header["type"]
+
+    if not (fileType == "Optimal Extracted"):
+        print("Error: filetype {} is not a type of Optimal Extracted Orders".format(fileType))
+        return
+
+    def getTable(order, fiber):
+        # Try to find order/fiber:
+        # First try find correct table at expect location
+        idx = (order-1)*5 + fiber
+        if ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber)):
+            table = hdul[idx]
+
+        else:
+            # If the correct table is not at the expected location, we loop over every order
+            # and check if the correct table among them.
+            locationFound = False
+            for idx in np.arange(np.size(hdul)):
+                try:
+                    correctLocation = ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber))
+                except:
+                    continue
+                if correctLocation:
+                    locationFound = True
+                    table = hdul[idx]
+                    break
+            if not locationFound:
+                print("order {o} and fiber {f} not found in file {file}.".format(o=order, f=fiber, file=path))
+                return
+        return table
+
+    spectra = {}
+
+    for o in orders:
+        for f in fibers:
+            table = getTable(o, f)
+            # print(table.data["Spectrum"])
+            # print(table.data["Pixels"])
+            # print(" ")
+
+            if table is None:
+                print("Error in file {}. Not correct format.".format(path))
+                return 
+            flux = (table.data["Spectrum"]).astype(np.float64)
+            xPos = (table.data['Pixels']).astype(np.int16)
+
+            if o in spectra:
+                spectra[o].update({f : (xPos, flux)})
+            else:
+                spectra[o] = {f : (xPos, flux)}
+
+    return spectra
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     
 
 
 
 
 if __name__ == "__main__":
-    path = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/extracted_flat_orders.fits"
-    getAllExtractedInfo(path)
 
-
-    # path_flat = os.getcwd() + "/Data/ProcessedData/MasterFlat/master_flat.fits"
-    # full_image = getImage(path_flat)
-
-    # positions = getExtractedPosition(path, 20, 4)
-    # flux      = getExtractedFlux(path, 20, 4)
-
-    # xx, yy = zip(*positions)
-    # ofst = np.min(xx)
-    # mask = [ True if x in np.arange(4440 + ofst, 4460 + ofst) else False for x in xx]
-
-    # x_mask = np.array(xx)[mask]
-    # y_mask = np.array(yy)[mask]
-
-    # x0 = np.min(x_mask)
-    # y0 = np.min(y_mask)
-
-    
-        
-    # buffr = 20
-
-    # print(np.max(x_mask))
-    # print(x0)
-    # print("==========")
-    # print(np.max(y_mask))
-    # print(y0)
-    # print("==========")
-    # print(np.min(yy), np.max(yy))
-
-    # image = np.zeros((np.max(x_mask)-x0+1, np.max(y_mask)-y0+1))
-    # mask_image = np.empty((np.max(x_mask)-x0+1, np.max(y_mask)-y0+1+2*buffr), dtype=bool)
-    # mask_image.fill(False)
-
-    # buffer1 = np.zeros((np.max(x_mask)-x0-1, buffr))
-    # buffer2 = np.zeros((np.max(x_mask)-x0-1, buffr))
-    
-    # for x, y in zip(x_mask, y_mask):
-    #     mask_image[x-x0, y-y0+buffr] = True
-
-    # image = full_image[x0:np.max(x_mask)+1, y0-buffr:np.max(y_mask)+buffr+1]
-    # extracted_img = image[mask_image]
-
-    
-    # x_max = np.max(y_mask)+2*buffr + 1 - y0 
-    # cm = plt.cm.get_cmap("RdYlBu")
-    
-    # plt.plot(np.transpose(image))
-    
-    # plt.fill_between(np.arange(buffr), 30000, 0, color='grey')
-    # plt.fill_between(np.arange(x_max-buffr, x_max), 30000, 0, color='grey')
-    # plt.show()
-
-    # plt.imshow(np.transpose(image))
-    # plt.show()
-
-        
-    # a = int(len(image[0][buffr:-buffr])/2)+1
-
-
-    # plt.plot([np.mean(x[buffr:-buffr]) for x in image])
-    # plt.show()
+    createReferenceList()
