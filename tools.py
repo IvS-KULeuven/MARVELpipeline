@@ -54,9 +54,8 @@ def addToDataBase(dict, overWrite=False):
     # 2. image is not in the dictornary
     # 3. Check that dict is in the right format 
 
-    images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages", "Calibrated Science Image" : "ScienceImages", "Extracted Flat Orders" : "ExtractedOrders", "Extracted Science Orders" : "ExtractedOrders", "Optimal Extracted" : "OptimalExtracted"}
+    images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages", "Calibrated Science Image" : "ScienceImages", "Extracted Flat Orders" : "ExtractedOrders", "Extracted Science Orders" : "ExtractedOrders", "Optimal Extracted" : "OptimalExtracted", "Extracted Etalon Orders": "ExtractedOrders"}
     typeImage  = dict["type"]
-
     collection = db[images[typeImage]]
     isInCollection = np.all([x == dict for x in collection.find({"_id" : dict["_id"]})])
     
@@ -389,25 +388,31 @@ def getAllExtractedInfo(path):
 
 
 
-def createReferenceList(path="Data/MARVEL_2021_11_22.hdf"):
-    hdrs = ["translation_x", "translation_y", "wavelength", "Fiber", "Orders"]
+def createReferenceList(path1="Data/MARVEL_2021_11_22_detector1.hdf", path2="Data/MARVEL_2021_11_22.hdf"):
+
+    hdrs = ["x_pixels", "y_Coordinate", "wavelength", "Fiber", "Orders"]
     fibers = [1, 2, 3, 4, 5]
     orders = np.arange(30, 99)
-    h5file = h5py.File(path)
+    h5file = h5py.File(path1)
+    h5file1 = h5py.File(path2)
 
     df = pd.DataFrame(columns=hdrs)
+    f1_wavelengths = h5file["wavelengths"]
+    f1_yCoordinates = h5file["yCoordinates"]
+    print(f1_wavelengths)
+    print(f1_yCoordinates)
 
     for fE, fP in zip(fibers[::-1], fibers):
         fbr = "fiber_{}".format(fE)
-        f1 = h5file[fbr]
+        f1f_wavelengths = f1_wavelengths[fbr]
+        f1f_yCoordinates = f1_yCoordinates[fbr]
         for oE, oP in zip(orders[::-1], orders):
-            f1o = f1["order{}".format(oE)]
-            x = f1o.fields(hdrs[:-2])
-            x = [list(i)+[fP, oP-29] for i in x]
-            x = np.array(x)
-            df = pd.concat([df, pd.DataFrame(data=x, index=None, columns=hdrs)])
-
-    
+            f1o_wavelengths = f1f_wavelengths["order_{}".format(oE)]
+            f1o_yCoordinates = f1f_yCoordinates["order_{}".format(oE)]
+            row = [ [n, x, lmda]+[fP, oP-29] for n, (x, lmda) in enumerate(zip(f1o_yCoordinates, f1o_wavelengths))]
+            row  = np.array(row)
+            df = pd.concat([df, pd.DataFrame(data=row, index=None, columns=hdrs)])
+    print(df)
     df.to_csv("Data/ReferenceLineList.csv")
     print("done")
 
