@@ -99,9 +99,9 @@ class OptimalExtraction(PipelineComponent):
         sSpectra = []
         fSpectra = []
         oSpectra = []
+        pixels   = []
 
         fibers, orders = tools.getFibersAndOrders(flatPath)
-
         flatInfo = tools.getAllExtractedInfo(flatPath)
         scienceInfo = tools.getAllExtractedInfo(sciencePath)
         
@@ -114,35 +114,35 @@ class OptimalExtraction(PipelineComponent):
                 if not np.all(xFlat == xPosition) and np.all(yFlat == yPosition):
                     print("Order: {}, fiber: {} do not have matching coordinates for flat {} and science {}".format(o, f, flatPath, sciencePath))
 
-                if f == 1:
-                    continue
                 flats, science, optim = getSpectrum(science, flat, xPosition, yPosition)
 
                 fiberAndOrder.append((o, f))
                 fSpectra.append(flats)
                 sSpectra.append(science)
                 oSpectra.append(optim)
+                pixels.append(np.unique(xPosition))
 
         if self.debug > 2:
-            debug.plotOrdersWithSlider(fSpectra, yMax=20000)
-            debug.plotOrdersWithSlider(sSpectra, yMax=2000)
-            debug.plotOrdersWithSlider(oSpectra, yMax=0.4)
+            debug.plotOrdersWithSlider(fSpectra, xValues=pixels, yMax=5000)
+            debug.plotOrdersWithSlider(sSpectra, xValues=pixels, yMax=3000)
+            debug.plotOrdersWithSlider(oSpectra, xValues=pixels, yMax=2)
 
-        return oSpectra, fiberAndOrder
+        return oSpectra, fiberAndOrder, pixels
 
 
+                                          
 
     def run(self):
         """
         ...
         """
-        spectrum, orders = self.make()
-        self.saveImage(spectrum, orders)
+        spectrum, orders, pixels = self.make()
+        self.saveImage(spectrum, orders, pixels)
         print("Block Generated!")
 
 
 
-    def saveImage(self, spectrum, orders):
+    def saveImage(self, spectrum, orders, pixels):
         """
         Save the image and add it to the database
         """
@@ -166,12 +166,15 @@ class OptimalExtraction(PipelineComponent):
 
             hdr1 = fits.Header()
             hdr1["order"] = orders[i]
-            hdr1["fiber"] = orders[i]
+            hdr1["fiber"] = fibers[i]
 
             spect1 = np.array(spectrum[i], dtype=np.float64)
-            col = fits.Column(name="Spectrum", format='D', array=spect1)
+            col1 = fits.Column(name="Spectrum", format='D', array=spect1)
 
-            cols = fits.ColDefs([col])
+            pixels1 = np.array(pixels[i], dtype=np.int16)
+            col2 = fits.Column(name="Pixels", format='J', array=pixels1)
+
+            cols = fits.ColDefs([col1, col2])
             hdu1 = fits.BinTableHDU.from_columns(cols, header=hdr1)
 
             hdul.append(hdu1)
