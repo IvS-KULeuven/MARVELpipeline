@@ -67,6 +67,15 @@ def createDataBase(makeIfExist=False):
         flatImages = [addFlatImage(flatImageBaseNames[n], flatImagePaths[n], flatCollection) for n in range(len(flatImagePaths))]
         flatCollection.insert_many(flatImages)
 
+    # Add the Etalon Images to the DataBase
+    etalonImageDirectory = pathToRaw + "CalibrationImages/Etalon"
+    etalonImagePaths = glob(etalonImageDirectory + "/*.fits")
+    print("Found {0} etalon frames to be inserted in MongoDB".format(len(etalonImagePaths)))
+    if len(etalonImagePaths) != 0:
+        etalonImageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in etalonImagePaths]
+        etalonCollection = db["EtalonImages"]
+        etalonImages = [addEtalonImage(etalonImageBaseNames[n], etalonImagePaths[n], etalonCollection) for n in range(len(etalonImagePaths))]
+        etalonCollection.insert_many(etalonImages)
 
     # Add the Science images to the DataBase
 
@@ -102,6 +111,13 @@ def addFlatImage(imageName, path, collection):
     hashInput = imageName + "Raw Flat Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
     return {"_id": hash, "path": path, "type": "Raw Flat Image"}
+
+
+
+def addEtalonImage(imageName, path, collection):
+    hashInput = imageName + "Raw Etalon Image"
+    hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
+    return {"_id": hash, "path": path, "type": "Raw Etalon Image"}
 
 
 

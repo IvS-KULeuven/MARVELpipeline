@@ -338,7 +338,7 @@ class CalibratedScienceFrames(PipelineComponent):
         bias = tools.getImages(biasPath[0])
 
         # Use the image in the fits files, and generate the calibrated science frames.
-        CalibratedScience = science - bias
+        CalibratedScience = np.median(science - bias, axis=0)
 
         if np.min(CalibratedScience) < 0:
             CalibratedScience = CalibratedScience - np.min(CalibratedScience)

@@ -8,18 +8,20 @@ The plot starts by plotting the 0th order, other orders can be shown by changing
 the slider. The gives an interactive idea of how the orders change staring from the 
 first order (left on the flatfield) and ending at the last order (right on the flatfield).
 """
-def plotOrdersWithSlider(orders, xMax=10560, yMax=30000):
+def plotOrdersWithSlider(orders, xValues=None, xMax=10560, yMax=30000, xMin=0):
     # The parametrized function to be plotted
     def f(t, m):
         m = int(m)
         mth_order = orders[m]
-        
-        return mth_order[t]
+        return mth_order
 
     def t(m):
         m = int(m)
-        mth_order = orders[m]
-        return np.arange(len(mth_order))
+        if xValues is None:
+            mth_order = orders[m]
+            return np.arange(len(mth_order))
+        else:
+            return xValues[m]
 
 
     # Define initial parameters
@@ -29,7 +31,7 @@ def plotOrdersWithSlider(orders, xMax=10560, yMax=30000):
     fig, ax = plt.subplots()
     line, = plt.plot(t(init_order), f(t(init_order), init_order), lw=2)
     ax.set_xlabel('x Position [pxl]')
-    plt.xlim([0, xMax])
+    plt.xlim([xMin, xMax])
     plt.ylim([0, yMax])
     
     # adjust the main plot to make room for the sliders
