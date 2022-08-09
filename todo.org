@@ -1,15 +1,15 @@
 #+title:Changes that still should happen
 
-<<<<<<< HEAD
+
 
 
 * Speed up flux-extraction
 
 * Save coordinates, flux, order/fiber 
-=======
+
 * in pipeline.py:
 - Master flats should taken into account the S/N of each of the flats (cf HERMES pipeline description)
->>>>>>> upstream/main
+
 
 * in tools.py:
 - gain/exposureTime/darkRate should be read from fitsFile (if this is in the file)
@@ -34,3 +34,24 @@ Maxize S/N wrp amound of pixels around:
 
 
 * Include input hash in output fits file
+
+* Thinks about a validation/documentation plan 
+
+* Should extract the bias/readout noise from Master Bias 
+
+* Fitting for flux calibration: statsmodels , https://www.statsmodels.org/stable/index.html 
+
+
+* Flux Extraction (copied from MAROON_X)
+
+** Etalon (and when needed ThAr) lines need to be fitted to determine the centroid of the 1D extracted spectrum.
+
+1. Etalon linsed need to be fitted to determine their centroid. -> 1D extracted spectrum
+   input : -a reduced ethalon_spectrum, -i reduced master_flat, -fs fibers (range or list), -o orders (range or list)
+
+   - orders and fibers from cl. If not given, both are None
+
+2. Etalon lines are unresolved (WHAT DOES THIS MEAN?)
+3. 
+
+** Build static wavelenght solution from ThAr and etalon spectra. 
