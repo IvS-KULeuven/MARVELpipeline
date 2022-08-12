@@ -57,7 +57,7 @@ class FluxExtraction(PipelineComponent):
     def checkInput(self, input):
         """
         This function checks that the input has the right format. The input should consist of
-        a image from which we want to extract the flux and an image with extracted flat orders.
+        an image from which we want to extract the flux and an image with extracted flat orders.
         This function should be specified for every child class, for this parent class it always
         returns True.
         """
