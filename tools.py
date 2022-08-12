@@ -54,7 +54,10 @@ def addToDataBase(dict, overWrite=False):
     # 2. image is not in the dictornary
     # 3. Check that dict is in the right format 
 
-    images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages", "Calibrated Science Image" : "ScienceImages", "Extracted Flat Orders" : "ExtractedOrders", "Extracted Science Orders" : "ExtractedOrders", "Optimal Extracted" : "OptimalExtracted", "Extracted Etalon Orders": "ExtractedOrders"}
+    images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages", 
+                  "Calibrated Science Image" : "ScienceImages", "Extracted Flat Orders" : "ExtractedOrders",   
+                  "Extracted Science Orders" : "ExtractedOrders","Extracted Etalon Orders": "ExtractedOrders", 
+                  "Optimal Extracted Science" : "OptimalExtracted", "Optimal Extracted Etalon" : "OptimalExtracted"}
     typeImage  = dict["type"]
     collection = db[images[typeImage]]
     isInCollection = np.all([x == dict for x in collection.find({"_id" : dict["_id"]})])
