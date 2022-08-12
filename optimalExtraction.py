@@ -46,7 +46,7 @@ class OptimalExtraction(PipelineComponent):
 
     def checkInput(self, input):
         """
-        This function checks that the input has the right format. The input shold consist of
+        This function checks that the input has the right format. The input should consist of
         an image with Extracted Flat Orders and another image with Extracted Orders that we
         want to optimaly extract.        
         """
@@ -54,8 +54,8 @@ class OptimalExtraction(PipelineComponent):
         # 1. Check that the input only consist of two hashes
         inputAmount = len(input) == 2
         if not inputAmount:
-            print("Input is not in the currect format, we expect a list with 2 elements, instead {} were fiven.".format(len(input)))
-            return
+            print("Input is not in the correct format, we expect a list with 2 elements, instead {} were given.".format(len(input)))
+            return False
 
         # 2. We check that one of the hashes corresponds to the Extracted Flat Orders.
         collection = self.db["ExtractedOrders"]
@@ -120,7 +120,14 @@ class OptimalExtraction(PipelineComponent):
             debug.plotOrdersWithSlider(otSpectra, xValues=pixels, yMax=3000)
             debug.plotOrdersWithSlider(oSpectra, xValues=pixels, yMax=2)
 
-        return oSpectra, fiberAndOrder, pixels
+        if self.exType == "Science":
+            return oSpectra, fiberAndOrder, pixels
+        elif self.exType == "Etalon":
+            print("SUCCES")
+            return otSpectra, fiberAndOrder, pixels
+        else:
+            return None
+        
 
 
                                           

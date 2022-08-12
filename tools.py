@@ -314,12 +314,76 @@ def getFibersAndOrders(path):
     return fibers, orders
 
 
+def getAllOptimalExtractedInfo(path):
+    """
+    This function extracts all the info (position and flux) for all the orders from Optimal Extracted Images.
+    INPUT: path to the optimal extracted images.
+    OUTPUT: dictionary with as keys the orders and the values another dictrionary with fibers/(position, flux)
+            as key/values.
+    INFO: Similar to getAllExtractedInfo
+    """
+    fibers, orders = getFibersAndOrders(path)
+
+    # Check that path exist
+    if not os.path.isfile(path):
+        print("Error: path does not exist")
+        return
+
+    # Check that type of fits file is Optimal Extracted Flux
+    hdul = fits.open(path)
+
+    fileType = hdul[0].header["type"]
+
+    if not (("Extracted" in fileType) and ("Optimal" in fileType)):
+        print("Error: filetype {} is not a type of Optimal Extracted".format(fileType))
+        return
+
+    def getTable(order, fiber):
+        # Try to find order/fiber:
+        # First try to find correct table at expected location
+        idx = (order-1)*5 + fiber
+        if ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber)):
+            table = hdul[idx]
+
+        else:
+            # If the correct table is not at the expectd location, we loop over every order
+            # and check if the correct table among them.
+            locationFound = False
+            for idx in np.arange(np.size(hdul)):
+                try:
+                    correctLocation = ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber))
+                except:
+                    continue
+                if correctLocation:
+                    locationFound = True
+                    table = hdul[idx]
+                    break
+            if not locationFound:
+                print("order {o} and fiber {f} not found in file {file}.".format(o=order, f=fiber, file=path))
+                return
+        return table
+
+    fluxes = {}
+
+    for o in orders:
+        for f in fibers:
+            table = getTable(o, f)
+            if table is None:
+                print("Error in file {}. Not correct format.".format(path))
+                return
+            print(table.data["Spectrum"].astype(np.float64))
+
+                
+                
+
+
+
 
 def getAllExtractedInfo(path):
     """ 
     This function extracts all the info (positions and flux) for all the orders from 
     extracted images. 
-    INPUT: path the the extracted images.
+    INPUT: path to the extracted images.
     OUPUT: dictionary with keys the orders and values a dictorionary with fibers/(positions, flux) 
            as key/values. 
     REMARK: The idea behind this function is that we only open the file one time and extract all the 
@@ -434,8 +498,8 @@ def getOptimalExtractedSpectrum(path):
     hdul = fits.open(path)
     fileType = hdul[0].header["type"]
 
-    if not (fileType == "Optimal Extracted"):
-        print("Error: filetype {} is not a type of Optimal Extracted Orders".format(fileType))
+    if not (("Extracted" in fileType) and ("Optimal" in fileType)):
+        print("Error: filetype {} is not a type of Optimal Extracted".format(fileType))
         return
 
     def getTable(order, fiber):
