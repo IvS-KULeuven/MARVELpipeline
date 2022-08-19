@@ -92,11 +92,12 @@ class OptimalExtraction(PipelineComponent):
         fSpectra  = []
         oSpectra  = []
         otSpectra = []
-        pixels    = []
+        xPixels   = []
+        yPixels   = [] 
 
         fibers, orders = tools.getFibersAndOrders(flatPath)
-        flatInfo = tools.getAllExtractedInfo(flatPath)
-        otherInfo = tools.getAllExtractedInfo(otherPath)
+        flatInfo = tools.getAllExtractedSpectrum(flatPath)
+        otherInfo = tools.getAllExtractedSpectrum(otherPath)
         
         for o in tqdm(orders):
             for f in fibers:
@@ -107,24 +108,25 @@ class OptimalExtraction(PipelineComponent):
                 if not np.all(xFlat == xPosition) and np.all(yFlat == yPosition):
                     print("Order: {}, fiber: {} do not have matching coordinates for flat {} and {} {}".format(o, f, flatPath, self.exType, otherPath))
 
-                flats, other, optim = getSpectrum(other, flat, xPosition, yPosition)
+                flats, other, optim, yPositionAvg = getSpectrum(other, flat, xPosition, yPosition)
 
                 fiberAndOrder.append((o, f))
                 fSpectra.append(flats)
                 otSpectra.append(other)
                 oSpectra.append(optim)
-                pixels.append(np.unique(xPosition))
+                xPixels.append(np.unique(xPosition))
+                yPixels.append(yPositionAvg)
 
         if self.debug > 2:
-            debug.plotOrdersWithSlider(fSpectra, xValues=pixels, yMax=5000)
-            debug.plotOrdersWithSlider(otSpectra, xValues=pixels, yMax=3000)
-            debug.plotOrdersWithSlider(oSpectra, xValues=pixels, yMax=2)
+            debug.plotOrdersWithSlider(fSpectra, xValues=xPixels, yMax=5000)
+            debug.plotOrdersWithSlider(otSpectra, xValues=xPixels, yMax=3000)
+            debug.plotOrdersWithSlider(oSpectra, xValues=xPixels, yMax=2)
 
         if self.exType == "Science":
-            return oSpectra, fiberAndOrder, pixels
+            return oSpectra, fiberAndOrder, xPixels, yPixels
         elif self.exType == "Etalon":
             print("SUCCES")
-            return otSpectra, fiberAndOrder, pixels
+            return otSpectra, fiberAndOrder, xPixels, yPixels
         else:
             return None
         
@@ -136,13 +138,13 @@ class OptimalExtraction(PipelineComponent):
         """
         ...
         """
-        spectrum, orders, pixels = self.make()
-        self.saveImage(spectrum, orders, pixels)
+        spectrum, orders, xPixels, yPixels = self.make()
+        self.saveImage(spectrum, orders, xPixels, yPixels)
         print("Block Generated!")
 
 
 
-    def saveImage(self, spectrum, orders, pixels):
+    def saveImage(self, spectrum, orders, xPixels, yPixels):
         """
         Save the image and add it to the database
         """
@@ -172,10 +174,13 @@ class OptimalExtraction(PipelineComponent):
             spect1 = np.array(spectrum[i], dtype=np.float64)
             col1 = fits.Column(name="Spectrum", format='D', array=spect1)
 
-            pixels1 = np.array(pixels[i], dtype=np.int16)
-            col2 = fits.Column(name="Pixels", format='J', array=pixels1)
+            pixels1 = np.array(xPixels[i], dtype=np.int16)
+            col2 = fits.Column(name="xPixels", format='J', array=pixels1)
 
-            cols = fits.ColDefs([col1, col2])
+            pixels2 = np.array(yPixels[i], dtype=np.int16)
+            col3 = fits.Column(name="yPixels", format='J', array=pixels2)
+
+            cols = fits.ColDefs([col1, col2, col3])
             hdu1 = fits.BinTableHDU.from_columns(cols, header=hdr1)
 
             hdul.append(hdu1)
@@ -194,25 +199,31 @@ class OptimalExtraction(PipelineComponent):
 @njit()
 def getSpectrum(oFlux, fFlux, xPos, yPos, readout=2000):
 
-    flats = np.zeros_like(np.unique(xPos), dtype=np.float32)
-    other = np.zeros_like(np.unique(xPos), dtype=np.float32)
-    optim = np.zeros_like(np.unique(xPos), dtype=np.float32)
+    flats  = np.zeros_like(np.unique(xPos), dtype=np.float32)
+    other  = np.zeros_like(np.unique(xPos), dtype=np.float32)
+    optim  = np.zeros_like(np.unique(xPos), dtype=np.float32)
+    yCoordinates = np.zeros_like(np.unique(xPos), dtype=np.float32)
 
     for i, x in enumerate(np.unique(xPos)):
         mask = (xPos == x)
         signal = oFlux[mask]
         flat   = fFlux[mask]
+        yCoord = yPos[mask]
 
         w = 1/(readout*np.ones_like(signal) + signal)
 
         flats[i] = np.sum(flat)/len(flat)
         other[i] = np.sum(signal)/len(signal)
+        if np.sum(signal) == 0:
+            yCoordinates[i] = np.sum(yCoord) / len(yCoord)
+        else:
+            yCoordinates[i] = np.sum(yCoord * signal) / np.sum(signal)
         if not np.sum(w * flat * flat)  == 0:
             optim[i] = np.sum(w * flat * signal) / np.sum(w * flat * flat)
         else:
             optim[i] = 1
 
-    return flats, other, optim
+    return flats, other, optim, yCoordinates
 
 
 
