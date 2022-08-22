@@ -29,6 +29,7 @@ def createDataBase(makeIfExist=False):
         db["DarkImages"].drop()
         db["ScienceImages"].drop()
         db["FlatImages"].drop()
+        db["EtalonImages"].drop()
 
     pathToRaw  = os.getcwd() + "/Data/RawData/"
     pathToPros = os.getcwd() + "/Data/ProcessedData/Data/"
