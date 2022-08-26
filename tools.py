@@ -313,7 +313,6 @@ def getFibersAndOrders(path):
 
     fibers = hdul[0].header["fibers"]
     fibers = [int(i) for i in fibers[1:-1].split(", ")]
-
     return fibers, orders
 
 
