@@ -1,6 +1,6 @@
 from pipeline import PipelineComponent
 from pymongo import MongoClient
-from numba import njit, jit, vectorize
+from numba import njit, jit, vectorize, prange
 from tqdm import tqdm
 from astropy.io import fits
 import matplotlib.pyplot as plt
@@ -9,12 +9,14 @@ import hashlib
 import os
 import tools
 import debug
+import time
 
 
 class OptimalExtraction(PipelineComponent):
     """
     Docstring
     """
+
 
 
     def __init__(self, input, extractedType, debug=0):
@@ -32,7 +34,6 @@ class OptimalExtraction(PipelineComponent):
             os.mkdir(self.outputPath)
 
         self.type = "Optimal Extracted {}".format(extractedType)
-
 
 
 
@@ -79,77 +80,62 @@ class OptimalExtraction(PipelineComponent):
         """
 
         getPath = lambda x : ([x["path"] for x in self.col.find({"_id" : self.inputDict[x]})])[0]
-
         # Obtain and return the optimal extracted spectrum 
         return self.extractSpectrum(getPath("flat"), getPath(self.exType.lower()))
 
 
 
     def extractSpectrum(self, flatPath, otherPath):
-
-        fiberAndOrder   = []
-        iSpectra  = []
-        fSpectra  = []
-        oSpectra  = []
-        otSpectra = []
-        pixels    = []
-
-        fibers, orders = tools.getFibersAndOrders(flatPath)
-        flatInfo = tools.getAllExtractedInfo(flatPath)
-        otherInfo = tools.getAllExtractedInfo(otherPath)
         
-        for o in tqdm(orders):
-            for f in fibers:
-                xFlat, yFlat, flat = (flatInfo[o])[f]
-                xPosition, yPosition, other = (otherInfo[o])[f]
+        fibers, orders = tools.getFibersAndOrders(flatPath)
 
-                # We check that for the same order/fiber that the extracted positions for the other and flat image are the same.
-                if not np.all(xFlat == xPosition) and np.all(yFlat == yPosition):
-                    print("Order: {}, fiber: {} do not have matching coordinates for flat {} and {} {}".format(o, f, flatPath, self.exType, otherPath))
+        flatInfo = tools.getAllExtractedSpectrum(flatPath)
+        otherInfo = tools.getAllExtractedSpectrum(otherPath)
 
-                flats, other, optim = getSpectrum(other, flat, xPosition, yPosition)
+        xValues, yValues, fValuesF, fValuesO, self.orders, self.fibers = self.convertToArray(otherInfo, flatInfo, fibers, orders)
 
-                fiberAndOrder.append((o, f))
-                fSpectra.append(flats)
-                otSpectra.append(other)
-                oSpectra.append(optim)
-                pixels.append(np.unique(xPosition))
+        print("Start getOptimalspectrum")
+        start = time.time()        
+        otSpectra, oSpectra, yPixels, xPixels = getOptimalSpectrum(xValues, yValues, fValuesF, fValuesO)
+        end   = time.time()
+        print("\tTime: ", end-start, "s")
 
+    
         if self.debug > 2:
-            debug.plotOrdersWithSlider(fSpectra, xValues=pixels, yMax=5000)
-            debug.plotOrdersWithSlider(otSpectra, xValues=pixels, yMax=3000)
-            debug.plotOrdersWithSlider(oSpectra, xValues=pixels, yMax=2)
-
+            #debug.plotOrdersWithSlider(fSpectra, xValues=xPixels, yMax=5000)
+            debug.plotOrdersWithSlider(otSpectra, xValues=xPixels, yMax=3000)
+            debug.plotOrdersWithSlider(oSpectra, xValues=xPixels, yMax=2)
+        
         if self.exType == "Science":
-            return oSpectra, fiberAndOrder, pixels
+            return oSpectra, xPixels, yPixels
         elif self.exType == "Etalon":
-            print("SUCCES")
-            return otSpectra, fiberAndOrder, pixels
+            return otSpectra, xPixels, yPixels
         else:
             return None
         
 
 
-                                          
 
     def run(self):
         """
         ...
         """
-        spectrum, orders, pixels = self.make()
-        self.saveImage(spectrum, orders, pixels)
+        spectrum, xPixels, yPixels = self.make()
+        self.saveImage(spectrum, xPixels, yPixels)
         print("Block Generated!")
 
 
 
-    def saveImage(self, spectrum, orders, pixels):
+    def saveImage(self, spectrum, xPixels, yPixels):
         """
         Save the image and add it to the database
         """
         hash = hashlib.sha256(bytes("".join(self.input), 'utf-8' )).hexdigest()
 
         path = self.outputPath + self.getFileName()
-        orders, fibers = zip(*orders)
+        fibers = np.unique(self.fibers)
+        orders = np.unique(self.orders)
+                  
 
         # Save Optimal Extracted as FITS file
         primary_hdr = fits.Header()
@@ -164,18 +150,20 @@ class OptimalExtraction(PipelineComponent):
         hdul = fits.HDUList([hdu])
 
         for i in np.arange(len(spectrum)):
-
             hdr1 = fits.Header()
-            hdr1["order"] = orders[i]
-            hdr1["fiber"] = fibers[i]
+            hdr1["order"] = self.orders[i]
+            hdr1["fiber"] = self.fibers[i]
 
             spect1 = np.array(spectrum[i], dtype=np.float64)
             col1 = fits.Column(name="Spectrum", format='D', array=spect1)
 
-            pixels1 = np.array(pixels[i], dtype=np.int16)
-            col2 = fits.Column(name="Pixels", format='J', array=pixels1)
+            pixels1 = np.array(xPixels[i], dtype=np.int16)
+            col2 = fits.Column(name="xPixels", format='J', array=pixels1)
 
-            cols = fits.ColDefs([col1, col2])
+            pixels2 = np.array(yPixels[i], dtype=np.int16)
+            col3 = fits.Column(name="yPixels", format='J', array=pixels2)
+
+            cols = fits.ColDefs([col1, col2, col3])
             hdu1 = fits.BinTableHDU.from_columns(cols, header=hdr1)
 
             hdul.append(hdu1)
@@ -187,6 +175,64 @@ class OptimalExtraction(PipelineComponent):
         tools.addToDataBase(dict, overWrite = True)
         
 
+
+    def convertToArray(self, otherInfo, flatInfo, fibers, orders):
+        """
+        This methods converts the list that is given as input into a numpy array.
+        This is done so that numba can be used to optimize the optimal extraction.
+        """
+        start = time.time()
+        print("start convert to array")
+        max_row_length = 0
+        # Let us first get the maximum length of the rows 
+        x_values = []
+        y_values = []
+        f_values = []
+        o_values = []
+        ordrs    = []
+        fbrs     = []
+
+        for o in orders:
+            for f in fibers:
+                x, y, flux = (flatInfo[o])[f]
+                if len(x) > max_row_length:
+                    max_row_length = len(x)
+
+        for o in orders:
+            for f in fibers:
+                x1, y1, otherFlux = (otherInfo[o])[f]
+                x2, y2, flatFlux = (flatInfo[o])[f]
+
+                if not ((x1 == x2).all() and (y1 == y2).all()):
+                    print("Flat mask does not correspond with other mask")
+                    exit
+                x = list(x1)
+                y = list(y1)
+                otherFlux = list(otherFlux)
+                flatFlux  = list(flatFlux)
+                
+
+                while (len(x) < max_row_length):
+                    x.append(-1)
+                    y.append(-1)
+                    otherFlux.append(np.nan)
+                    flatFlux.append(np.nan)
+
+                x_values += [x]
+                y_values += [y]
+                f_values += [flatFlux]
+                o_values += [otherFlux]
+                ordrs.append(o)
+                fbrs.append(f)
+        end = time.time()
+        print("\tTime: ", end-start, "s")
+        return np.array(x_values, dtype=np.int16), np.array(y_values, dtype=np.int16), np.array(f_values, np.float64), np.array(o_values, np.float64), np.array(ordrs), np.array(fbrs)
+
+        
+
+
+
+
         
 
         
@@ -194,47 +240,56 @@ class OptimalExtraction(PipelineComponent):
 @njit()
 def getSpectrum(oFlux, fFlux, xPos, yPos, readout=2000):
 
-    flats = np.zeros_like(np.unique(xPos), dtype=np.float32)
-    other = np.zeros_like(np.unique(xPos), dtype=np.float32)
-    optim = np.zeros_like(np.unique(xPos), dtype=np.float32)
+    # Initialize the arrays that will be added to the output array
+    others = np.ones(10560, dtype=np.float32) * -1
+    optim  = np.ones(10560, dtype=np.float32) * -1
+    yPositionAvg = np.ones(10560, dtype=np.float32) * -1
+        
+    # Create the optimal order for every xValue
+    for i,x in enumerate(np.unique(xPos)):
+        if x == -1:
+            others[i] = np.nan
+            optim[i]  = np.nan
+            yPositionAvg[i] = np.nan
+            continue
 
-    for i, x in enumerate(np.unique(xPos)):
+        # Select the pixels that correspond to the xValue
         mask = (xPos == x)
-        signal = oFlux[mask]
-        flat   = fFlux[mask]
+        
+        signal = (oFlux)[mask]
+        flat   = (fFlux)[mask]
+        yCoord = (yPos)[mask]
 
         w = 1/(readout*np.ones_like(signal) + signal)
 
-        flats[i] = np.sum(flat)/len(flat)
-        other[i] = np.sum(signal)/len(signal)
+        others[i] = np.sum(signal)/len(signal)
+        if np.sum(signal) == 0:
+            yPositionAvg[i] = np.sum(yCoord) / len(yCoord)
+        else:
+            yPositionAvg[i] = np.sum(yCoord * signal) / np.sum(signal)
         if not np.sum(w * flat * flat)  == 0:
             optim[i] = np.sum(w * flat * signal) / np.sum(w * flat * flat)
         else:
             optim[i] = 1
-
-    return flats, other, optim
-
-
-
-            
+    
+    return others, optim, yPositionAvg
 
 
-        
+@njit(parallel=True)
+def getOptimalSpectrum(xValues, yValues, flat, other, readout=2000):
+    # Initialize the output arrays
+    otSpectra = np.empty((66 * 5, 10560))
+    oSpectra  = np.empty((66 * 5, 10560))
+    yPixels   = np.empty((66 * 5, 10560))
+    xPixels   = np.empty((66 * 5, 10560))
+    
+    # Loop over every order/fiber 
+    for line in prange(66*5):
+        others, optim, yPositionAvg = getSpectrum(other[line], flat[line], xValues[line], yValues[line])
+        # Add the optimal spectrum, avg flux spectrum and average Y value to the output arrays
+        otSpectra[line] = others
+        oSpectra[line]  = optim
+        yPixels[line]   = yPositionAvg
+        (xPixels[line])[:len(np.unique(xValues[line]))] = np.unique(xValues[line])
 
-        
-
-
-
-
-        
-
-        
-
-
-
-if __name__ == "__main__":
-
-    # Extracted flat <-> Extracted science
-    hash_list = ["2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b", "626de973a22fe042b8355bfdb868260e1dc13cbbc411f4baaf6730b813e3a26d"]
-    oExtracted = OptimalExtraction(hash_list, debug=3)
-    oExtracted.run()
+    return otSpectra, oSpectra, yPixels, xPixels
