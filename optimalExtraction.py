@@ -80,21 +80,19 @@ class OptimalExtraction(PipelineComponent):
         """
 
         getPath = lambda x : ([x["path"] for x in self.col.find({"_id" : self.inputDict[x]})])[0]
-
         # Obtain and return the optimal extracted spectrum 
         return self.extractSpectrum(getPath("flat"), getPath(self.exType.lower()))
 
 
 
     def extractSpectrum(self, flatPath, otherPath):
-
+        
         fibers, orders = tools.getFibersAndOrders(flatPath)
+
         flatInfo = tools.getAllExtractedSpectrum(flatPath)
         otherInfo = tools.getAllExtractedSpectrum(otherPath)
 
-
-
-        xValues, yValues, fValuesF, fValuesO = self.convertToArray(otherInfo, flatInfo, fibers, orders)
+        xValues, yValues, fValuesF, fValuesO, self.orders, self.fibers = self.convertToArray(otherInfo, flatInfo, fibers, orders)
 
         print("Start getOptimalspectrum")
         start = time.time()        
@@ -135,8 +133,8 @@ class OptimalExtraction(PipelineComponent):
         hash = hashlib.sha256(bytes("".join(self.input), 'utf-8' )).hexdigest()
 
         path = self.outputPath + self.getFileName()
-        fibers = np.tile(np.arange(1, 6), 66)
-        orders = np.repeat(np.arange(1, 67), 5)
+        fibers = np.unique(self.fibers)
+        orders = np.unique(self.orders)
                   
 
         # Save Optimal Extracted as FITS file
@@ -152,10 +150,9 @@ class OptimalExtraction(PipelineComponent):
         hdul = fits.HDUList([hdu])
 
         for i in np.arange(len(spectrum)):
-
             hdr1 = fits.Header()
-            hdr1["order"] = orders[i]
-            hdr1["fiber"] = fibers[i]
+            hdr1["order"] = self.orders[i]
+            hdr1["fiber"] = self.fibers[i]
 
             spect1 = np.array(spectrum[i], dtype=np.float64)
             col1 = fits.Column(name="Spectrum", format='D', array=spect1)
@@ -192,6 +189,8 @@ class OptimalExtraction(PipelineComponent):
         y_values = []
         f_values = []
         o_values = []
+        ordrs    = []
+        fbrs     = []
 
         for o in orders:
             for f in fibers:
@@ -223,9 +222,11 @@ class OptimalExtraction(PipelineComponent):
                 y_values += [y]
                 f_values += [flatFlux]
                 o_values += [otherFlux]
+                ordrs.append(o)
+                fbrs.append(f)
         end = time.time()
         print("\tTime: ", end-start, "s")
-        return np.array(x_values, dtype=np.int16), np.array(y_values, dtype=np.int16), np.array(f_values, np.float64), np.array(o_values, np.float64)
+        return np.array(x_values, dtype=np.int16), np.array(y_values, dtype=np.int16), np.array(f_values, np.float64), np.array(o_values, np.float64), np.array(ordrs), np.array(fbrs)
 
         
 

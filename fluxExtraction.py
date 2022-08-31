@@ -162,7 +162,6 @@ class FluxExtraction(PipelineComponent):
         hash = hashlib.sha256(bytes("".join(self.input), 'utf-8')).hexdigest()
         path = self.outputPath + self.getFileName()
         orders, fibers = zip(*orders)
-
         # Save Extracted Flat Orders as FITS file for primary HDU
         primary_hdr = fits.Header()
         primary_hdr["hash"] = hash

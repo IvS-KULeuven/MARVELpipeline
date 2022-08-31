@@ -148,8 +148,8 @@ def getPositionsOfOrders():
     orders = []
 
     for i in np.arange(np.size(positions)):
-        order = int((i)/5)+1
-        fiber = int((i+1)%5)
+        order = 98 - int((i)/5)
+        fiber = 5 - int(i%5)
         if (fiber == 0):
             fiber=5
 
@@ -228,7 +228,6 @@ def checkInputExtractedData(path, order, fiber):
 
     # Check that type of fits file is Extracted Flux
     hdul = fits.open(path)
-
     fileType = hdul[0].header["type"]
 
     if not (("Extracted" in fileType) and ("Orders" in fileType)):
@@ -237,8 +236,7 @@ def checkInputExtractedData(path, order, fiber):
 
     # Try to find order/fiber:
     # First try find correct table at expect location
-    idx = (order-1)*5 + fiber
-
+    idx = (order-33)*5 + (fiber)
     if ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber)):
         table = hdul[idx]
     else:
@@ -264,7 +262,6 @@ def getExtractedPosition(path, order, fiber):
 
     # First we check that the input that is provided is sensible
     table = checkInputExtractedData(path, order, fiber)
-
     # If it is sensible, we return the Positions
     if table is None:
         return
@@ -333,7 +330,6 @@ def getAllExtractedSpectrum(path):
     """
 
     fibers, orders = getFibersAndOrders(path)
-
     # Check that path exist
     if not os.path.isfile(path):
         print("Error: path does not exist")
@@ -341,9 +337,7 @@ def getAllExtractedSpectrum(path):
 
     # Check that type of fits file is Extracted Flux
     hdul = fits.open(path)
-
     fileType = hdul[0].header["type"]
-
     if not (("Extracted" in fileType) and ("Orders" in fileType)):
         print("Error: filetype {} is not a type of Extracted Orders".format(fileType))
         return
@@ -353,8 +347,7 @@ def getAllExtractedSpectrum(path):
     def getTable(order, fiber):
         # Try to find order/fiber:
         # First try find correct table at expect location
-        idx = (order-1)*5 + fiber
-
+        idx = (order-33)*5 + (fiber)
         if ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber)):
             table = hdul[idx]
 
@@ -421,7 +414,6 @@ def createReferenceList(path1="Data/MARVEL_2021_11_22_detector1.hdf", path2="Dat
             row = [ [n, x, lmda]+[fP, oP-29] for n, (x, lmda) in enumerate(zip(f1o_yCoordinates, f1o_wavelengths))]
             row  = np.array(row)
             df = pd.concat([df, pd.DataFrame(data=row, index=None, columns=hdrs)])
-    print(df)
     df.to_csv("Data/ReferenceLineList.csv")
     print("done")
 
@@ -429,9 +421,8 @@ def createReferenceList(path1="Data/MARVEL_2021_11_22_detector1.hdf", path2="Dat
 
 
 def getAllOptimalExtractedSpectrum(path):
-
+    
     fibers, orders = getFibersAndOrders(path)
-
     # Check that path exist
     if not os.path.isfile(path):
         print("Error: path does not exist")
@@ -447,7 +438,7 @@ def getAllOptimalExtractedSpectrum(path):
     def getTable(order, fiber):
         # Try to find order/fiber:
         # First try find correct table at expect location
-        idx = (order-1)*5 + fiber
+        idx = (order-33)*5 + (fiber)
         if ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber)):
             table = hdul[idx]
 

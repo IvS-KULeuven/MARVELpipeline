@@ -349,7 +349,6 @@ class FlatOrderExtraction(PipelineComponent):
         if self.debug > 2:
             end = time.time()
             print("\tTime for second part of the function extractFlatStripes is {}".format(end-start))
-
         return xCoordinates, yCoordinates, fluxValues, orders
         
 
@@ -361,6 +360,7 @@ def extractStripes(image, fiber_indexes, order_indexes):
     """
     Docstring
     """
+
     xCoordinates = [] 
     yCoordinates = []
     fluxValues   = []
@@ -368,8 +368,9 @@ def extractStripes(image, fiber_indexes, order_indexes):
     
     nRow, nCol = image.shape
     columns    = np.repeat(np.arange(nRow), nCol).reshape((nRow, nCol))
-    for o in np.arange(1, np.max(order_indexes)+1):
+    for o in np.arange(33, np.max(order_indexes)+1):
         order_mask = order_indexes == o
+
         for f in np.arange(1, np.max(fiber_indexes[order_mask])+1):
 
             fiber_mask = fiber_indexes == f
@@ -379,9 +380,6 @@ def extractStripes(image, fiber_indexes, order_indexes):
             yCoordinates.append(yValues)
             fluxValues.append(flux)
             orders.append((o,f))
-
-
-
 
     return xCoordinates, yCoordinates, fluxValues, orders
 
@@ -512,7 +510,6 @@ def identify(positions, observed, polynomials, xValues, fibers, orders, shift):
     Docstring
     """
     p_id = {}
-            
     # Keeps track of the orders that have been identified
     used = np.zeros_like(positions)
 
@@ -613,7 +610,7 @@ def getSignalToNoise(signal, background, Npixels):
 if __name__ == "__main__":
 
     masterflat_hash = ["641f2b56be1a8a86848c29abbd81858ddd15e42359ae84473050962efb9dea06"]
-    fluxExtraction = FlatOrderExtraction(masterflat_hash, debug=2)
+    fluxExtraction = FlatOrderExtraction(masterflat_hash, debug=1)
 
 
     fluxExtraction.run()

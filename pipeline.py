@@ -280,7 +280,7 @@ class CalibratedScienceFrames(PipelineComponent):
         inputAmount = (len(input) == 3)
         if not inputAmount:
             print("Input is not in the correct format, we expect a list with 3 elements, instead {} were given.".format(len(input)))
-            return 
+            return False
 
         scienceFrames = self.db["ScienceImages"]
         darkFrames    = self.db["DarkImages"]
