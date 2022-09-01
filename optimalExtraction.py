@@ -3,6 +3,7 @@ from pymongo import MongoClient
 from numba import njit, jit, vectorize, prange
 from tqdm import tqdm
 from astropy.io import fits
+from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import hashlib
@@ -171,7 +172,8 @@ class OptimalExtraction(PipelineComponent):
         hdul.writeto(path, overwrite=True)
 
         # Add image to the database
-        dict = {"_id" : hash, "path" : path, "type" : self.type}
+        currentTime = datetime.now()
+        dict = {"_id" : hash, "path" : path, "type" : self.type, "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
         tools.addToDataBase(dict, overWrite = True)
         
 

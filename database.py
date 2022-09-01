@@ -5,6 +5,7 @@ from pymongo import MongoClient
 import hashlib
 import os
 from glob import glob
+from datetime import datetime
 
 
 
@@ -90,42 +91,42 @@ def createDataBase(makeIfExist=False):
         scienceCollection.insert_many(scienceImages)
 
 
-
+currentTime = datetime.now()
 def addBiasImage(imageName, path, collection):
     """
     Does something for which a doc string is required
     """
     hashInput = imageName + "Raw Bias Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
-    return {"_id" : hash, "path" : path, "type" : "Raw Bias Image"}
+    return {"_id" : hash, "path" : path, "type" : "Raw Bias Image", "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
 
 
 
 def addDarkImage(imageName, path, collection):
     hashInput = imageName + "Raw Dark Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
-    return {"_id": hash, "path": path, "type": "Raw Dark Image"}
+    return {"_id": hash, "path": path, "type": "Raw Dark Image", "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
 
 
 
 def addFlatImage(imageName, path, collection):
     hashInput = imageName + "Raw Flat Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
-    return {"_id": hash, "path": path, "type": "Raw Flat Image"}
+    return {"_id": hash, "path": path, "type": "Raw Flat Image", "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
 
 
 
 def addEtalonImage(imageName, path, collection):
     hashInput = imageName + "Raw Etalon Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
-    return {"_id": hash, "path": path, "type": "Raw Etalon Image"}
+    return {"_id": hash, "path": path, "type": "Raw Etalon Image", "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
 
 
 
 def addScienceImage(imageName, path, collection):
     hashInput = imageName + "Raw Science Image"
     hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
-    return {"_id": hash, "path": path, "type": "Raw Science Image"}
+    return {"_id": hash, "path": path, "type": "Raw Science Image", "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
 
     
     
