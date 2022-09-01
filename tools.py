@@ -343,7 +343,6 @@ def getAllExtractedSpectrum(path):
         return
 
 
-
     def getTable(order, fiber):
         # Try to find order/fiber:
         # First try find correct table at expect location
@@ -485,6 +484,44 @@ def getAllOptimalExtractedSpectrum(path):
 
 
 
+def convertPathToHash(path):
+    """
+    This method converts returns the hash that corresponds to the file at
+    the location of the input path.
+    REMARK: This method uses the marvel database.
+    """
+    dirToDataBase = {"Bias": "BiasImages", "Dark": "DarkImages",
+                     "Etalon": "EtalonImages", "Flat": "FlatImages",
+                     "ScienceFrames": "ScienceImages", "CalibratedScience":
+                     "ScienceImages", "ExtractedOrders": "ExtractedOrders",
+                     "MasterBias": "BiasImages", "MasterDark": "DarkImages",
+                     "MasterFlat": "FlatImages", 
+                     "OptimalExtraction": "OptimalExtracted"}
+
+    # 1. Make sure we have a path for which the file exist and that path refers
+    # to the absolute path
+    if not os.path.isfile(path):
+        raise Exception(f'The file at path {path} is not found.')
+
+    if not os.path.isabs(path): 
+        path = os.path.abspath(path)
+
+    # 2. Check that we can figure out what kind of file we have from the path
+    # of the file
+    parentDir = path.split("/")[-2]
+    if not parentDir in dirToDataBase.keys():
+        raise Exception('Not able to derive the type of file from ' +
+                        f'the {parentDir} directory')
+
+    # 3. Check in the database if we can find the relavant file
+    image = db[dirToDataBase[parentDir]].find({"path": path})
+    hashes = [ x["_id"] for x in image]
+
+    if len(hashes) == 0:
+        raise Exception(f'File {path} is not found in the database')
+    
+    # 4. Return the hash from the database
+    return hashes[0]
 
 
 
