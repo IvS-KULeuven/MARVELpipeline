@@ -47,7 +47,6 @@ class PipelineComponent():
 
     def convertInputToHash(self, input):
         input = [tools.convertPathToHash(x) if os.path.isfile(x) else x for x in input]
-        print(input)
         return input
 
 
