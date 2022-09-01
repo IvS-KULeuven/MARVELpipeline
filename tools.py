@@ -60,9 +60,8 @@ def addToDataBase(dict, overWrite=False):
                   "Optimal Extracted Science" : "OptimalExtracted", "Optimal Extracted Etalon" : "OptimalExtracted"}
     typeImage  = dict["type"]
     collection = db[images[typeImage]]
-    isInCollection = np.all([x == dict for x in collection.find({"_id" : dict["_id"]})])
-    
-    if not isInCollection:
+    isInCollection = [x == dict for x in collection.find({"_id" : dict["_id"]})]
+    if (len(isInCollection) == 0):
         collection.insert_one(dict)
 
     elif overWrite:

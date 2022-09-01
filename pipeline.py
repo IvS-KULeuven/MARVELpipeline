@@ -9,6 +9,7 @@ from astropy.io import fits
 import tools
 import numpy as np
 import hashlib
+from datetime import datetime
 
 client = MongoClient()
 
@@ -81,7 +82,9 @@ class PipelineComponent():
         hdu.writeto(path, overwrite=True)
 
         # Add Master Bias Image to database
-        dict = {"_id" : hash, "path" : path, "type" : self.type}
+        currentTime = datetime.now()
+        dict = {"_id" : hash, "path" : path, "type" : self.type, "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
+
         tools.addToDataBase(dict, overWrite = True)
 
 
