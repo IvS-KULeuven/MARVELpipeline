@@ -38,11 +38,17 @@ class PipelineComponent():
             raise Exception("MARVEL database does not exist.")
         else:
             self.db = client["databaseMARVEL"]
+            input = self.convertInputToHash(input)
             if (self.checkInput(input)):
                 self.input = input
             else:
                 raise Exception("Input is not correct format")
 
+
+    def convertInputToHash(self, input):
+        input = [tools.convertPathToHash(x) if os.path.isfile(x) else x for x in input]
+        print(input)
+        return input
 
 
     def checkInput(self, input):
@@ -74,7 +80,6 @@ class PipelineComponent():
 
         hdu = fits.PrimaryHDU(image, header=hdr)
         hdu.writeto(path, overwrite=True)
-
 
         # Add Master Bias Image to database
         dict = {"_id" : hash, "path" : path, "type" : self.type}
