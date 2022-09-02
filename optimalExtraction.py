@@ -101,7 +101,8 @@ class OptimalExtraction(PipelineComponent):
         end   = time.time()
         print("\tTime: ", end-start, "s")
 
-    
+        self.stripNanValues(otSpectra, oSpectra, yPixels, xPixels)
+
         if self.debug > 2:
             #debug.plotOrdersWithSlider(fSpectra, xValues=xPixels, yMax=5000)
             debug.plotOrdersWithSlider(otSpectra, xValues=xPixels, yMax=3000)
@@ -113,6 +114,12 @@ class OptimalExtraction(PipelineComponent):
             return otSpectra, xPixels, yPixels
         else:
             return None
+        
+
+
+    def stripNanValues(self, otSpectra, oSpectra, yPixels, xPixels):
+        mask = ~np.isnan(oSpectra)
+
         
 
 
