@@ -3,6 +3,7 @@ from pymongo import MongoClient
 from numba import njit, jit, vectorize, prange
 from tqdm import tqdm
 from astropy.io import fits
+from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 import hashlib
@@ -100,7 +101,8 @@ class OptimalExtraction(PipelineComponent):
         end   = time.time()
         print("\tTime: ", end-start, "s")
 
-    
+        self.stripNanValues(otSpectra, oSpectra, yPixels, xPixels)
+
         if self.debug > 2:
             #debug.plotOrdersWithSlider(fSpectra, xValues=xPixels, yMax=5000)
             debug.plotOrdersWithSlider(otSpectra, xValues=xPixels, yMax=3000)
@@ -112,6 +114,12 @@ class OptimalExtraction(PipelineComponent):
             return otSpectra, xPixels, yPixels
         else:
             return None
+        
+
+
+    def stripNanValues(self, otSpectra, oSpectra, yPixels, xPixels):
+        mask = ~np.isnan(oSpectra)
+
         
 
 
@@ -171,7 +179,8 @@ class OptimalExtraction(PipelineComponent):
         hdul.writeto(path, overwrite=True)
 
         # Add image to the database
-        dict = {"_id" : hash, "path" : path, "type" : self.type}
+        currentTime = datetime.now()
+        dict = {"_id" : hash, "path" : path, "type" : self.type, "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
         tools.addToDataBase(dict, overWrite = True)
         
 

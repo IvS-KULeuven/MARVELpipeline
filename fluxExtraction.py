@@ -5,6 +5,7 @@ import tools
 from numba import njit, jit, vectorize
 import matplotlib.pyplot as plt
 from astropy.io import fits
+from datetime import datetime
 import hashlib
 
 class FluxExtraction(PipelineComponent):
@@ -198,7 +199,8 @@ class FluxExtraction(PipelineComponent):
         hdul.writeto(path, overwrite=True)
 
         # Add image to the database
-        dict = {"_id" : hash, "path" : path, "type" : self.type}
+        currentTime = datetime.now()
+        dict = {"_id" : hash, "path" : path, "type" : self.type, "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
         tools.addToDataBase(dict, overWrite = True)        
 
 
