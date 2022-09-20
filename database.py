@@ -1,5 +1,3 @@
-# This function creates/resets a database from the raw input images.
- 
 
 from pymongo import MongoClient
 import hashlib
@@ -8,23 +6,58 @@ from glob import glob
 from datetime import datetime
 
 
+def createHash(imageName, imageType):
+    """
+    Create a SHA256 hash of an image based on the filename and the image type.
+    
+    Input:
+        imageName: base filename of the image, without extension. E.g. "science_0004"
+        imageType: string containing the image type. Supported image types are
+                   "Raw Bias Image", "Raw Dark Image", "Raw Flat Image", "Raw Etalon Image", 
+                   and "Raw Science Image".
 
-def createDataBase(makeIfExist=False):
+    Output:
+        hash: string containing the SHA256 hash
+    """
+    supportedImageTypes = ["Raw Bias Image", "Raw Dark Image", "Raw Flat Image", "Raw Etalon Image", "Raw Science Image"]
+    if imageType not in supportedImageTypes:
+        print(f"Error: '{imageType}' is not one of the supported image types")
+        exit(1)
 
+    hashInput = imageName + imageType
+    hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
+    return hash
+
+
+
+
+
+def initializeDataBaseWithRawImages(clearIfExist=False):
+    """ 
+    Create and initialize the MongoDB database with the information on the raw CCD fits images.
+    Only information is stored, not the actual fits files.
+    It is assumed that a MongoDB daemon is running, e.g. execute "mongod --dbpath ~/MongoDB" on the prompt.
+
+    Input:
+        clearIfExist: clear all existing information if the database was already previously initialized.
+
+    Output:
+        None
+    """
     client = MongoClient()
 
     # Check if database already exist
 
-    if ("databaseMARVEL" in client.list_database_names() and not makeIfExist):
+    if ("databaseMARVEL" in client.list_database_names() and not clearIfExist):
         print("There already exist a Database for MARVEL. To explitly remake the database run:")
-        print("createDataBase(makeIfExist=True)")
+        print("createDataBase(clearIfExist=True)")
         return
 
     db = client["databaseMARVEL"]
 
-    # If database already exist, we make sure it is empty before we start 
+    # If database already exist, make sure it is emptied before we start 
 
-    if ("databaseMARVEL" in client.list_database_names() and makeIfExist):
+    if ("databaseMARVEL" in client.list_database_names() and clearIfExist):
         print("Clearing existing database")
         db["BiasImages"].drop()
         db["DarkImages"].drop()
@@ -33,104 +66,28 @@ def createDataBase(makeIfExist=False):
         db["EtalonImages"].drop()
 
     pathToRaw  = os.getcwd() + "/Data/RawData/"
-    pathToPros = os.getcwd() + "/Data/ProcessedData/Data/"
+    print(f"Searching for raw images in {pathToRaw}")
 
-    # Add the Bias images to the DataBase
+    for imageType in ["Bias", "Dark", "Flat", "Etalon", "Science"]:
+        if imageType == "Science":
+            imagePaths = glob(pathToRaw + "/ScienceFrames/*.fits")
+        else:
+            imagePaths = glob(pathToRaw + f"/CalibrationImages/{imageType}/*.fits")
 
-    biasImageDirectory = pathToRaw + "CalibrationImages/Bias"
-    biasImagePaths = glob(biasImageDirectory + "/*.fits")
-    print("Found {0} bias frames to be inserted in MongoDB".format(len(biasImagePaths)))
-    if len(biasImagePaths) != 0:
-        biasImageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in biasImagePaths]
-        biasCollection = db["BiasImages"]
-        biasImages = [addBiasImage(biasImageBaseNames[n], biasImagePaths[n], biasCollection) for n in range(len(biasImagePaths))]
-        biasCollection.insert_many(biasImages)
-
-
-    # Add the Dark images to the DataBase
-    
-    darkImageDirectory = pathToRaw + "CalibrationImages/Dark"
-    darkImagePaths = glob(darkImageDirectory + "/*.fits")
-    print("Found {0} dark frames to be inserted in MongoDB".format(len(darkImagePaths)))
-    if len(darkImagePaths) != 0:
-        darkImageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in darkImagePaths]
-        darkCollection = db["DarkImages"]
-        darkImages = [addDarkImage(darkImageBaseNames[n], darkImagePaths[n], darkCollection) for n in range(len(darkImagePaths))]
-        darkCollection.insert_many(darkImages)
-
-    # Add the Flat images to the Database
-
-    flatImageDirectory = pathToRaw + "CalibrationImages/Flat"
-    flatImagePaths = glob(flatImageDirectory + "/*.fits")
-    print("Found {0} flat frames to be inserted in MongoDB".format(len(flatImagePaths)))
-    if len(flatImagePaths) != 0:
-        flatImageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in flatImagePaths]
-        flatCollection = db["FlatImages"]
-        flatImages = [addFlatImage(flatImageBaseNames[n], flatImagePaths[n], flatCollection) for n in range(len(flatImagePaths))]
-        flatCollection.insert_many(flatImages)
-
-    # Add the Etalon Images to the DataBase
-    etalonImageDirectory = pathToRaw + "CalibrationImages/Etalon"
-    etalonImagePaths = glob(etalonImageDirectory + "/*.fits")
-    print("Found {0} etalon frames to be inserted in MongoDB".format(len(etalonImagePaths)))
-    if len(etalonImagePaths) != 0:
-        etalonImageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in etalonImagePaths]
-        etalonCollection = db["EtalonImages"]
-        etalonImages = [addEtalonImage(etalonImageBaseNames[n], etalonImagePaths[n], etalonCollection) for n in range(len(etalonImagePaths))]
-        etalonCollection.insert_many(etalonImages)
-
-    # Add the Science images to the DataBase
-
-    scienceImageDirectory = pathToRaw + "ScienceFrames"
-    scienceImagePaths = glob(scienceImageDirectory + "/*.fits")
-    print("Found {0} science frames to be inserted in MongoDB".format(len(scienceImagePaths)))
-    if len(scienceImagePaths) != 0:
-        scienceImageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in scienceImagePaths]
-        scienceCollection = db["ScienceImages"]
-        scienceImages = [addScienceImage(scienceImageBaseNames[n], scienceImagePaths[n], scienceCollection) for n in range(len(scienceImagePaths))]
-        scienceCollection.insert_many(scienceImages)
-
-
-currentTime = datetime.now()
-def addBiasImage(imageName, path, collection):
-    """
-    Does something for which a doc string is required
-    """
-    hashInput = imageName + "Raw Bias Image"
-    hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
-    return {"_id" : hash, "path" : path, "type" : "Raw Bias Image", "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
-
-
-
-def addDarkImage(imageName, path, collection):
-    hashInput = imageName + "Raw Dark Image"
-    hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
-    return {"_id": hash, "path": path, "type": "Raw Dark Image", "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
-
-
-
-def addFlatImage(imageName, path, collection):
-    hashInput = imageName + "Raw Flat Image"
-    hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
-    return {"_id": hash, "path": path, "type": "Raw Flat Image", "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
-
-
-
-def addEtalonImage(imageName, path, collection):
-    hashInput = imageName + "Raw Etalon Image"
-    hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
-    return {"_id": hash, "path": path, "type": "Raw Etalon Image", "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
-
-
-
-def addScienceImage(imageName, path, collection):
-    hashInput = imageName + "Raw Science Image"
-    hash = hashlib.sha256(bytes(hashInput, 'utf-8')).hexdigest()
-    return {"_id": hash, "path": path, "type": "Raw Science Image", "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
-
-    
-    
-
+        Nimages = len(imagePaths)
+        print(f"Found {Nimages} {imageType} frames to be inserted in MongoDB")
+        if len(imagePaths) != 0:
+            imageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in imagePaths]
+            print(imageBaseNames)
+            collection = db[imageType+"Images"]
+            hashes = [createHash(imageBaseNames[n], f"Raw {imageType} Image") for n in range(Nimages)]
+            currentTime = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+            imageInfo = [{"_id":          hashes[n], 
+                          "path":         imagePaths[n],
+                          "type":         f"Raw {imageType} Image",
+                          "date_created": currentTime
+                        } for n in range(Nimages)]
+            collection.insert_many(imageInfo)
 
 
 
@@ -138,17 +95,5 @@ def addScienceImage(imageName, path, collection):
 
 if __name__ == "__main__":
 
-    createDataBase(makeIfExist=True)
+    initializeDataBaseWithRawImages(clearIfExist=True)
     
-    
-    
-
-
-
-
-"""
-NOTES: 
-1. We should check what happens when we add things that are already in the collections. Are the duplicated or not? 
-2. We should generate a _uniqe_ hash code, that is reproducible (stored in _id)
-3. What information should Dark and Bias images have: - date 
-"""
