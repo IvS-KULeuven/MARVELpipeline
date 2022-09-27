@@ -16,24 +16,25 @@ client = MongoClient()
 
 
 """
-MARVEL pipeline building blocks
+MARVEL pipeline building components
 
-The PipelineComponent represents one isolated block of the pipeline. Every end product of a block has a hash code associated 
-to it, which is also added to the MARVEL database. A block is created using a list a hashes that represents other block-outputs
- as input. PipelineComponents are isolated blocks in that they do not depend on other components. This implies that two blocks 
+The PipelineComponent represents one isolated component of the pipeline. Every end product of a component has a hash code associated 
+to it, which is also added to the MARVEL database. A component is created using a list a hashes that represents other component-outputs
+ as input. PipelineComponents are isolated components in that they do not depend on other components. This implies that two components 
 that have the same input should also have the same output (within the same version of the pipeline).
 
-Once we have created a block the output is generated and added to the MARVEL database by running the runComponent() method on a PipelineComponent instance. 
+Once we have created a component the output is generated and added to the MARVEL database by running the runComponent() method on a 
+PipelineComponent instance. 
 
 Example:
-    masterBlock = MasterBias(hash_list)
-    masterBlock.run()
+    masterComponent = MasterBias(hash_list)
+    masterComponent.run()
 """
 
 
 class PipelineComponent():
 
-    def __init__(self, input):
+    def __init__(self, input):     # TODO: change 'input' in a more descriptive name. Is it a list, a string, a path?
 
         if not "databaseMARVEL" in client.list_database_names():
             raise Exception("MARVEL database does not exist.")
@@ -55,11 +56,10 @@ class PipelineComponent():
         return True
 
 
-
     def run(self):
         img = self.make()
         self.saveImage(img)
-        print("Block Generated!")
+        print("Component finished!")
 
 
 
@@ -368,11 +368,11 @@ class CalibratedScienceFrames(PipelineComponent):
 
 
 """
-Whenever we want to execute a block from the pipeline.
+Whenever we want to execute a component from the pipeline.
 1. We give input as a list of hashes
 2. We use the DB in order to check that the format of these files is correct
 3. From the DB we obtain the path to the files
-4. Every "type" Block will be its own subclass of pipelineBlock
+4. Every "type" Component will be its own subclass of pipelineComponent
 ==============================================================================
 => Check that master dark works well
 => Master Dark and scaled to exposure time of the SF

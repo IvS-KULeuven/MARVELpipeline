@@ -13,7 +13,11 @@ from datetime import datetime
 import os
 
 
-class FlatOrderExtraction(PipelineComponent):
+
+
+
+
+class OrderMaskExtraction(PipelineComponent):
     """
     DESCRIPTION: This module identifies the correct pixels and their
                  corresponding flux values for every fiber and order.
@@ -612,10 +616,8 @@ def getSignalToNoise(signal, background, Npixels):
 if __name__ == "__main__":
 
     masterflat_hash = ["641f2b56be1a8a86848c29abbd81858ddd15e42359ae84473050962efb9dea06"]
-    fluxExtraction = FlatOrderExtraction(masterflat_hash, debug=1)
-
-
-    fluxExtraction.run()
+    maskExtractor = OrderMaskExtraction(masterflat_hash, debug=1)
+    maskExtractor.run()
 
 
 
