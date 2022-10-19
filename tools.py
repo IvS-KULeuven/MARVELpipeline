@@ -26,7 +26,6 @@ def getImages(paths):
 
 
 def getImage(path):
-
     hdul = fits.open(path)
     return hdul[0].data
 
@@ -48,25 +47,38 @@ def getDarkRate(path):
 
 
 
-def addToDataBase(dict, overWrite=False):
-    # We should have proper error catching for:
-    # 1. We want to add somthing that already exist
-    # 2. image is not in the dictornary
-    # 3. Check that dict is in the right format 
+def addToDataBase(metaData, db, overWrite=False):
+    """
+    Add the input dict to database object
+
+    Input:
+        metaData:  dictionary containing the metadata that we want to add to the database image
+        db:        database image to which we add metadata
+        overWrite: bool. If True, we overwrite the row if a row already exists with the same "_id"
+
+    Output:
+        None
+
+    We should have proper error catching for:
+    1. We want to add somthing that already exist
+    2. image is not in the dictornary
+    3. Check that dict is in the right format 
+    """
 
     images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages", 
-                  "Calibrated Science Image" : "ScienceImages", "Extracted Flat Orders" : "ExtractedOrders",   
+                  "Calibrated Science Image" : "ScienceImages", "Calibrated Etalon Image":"EtalonImages", "Extracted Flat Orders" : "ExtractedOrders",   
                   "Extracted Science Orders" : "ExtractedOrders","Extracted Etalon Orders": "ExtractedOrders", 
                   "Optimal Extracted Science" : "OptimalExtracted", "Optimal Extracted Etalon" : "OptimalExtracted"}
-    typeImage  = dict["type"]
+    typeImage  = metaData["type"]
     collection = db[images[typeImage]]
-    isInCollection = [x == dict for x in collection.find({"_id" : dict["_id"]})]
-    if (len(isInCollection) == 0):
-        collection.insert_one(dict)
+    isInCollection = collection.find_one({"_id": metaData["_id"]})
+
+    if (isInCollection is None):
+        collection.insert_one(metaData)
 
     elif overWrite:
-        collection.delete_many({"_id": dict["_id"]})
-        collection.insert_one(dict)
+        collection.delete_many({"_id": metaData["_id"]})
+        collection.insert_one(metaData)
     else:
         print("Document is already in database")
     
@@ -235,7 +247,9 @@ def checkInputExtractedData(path, order, fiber):
 
     # Try to find order/fiber:
     # First try find correct table at expect location
-    idx = (order-33)*5 + (fiber)
+    fibers, orders = getFibersAndOrders(path)
+    idx = (order-np.min(orders))*5 + (fiber)
+
     if ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber)):
         table = hdul[idx]
     else:
@@ -261,6 +275,7 @@ def getExtractedPosition(path, order, fiber):
 
     # First we check that the input that is provided is sensible
     table = checkInputExtractedData(path, order, fiber)
+    
     # If it is sensible, we return the Positions
     if table is None:
         return
@@ -345,7 +360,7 @@ def getAllExtractedSpectrum(path):
     def getTable(order, fiber):
         # Try to find order/fiber:
         # First try find correct table at expect location
-        idx = (order-33)*5 + (fiber)
+        idx = (order-np.min(orders))*5 + (fiber)
         if ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber)):
             table = hdul[idx]
 
@@ -436,7 +451,7 @@ def getAllOptimalExtractedSpectrum(path):
     def getTable(order, fiber):
         # Try to find order/fiber:
         # First try find correct table at expect location
-        idx = (order-33)*5 + (fiber)
+        idx = (order-np.min(orders))*5 + (fiber)
         if ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber)):
             table = hdul[idx]
 
@@ -483,7 +498,7 @@ def getAllOptimalExtractedSpectrum(path):
 
 
 
-def convertPathToHash(path):
+def convertPathToHash(path, db):
     """
     This method converts returns the hash that corresponds to the file at
     the location of the input path.
@@ -494,7 +509,7 @@ def convertPathToHash(path):
                      "ScienceFrames": "ScienceImages", "CalibratedScience":
                      "ScienceImages", "ExtractedOrders": "ExtractedOrders",
                      "MasterBias": "BiasImages", "MasterDark": "DarkImages",
-                     "MasterFlat": "FlatImages", 
+                     "MasterFlat": "FlatImages",
                      "OptimalExtraction": "OptimalExtracted"}
 
     # 1. Make sure we have a path for which the file exist and that path refers
@@ -502,7 +517,7 @@ def convertPathToHash(path):
     if not os.path.isfile(path):
         raise Exception(f'The file at path {path} is not found.')
 
-    if not os.path.isabs(path): 
+    if not os.path.isabs(path):
         path = os.path.abspath(path)
 
     # 2. Check that we can figure out what kind of file we have from the path
@@ -513,14 +528,15 @@ def convertPathToHash(path):
                         f'the {parentDir} directory')
 
     # 3. Check in the database if we can find the relavant file
-    image = db[dirToDataBase[parentDir]].find({"path": path})
-    hashes = [ x["_id"] for x in image]
 
-    if len(hashes) == 0:
+    image = db[dirToDataBase[parentDir]].find_one({"path": path})
+
+    if image is None:
         raise Exception(f'File {path} is not found in the database')
-    
+
     # 4. Return the hash from the database
-    return hashes[0]
+
+    return image["_id"]
 
 
 

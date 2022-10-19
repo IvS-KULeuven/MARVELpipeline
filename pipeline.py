@@ -40,7 +40,7 @@ class PipelineComponent():
         masterComponent.run()
     """
 
-    def __init__(self, database, **inputHashes):
+    def __init__(self, database=None, **inputHashes):
         """
         Initializes the component of the pipeline. This functions is called after a component
         is generated. This checks that the input hashes are sensible.
@@ -62,7 +62,7 @@ class PipelineComponent():
         if not (self.checkSanityOfInput(**inputHashes)):
             raise Exception("Input is not correct format")
         self.inputHashes = inputHashes
-            
+
 
 
 
@@ -83,7 +83,7 @@ class PipelineComponent():
         """
 
         for imageType in inputHash:
-            
+
             # If there are multiple hashes corresponding to one imagetype
 
             if type(inputHash[imageType]) == list:
@@ -102,7 +102,7 @@ class PipelineComponent():
         # If we get here, the hashes were found at the correct location
 
         return True
-    
+
 
 
 
@@ -119,7 +119,7 @@ class PipelineComponent():
         Output:
             inputHashes: inputType/hash
         """
-    
+
         for key, value in inputHashes.items():
 
             if type(value) == list:
@@ -166,7 +166,7 @@ class PipelineComponent():
 
 class MasterBias(PipelineComponent):
 
-    def __init__(self, database, **input):
+    def __init__(self, database=None, **input):
         super().__init__(database, **input)
         if self.checkSanityOfinputTypes(**input):
 
@@ -203,9 +203,9 @@ class MasterBias(PipelineComponent):
             return False
 
         # If we get here, the input is sane if the hashes correspond to raw Images
-        
+
         return areRawImages
-        
+
 
 
 
@@ -221,7 +221,7 @@ class MasterBias(PipelineComponent):
 
         Output:
             masterBias:     master bias image [ADU]
-        """ 
+        """
 
         # Get all the paths of the files corresponding to these hashes
         paths = [ (self.db["BiasImages"].find_one({"_id": hash}))["path"] for hash in self.rawBiasHashes]
@@ -263,9 +263,9 @@ class MasterBias(PipelineComponent):
 
 class MasterDark(PipelineComponent):
 
-    def __init__(self, database, **darkHashes):
+    def __init__(self, database=None, **darkHashes):
         super().__init__(database, **darkHashes)
-        
+
         if self.checkSanityOfinputTypes(**darkHashes):
 
             self.outputPath = os.getcwd() + "/Data/ProcessedData/MasterDark/"
@@ -304,7 +304,7 @@ class MasterDark(PipelineComponent):
             return False
 
         # If we get here, the input is sane if the hashes correspond to raw Images
-        
+
         return areRawImages
 
 
@@ -312,7 +312,7 @@ class MasterDark(PipelineComponent):
 
 
 
-    
+
     def run(self, outputFileName=None):
         """
         We run through the alghorim to create the master dark image.
@@ -330,7 +330,7 @@ class MasterDark(PipelineComponent):
 
         # Get all the fits files corresponding to these hashes
         darks = tools.getImages(paths)
- 
+
         # Use the image in the fits files, and use mean_combining to obtain the the master image
         masterDark = np.median(darks, axis=0)
 
@@ -367,7 +367,7 @@ class MasterDark(PipelineComponent):
 
 class MasterFlat(PipelineComponent):
 
-    def __init__(self, database, **flatAndBiasHashes):
+    def __init__(self, database=None, **flatAndBiasHashes):
 
         super().__init__(database, **flatAndBiasHashes)
         flatAndBiasHashes = self.inputHashes
@@ -396,7 +396,7 @@ class MasterFlat(PipelineComponent):
         values = list(flatAndBiasHashes.values())
 
         # Check that the keys are of the right format. For a master dark these should only be DarkImages
-        
+
         keysAreCorrect = (len(types)) == 2 and ("BiasImages" in types) and ("FlatImages" in types)
 
         if keysAreCorrect:
@@ -433,7 +433,7 @@ class MasterFlat(PipelineComponent):
 
         Output:
             masterFlat:     master flat image [ADU]
-        """ 
+        """
 
         # Get all the paths of the files corresponding to these hashes
         flatPaths = [ (self.db["FlatImages"].find_one({"_id": hash}))["path"] for hash in self.rawFlatHashes ]
@@ -475,7 +475,7 @@ class MasterFlat(PipelineComponent):
         """
         hash = hashlib.sha256(bytes("".join(self.rawFlatHashes) + self.masterBiasHash, 'utf-8')).hexdigest()
         return hash
-        
+
 
 
 
@@ -486,7 +486,7 @@ class MasterFlat(PipelineComponent):
 
 class CalibratedScienceFrames(PipelineComponent):
 
-    def __init__(self, database, **inputScienceHashes):
+    def __init__(self, database=None, **inputScienceHashes):
         super().__init__(database, **inputScienceHashes)
         inputScienceHashes = self.inputHashes
 
@@ -502,7 +502,6 @@ class CalibratedScienceFrames(PipelineComponent):
 
 
 
-    
 
 
 
@@ -538,7 +537,7 @@ class CalibratedScienceFrames(PipelineComponent):
             return False
 
         return isMasterDarkImage and isMasterBiasImage and isRawScienceImage
-            
+
 
 
 
@@ -562,7 +561,7 @@ class CalibratedScienceFrames(PipelineComponent):
         darkPath    = self.db["DarkImages"].find_one({"_id": self.masterDarkHash })["path"]
         biasPath    = self.db["BiasImages"].find_one({"_id": self.masterBiasHash })["path"]
         sciencePath = self.db["ScienceImages"].find_one({"_id": self.rawScienceHash})["path"]
-            
+
         # Get all the fits files corresponding to these hashes
         dark    = tools.getImage(darkPath)
         bias    = tools.getImage(biasPath)
@@ -589,7 +588,6 @@ class CalibratedScienceFrames(PipelineComponent):
 
 
 
-        
     def getHashOfOutputfile(self):
         """
         The function returns the hash id for the output file.
@@ -601,8 +599,6 @@ class CalibratedScienceFrames(PipelineComponent):
         combinedHashes = self.masterDarkHash + self.masterBiasHash + self.rawScienceHash
         hash = hashlib.sha256(bytes(combinedHashes, 'utf-8')).hexdigest()
         return hash
-        
-            
 
 
 
@@ -628,7 +624,7 @@ class CalibratedEtalonImage(PipelineComponent):
     its minimum value so that the new minimum is 0.
     """
 
-    def __init__(self, database, **inputEtalonHashes):
+    def __init__(self, database=None, **inputEtalonHashes):
         """
         Initialize the calibrated etalon image.
         """
@@ -749,12 +745,6 @@ class CalibratedEtalonImage(PipelineComponent):
         return hash
 
 
-        
-
-
-
-        
-        
 
 
 
@@ -767,7 +757,9 @@ class CalibratedEtalonImage(PipelineComponent):
 
 
 
-               
+
+
+
 
 
 
@@ -804,7 +796,7 @@ if __name__ == "__main__":
                        '53fa9f81ffba0b3916bcb90603e49becb4e77eef0e73d6f8073132d8b585c703']
 
     masterB1 = MasterBias(db, BiasImages=raw_bias_hashes)
-    masterB2 = MasterBias(None, BiasImages=raw_bias_hashes)
+    masterB2 = MasterBias(BiasImages=raw_bias_hashes)
     masterB1.run("testsFBias.fits")
     masterB2.run("testsDBias.fits")
     print("")
@@ -815,7 +807,7 @@ if __name__ == "__main__":
                         '649d0b67d7be70ef286d86c9629bd017716cd3667fde46beeab35dcd27a98f0c',
                         'f53e4b7837347cdcddf0bf41a1cd5ac40f7594c4561ac8b71b08fb4da541f1f5']
     masterD1 = MasterDark(db, DarkImages=raw_dark_hashes)
-    masterD2 = MasterDark(None, DarkImages=raw_dark_hashes)
+    masterD2 = MasterDark(DarkImages=raw_dark_hashes)
     masterD1.run("testFDark.fits")
     masterD2.run("testDDark.fits")
     print("")
@@ -831,8 +823,8 @@ if __name__ == "__main__":
     master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
     master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
     masterF1 = MasterFlat(db, FlatImages=raw_flat_hashes, BiasImages=master_bias_pathF)
-    masterF2 = MasterFlat(None, FlatImages=raw_flat_hashes, BiasImages=master_bias_pathD)
-    
+    masterF2 = MasterFlat(FlatImages=raw_flat_hashes, BiasImages=master_bias_pathD)
+
     masterF1.run("testsFFlat.fits")
     masterF2.run("testsDFlat.fits")
 
@@ -841,20 +833,20 @@ if __name__ == "__main__":
     rawScienceHash = "d99dff18a15ab83b51af4ecdca9dc99c2069bdc17eb6a5d1cdb67e7e86c92e4a"
 
     master_dark_pathF = "Data/ProcessedData/MasterDark/testFDark.fits"
-    master_dark_pathD = "Data/ProcessedData/MasterDark/testDDark.fits"    
+    master_dark_pathD = "Data/ProcessedData/MasterDark/testDDark.fits"
 
     master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
-    master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"    
+    master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
 
 
     print(" ")
     calibration1 = CalibratedScienceFrames(db, ScienceImages=rawScienceHash,
                                               DarkImages=master_dark_pathF,
                                               BiasImages=master_bias_pathF)
-    calibration2 = CalibratedScienceFrames(None, ScienceImages=rawScienceHash,
-                                              DarkImages=master_dark_pathD,
-                                              BiasImages=master_bias_pathD)
-    
+    calibration2 = CalibratedScienceFrames(ScienceImages=rawScienceHash,
+                                           DarkImages=master_dark_pathD,
+                                           BiasImages=master_bias_pathD)
+
     calibration1.run("testFScience.fits")
     calibration2.run("testDScience.fits")
 
@@ -863,18 +855,18 @@ if __name__ == "__main__":
     raw_etalon_hash  = "e0ac021d19ce5520d0ba92df1d5aadf6541f35f76a84121576828287937ca508"
 
     master_dark_pathF = "Data/ProcessedData/MasterDark/testFDark.fits"
-    master_dark_pathD = "Data/ProcessedData/MasterDark/testDDark.fits"    
+    master_dark_pathD = "Data/ProcessedData/MasterDark/testDDark.fits"
 
     master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
-    master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"    
+    master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
 
     print(" ")
     calibratedEtalon1 = CalibratedEtalonImage(db, EtalonImages=raw_etalon_hash,
                                                  DarkImages=master_dark_pathF,
                                                  BiasImages=master_bias_pathF)
-    calibratedEtalon2 = CalibratedEtalonImage(None, EtalonImages=raw_etalon_hash,
-                                                 DarkImages=master_dark_pathD,
-                                                 BiasImages=master_bias_pathD)
+    calibratedEtalon2 = CalibratedEtalonImage(EtalonImages=raw_etalon_hash,
+                                              DarkImages=master_dark_pathD,
+                                              BiasImages=master_bias_pathD)
     calibratedEtalon1.run("testFEtalon.fits")
     calibratedEtalon2.run("testDEtalon.fits")
 

@@ -1,16 +1,22 @@
 import time
-from pipeline import PipelineComponent
-from debug import plotOrdersWithSlider, plotGIF
-import numpy as np
-import tools
-import matplotlib.pyplot as plt 
-from scipy import ndimage
-from tqdm import tqdm
-from numba import njit, jit, vectorize
-import hashlib
-from astropy.io import fits
-from datetime import datetime
+
 import os
+import hashlib
+import tools
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+from astropy.io import fits
+from datetime   import datetime
+from database   import DatabaseFromLocalFiles
+from numba      import njit, jit, vectorize
+from scipy      import ndimage
+from tqdm       import tqdm
+from pipeline   import PipelineComponent
+from debug      import plotOrdersWithSlider, plotGIF
+
 
 
 
@@ -35,37 +41,61 @@ class OrderMaskExtraction(PipelineComponent):
        fit and save x-values, y-values and flux values.
     """
 
-    def __init__(self, input, debug=0):
+    def __init__(self, database=None, debug=0, **input):
         """
         Initialize the componont
         """
-        super().__init__(input)
-        self.col = self.setCollection(input)
-        self.debug = debug
-        self.outputPath = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/"
+
+        super().__init__(database, **input)
+        input = self.inputHashes
+
+        if self.checkSanityOfInputTypes(**input):
+
+            self.outputPath = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/"
+            self.type = "Extracted Flat Orders"
+            self.masterFlatHash = input["FlatImages"]
+            self.debug = debug
+        else:
+            raise Exception("Error: The input hashes do not match the correct type: Aborting")
+            exit(1)
 
         if not os.path.isdir(self.outputPath):
             os.mkdir(self.outputPath)
-
-        self.type = "Extracted Flat Orders"
-
+        print("Done")
 
 
-    def setCollection(self, input):
+
+
+
+
+
+    def checkSanityOfInputTypes(self, **input):
         """
-        Where in the database we should look for the input hashes
+        This function is ran after we run checkSanityOfInputHashes. This function checks the the
+        input types that are given is able to generate a mask extracted output file.
         """
-        return self.db["FlatImages"]
+
+        types  = list(input.keys())
+        values = list(input.values())
+
+        # Check that the keys are of the right format. For order mask extraction this should be FlatImages.
+
+        keysAreCorrect = (len(types) == 1) and types[0] == "FlatImages"
+        valuesAreCorrect = (len(values) == 1) and isinstance(values[0], str)
+
+        if keysAreCorrect and valuesAreCorrect:
+            isMasterImage = self.db[types[0]].find_one({"_id": values[0]})["type"] == "Master Flat Image"
+        else:
+            return False
+
+        return isMasterImage
 
 
 
-    def checkInput(self, input):
-        isCorrect = []
-        collection = self.db["FlatImages"]
-        for hash in input:
-            instances = collection.find({"_id" : hash})
-            isCorrect.append(np.all([( x["type"] == "Master Flat Image") for x in instances]))
-        return np.all(isCorrect)
+
+
+
+
 
 
 
@@ -73,12 +103,11 @@ class OrderMaskExtraction(PipelineComponent):
         """
         Runs the algorithm described after the class definition.
         """
-        # 1. We should get the image
-        for hash in self.input:
-            instances = self.col.find({"_id": hash})
-            paths = [ x["path"] for x in instances ]
-        image = tools.getImage(paths[0]).astype('float64')
 
+        # get the path to the master flat image
+        path = self.db["FlatImages"].find_one({"_id": self.masterFlatHash})["path"]
+        image = tools.getImage(path)
+        
         # 2. Locate the orders on the return a polynomial fit of them
         if (self.debug > 2):
             print("Find the stripes:")
@@ -374,11 +403,10 @@ def extractStripes(image, fiber_indexes, order_indexes):
     
     nRow, nCol = image.shape
     columns    = np.repeat(np.arange(nRow), nCol).reshape((nRow, nCol))
-    for o in np.arange(33, np.max(order_indexes)+1):
+    order_min  = np.sort(np.unique(order_indexes))[1]
+    for o in np.arange(order_min, np.max(order_indexes)+1):
         order_mask = order_indexes == o
-
         for f in np.arange(1, np.max(fiber_indexes[order_mask])+1):
-
             fiber_mask = fiber_indexes == f
             combined_mask = fiber_mask * order_mask
             xValues, yValues, flux = extractSingleStripe2(image, combined_mask, columns)
@@ -615,9 +643,17 @@ def getSignalToNoise(signal, background, Npixels):
 
 if __name__ == "__main__":
 
-    masterflat_hash = ["641f2b56be1a8a86848c29abbd81858ddd15e42359ae84473050962efb9dea06"]
-    maskExtractor = OrderMaskExtraction(masterflat_hash, debug=1)
+    db = DatabaseFromLocalFiles("pipelineDatabase.txt")
+    print("")
+
+    masterflat_hash = "641f2b56be1a8a86848c29abbd81858ddd15e42359ae84473050962efb9dea06"
+    masterflat_path = "Data/ProcessedData/MasterFlat/testsFFlat.fits"
+
+    maskExtractor = OrderMaskExtraction(db, debug=1, FlatImages=masterflat_path)
     maskExtractor.run()
+
+
+
 
 
 
