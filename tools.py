@@ -512,7 +512,7 @@ def convertPathToHash(path, db):
     dirToDataBase = {"Bias": "BiasImages", "Dark": "DarkImages",
                      "Etalon": "EtalonImages", "Flat": "FlatImages",
                      "ScienceFrames": "ScienceImages", "CalibratedScience":
-                     "ScienceImages", "ExtractedOrders": "ExtractedOrders",
+                     "ScienceImages", "CalibratedEtalon": "EtalonImages", "ExtractedOrders": "ExtractedOrders",
                      "MasterBias": "BiasImages", "MasterDark": "DarkImages",
                      "MasterFlat": "FlatImages",
                      "OptimalExtraction": "OptimalExtracted"}
@@ -552,7 +552,7 @@ def convertPathToHash(path, db):
 
 
 
-    
+
 
 
 

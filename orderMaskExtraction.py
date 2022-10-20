@@ -1,5 +1,4 @@
 import time
-
 import os
 import hashlib
 import tools
@@ -136,7 +135,7 @@ class OrderMaskExtraction(PipelineComponent):
 
         # If required, save to FITS
         if outputFileName is not None:
-            self.saveImage(xCoordinates, yCoordinates, fluxValues, orders, outputFileName)
+            self.saveImageAndAddToDatabase(xCoordinates, yCoordinates, fluxValues, orders, outputFileName)
             print("extracted mask orders saved to fits file")
 
         # That's it!
@@ -250,7 +249,7 @@ class OrderMaskExtraction(PipelineComponent):
 
 
 
-    def saveImage(self, xValues, yValues, flux, orders, outputFileName):
+    def saveImageAndAddToDatabase(self, xValues, yValues, flux, orders, outputFileName):
         """
         Save the image and add to the database.
 
@@ -477,7 +476,7 @@ def extractStripes(image, fiber_indexes, order_indexes):
         - xCoordinates: extracted x-coordinates for every fiber/order [pix]
         - yCoordinates: extracted y-coordinates for every fiber/order [pix]
         - fluxValues:   extracted flux values for every fiber/order   [ADU]
-        - orders:       list with fibers/orders 
+        - orders:       list with fibers/orders
     """
 
     # Initialize the output listst
@@ -569,7 +568,7 @@ def followOrders(max_row_0, dark_column, image):
                      of the image. [pix]
         - dark_column: index of dark pixel that can be used to estimate the
                        background. (needed for estimating the S/N) [pix]
-            
+
         - image: master flat field image [ADU]
     """
 
@@ -631,7 +630,7 @@ def followOrders(max_row_0, dark_column, image):
         if getSignalToNoiseSinglePixel(value[column], dark_value) < 20:
             break
 
-    # Done! 
+    # Done!
     return value, order
 
 
@@ -755,11 +754,5 @@ if __name__ == "__main__":
     maskExtractor2.run("testDMask.fits")
 
     db.saveToFile("pipelineDatabase.txt")
-
-
-
-
-
-
 
 

@@ -1,12 +1,20 @@
-import numpy as np
-import os
-from pipeline import PipelineComponent
-import tools
-from numba import njit, jit, vectorize
-import matplotlib.pyplot as plt
-from astropy.io import fits
-from datetime import datetime
 import hashlib
+import os
+import tools
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from numba      import njit, jit, vectorize
+from astropy.io import fits
+from datetime   import datetime
+from pipeline   import PipelineComponent
+from database   import DatabaseFromLocalFiles
+
+
+
+
+
 
 
 class OrderExtraction(PipelineComponent):
@@ -14,85 +22,89 @@ class OrderExtraction(PipelineComponent):
     Class that performs the extraction of the orders given an image and an order mask.
     """
 
-    def __init__(self, imageHash, extractedType, orderMaskHash, debug=0):
+    def __init__(self, database=None, debug=0, **imageAndMaskHash):
         """
         Initialize the order extraction component
 
         Input:
-            imageHash:      string containing the hashes of the CCD images to process
-            extractedType:  string. Type of the CCD image. Can be either "Science" or "Etalon".
-            orderMaskHash:  string. The hash of the fits file containing the mask of the orders (derived from a flat)
-                            and their derived flux.
-            debug:          0, 1, 2, or 3:  0 meaning no debug output, 3 meaning lots of debug output.
+            database:      if not None, DatabaseFromLocalFiles object to be used as database.
+                           else MongoDB is used as database.
+
+            debug:         0, 1, 2, or 3:  0 meaning no debug output, 3 meaning lots of debug output.
+
+            imageAndMaskHash: hashes of images to be used in the extraction.
+                              Given as ImageType/ImageHash (keyword/argument)
+
 
         Output:
             None
         """
 
-        self.extractedType = extractedType                             # Image type, e.g. "Science" or "Etalon"
-        super().__init__([imageHash, orderMaskHash])                   # Reproducibility: keep track of all hashes used
+        super().__init__(database, **imageAndMaskHash)
+        imageAndMaskHash = self.inputHashes
 
-        isSane = self.checkSanityOfInputHashes(imageHash, extractedType, orderMaskHash)  # will only work after super was initialized
-        if not isSane:
-            print("Input hashes not sane. Aborting.")                  # TODO: better error message
+        if self.checkSanityOfInputTypes(**imageAndMaskHash):
+            self.outputPath = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/"
+            self.outputType = "Extracted " + self.extractedType + " Orders"
+            self.orderMaskHash = imageAndMaskHash["ExtractedOrders"]
+            self.imageHash = imageAndMaskHash[self.extractedType + "Images"]
+            self.debug = debug
+
+        else:
+            raise Exception("Error: The input hashes do not match the correct type: Aborting")
             exit(1)
 
+        # +=============================================================+
         self.imageCollection = self.db[self.extractedType + "Images"]
         self.orderMaskCollection = self.db["ExtractedOrders"]
-        self.imageHash = imageHash
-        self.orderMaskHash = orderMaskHash
-        self.debug = debug
-        self.outputPath = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/"
+        # +=============================================================+
 
         if not os.path.isdir(self.outputPath):
             os.mkdir(self.outputPath)
 
-        self.outputType = "Extracted {} Orders".format(extractedType)
 
 
 
 
 
-
-    def checkSanityOfInputHashes(self, imageHash, imageType, orderMaskHash):
+    def checkSanityOfInputTypes(self, **imageAndMaskHash):
         """
-        Check if the imageHash indeed corresponds to an image, and check if the
-        orderMaskHash indeed corresponds to a fits file containing the order masks.
-
-        Input:
-            imageHash:     string containing the hashes of the images to be order-extracted
-            imageType:     type of the image for which the hash is given.
-                           Can be "Science" or "Etalon".
-            orderMaskHash: hash of the fits file containing the order mask (obtained in a previously
-                           step using a flatfield)
-
-        Output:
-            isSane: boolean. True if both input hashes are sane, False if at least one of the
-                             images is unsane.
+        This function is ran after we run checkSanityOfInputHashes. This function checks the the
+        input types that are given is able to generate a order extracted output file.
         """
 
-        # Check if the CCD image is of the type specified
+        types  = list(imageAndMaskHash.keys())
+        values = list(imageAndMaskHash.values())
 
-        if imageType == "Science":
-            image = self.db["ScienceImages"].find_one({"_id": imageHash})
-            if image["type"] != "Calibrated Science Image":
-                return False
-        elif imageType == "Etalon":
-            image = self.db["EtalonImages"].find_one({"_id": imageHash})
-            if image["type"] != "Calibrated Etalon Image":
-                return False
+        # Check that the keys are of the right format. For order extraction there should be one
+        # extracted flat image and one calibrated etalon or science frame.
 
-        # Check if the orderMaskHash indeed relates to an order mask.
+        hasMask = (len(types) == 2) and ("ExtractedOrders" in types)
+        hasImages = ("ScienceImages" in types) or ("EtalonImages" in types)
+        keysAreCorrect = hasMask and hasImages
 
-        image = self.db["ExtractedOrders"].find_one({"_id": orderMaskHash})
-        if image is None:
+        valuesAreCorrect = isinstance(values[0], str) and isinstance(values[1], str)
+
+
+        # We can set the type of image, e.g. "Science" or "Etalon"
+        if "ScienceImages" in types:
+            self.extractedType = "Science"
+        else:
+            self.extractedType = "Etalon"
+
+        if keysAreCorrect and valuesAreCorrect:
+            hasExtractedFlat = self.db["ExtractedOrders"].find_one({"_id": imageAndMaskHash["ExtractedOrders"]})["type"] == "Extracted Flat Orders"
+
+            imageType = self.extractedType+"Images"
+            hasCalibratedImage = self.db[imageType].find_one({"_id": imageAndMaskHash[imageType]})["type"] == "Calibrated " + self.extractedType + " Image"
+
+            return hasExtractedFlat and hasCalibratedImage
+        else:
             return False
-        elif image["type"] != "Extracted Flat Orders":
-                return False
 
-        # If we reach this point, nothing abnormal was detected.
 
-        return True
+
+
 
 
 
@@ -150,7 +162,7 @@ class OrderExtraction(PipelineComponent):
         Output:
             mask: TODO: describe the structure of the mask dictionary
         """
-        extractedFlatPath = self.orderMaskCollection.find_one({"_id" : orderMaskHash})["path"]
+        extractedFlatPath = self.db["ExtractedOrders"].find_one({"_id" : self.orderMaskHash})["path"]
         fibers, orders = tools.getFibersAndOrders(extractedFlatPath)
 
         mask = {}
@@ -169,25 +181,25 @@ class OrderExtraction(PipelineComponent):
 
 
     def extractStripes(self, image, mask):
-        """ 
+        """
         For each order extract all pixels within the stripe of this order, and keep the x-, and y- coordinates
         of this pixel as well as its flux value.
 
         Input:
             image:
-            mask: 
+            mask:
 
         Output:
             xCoordinates:  x-coordinates of the pixels that belong to the orders [pix]   TODO: specify: row or column?
             yCoordinates:  y-coordinates of the pixels that belong to the orders [pix]
             fluxValues:    values of the pixels that belong to the orders        [ADU]
-            orders:        number of the order to which the pixels belong 
+            orders:        number of the order to which the pixels belong
         """
         fluxValues   = []
         orders       = []
         xCoordinates = []
         yCoordinates = []
-        
+
         mask_image = np.zeros(image.shape)
         for f in mask.keys():
             for o in mask[f].keys():
@@ -198,12 +210,12 @@ class OrderExtraction(PipelineComponent):
 
                 for x, y in positions:
                     mask_image[x, y] = 1
-                    
+
                 fluxValues.append([ image[x, y] for x,y in zip(xPositions, yPositions)])
                 orders.append((o,f))
                 xCoordinates.append(xPositions)
                 yCoordinates.append(yPositions)
-                    
+
         if self.debug > 2:
             plt.imshow(mask_image, origin='lower')
             plt.imshow(image, alpha=0.95, origin='lower')
@@ -222,15 +234,18 @@ class OrderExtraction(PipelineComponent):
         Input:
             outputFileName:
             xValues:
-            yValues: 
-            flux: 
+            yValues:
+            flux:
             orders:
 
         Output:
             None
 
         """
-        hash = hashlib.sha256(bytes("".join(self.input), 'utf-8')).hexdigest()
+
+        combinedHash = self.orderMaskHash + self.imageHash
+        hash = hashlib.sha256(bytes(combinedHash, 'utf-8')).hexdigest()
+
         path = self.outputPath + outputFileName
         orders, fibers = zip(*orders)
 
@@ -242,7 +257,7 @@ class OrderExtraction(PipelineComponent):
         primary_hdr["type"] = self.outputType
         primary_hdr["orders"] = str(set(orders))
         primary_hdr["fibers"] = str(set(fibers))
-        primary_hdr["input"] = str(self.input)
+        primary_hdr["input"] = str([self.orderMaskHash, self.imageHash])
 
 
         hdu = fits.PrimaryHDU(header=primary_hdr)
@@ -276,7 +291,7 @@ class OrderExtraction(PipelineComponent):
                 "path" : path,
                 "type" : self.outputType,
                 "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
-        tools.addToDataBase(dict, overWrite = True)
+        tools.addToDataBase(dict, self.db, overWrite = True)
 
 
 
@@ -284,20 +299,44 @@ class OrderExtraction(PipelineComponent):
 
 if __name__ == "__main__":
 
+    db = DatabaseFromLocalFiles("pipelineDatabase.txt")
+    print("")
+
     # Extract the orders of a science image
 
     scienceImageHash = "b0ef6a99bde7cdbc968a46fcd7a57e450a554c548d9cc89d7a9555e7236fe05f"
-    orderMaskHash    = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
+    scienceImagePath = "Data/ProcessedData/CalibratedScience/testFScience.fits"
 
-    extractor = OrderExtraction(scienceImageHash, "Science", orderMaskHash, debug=3)
-    outputFileName = "extracted_science_orders.fits"
-    dummy = extractor.run(outputFileName)
+    orderMaskHash    = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
+    orderMaskPath    = "Data/ProcessedData/ExtractedOrders/testFMask.fits"
+
+    scienceExtractor1 = OrderExtraction(db, debug=1, ExtractedOrders=orderMaskPath,
+                                        ScienceImages=scienceImagePath)
+    scienceExtractor2 = OrderExtraction(debug=1, ExtractedOrders=orderMaskHash,
+                                        ScienceImages=scienceImageHash)
+
+    scienceExtractor1.run("extractedScienceTestF.fits")
+    print("+============================+")
+    scienceExtractor2.run("extractedScienceTestD.fits")
+    print("+============================+")
+
 
     # Extract the orders of an Etalon image (Calibrated Etalon)
 
-    etalonImageHashes = "372bd5de4de92bb991f6eb3991a05c423063b67788ab1275cf31d060a347d533"
+    etalonImageHash = "372bd5de4de92bb991f6eb3991a05c423063b67788ab1275cf31d060a347d533"
+    etalonImagePath   = "Data/ProcessedData/CalibratedEtalon/testFEtalon.fits"
+
     orderMaskHash = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
-    extractor = OrderExtraction(etalonImageHashes, "Etalon", orderMaskHash, debug=3)
-    outputFileName = "extracted_etalon_orders.fits"
-    dummy = extractor.run(outputFileName)
+    orderMaskPath    = "Data/ProcessedData/ExtractedOrders/testFMask.fits"
+
+    etalonExtractor1 = OrderExtraction(db, debug=1, ExtractedOrders=orderMaskPath,
+                                        EtalonImages=etalonImagePath)
+    etalonExtractor2 = OrderExtraction(debug=1, ExtractedOrders=orderMaskHash,
+                                        EtalonImages=etalonImageHash)
+
+    etalonExtractor1.run("extractedEtalonTestF.fits")
+    print("+============================+")
+    etalonExtractor2.run("extractedEtalonTestD.fits")
+
+    db.saveToFile("pipelineDatabase.txt")
 
