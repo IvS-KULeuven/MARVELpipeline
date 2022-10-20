@@ -33,7 +33,7 @@ def plotOrdersWithSlider(orders, xValues=None, xMax=10560, yMax=30000, xMin=0):
     ax.set_xlabel('x Position [pxl]')
     plt.xlim([xMin, xMax])
     plt.ylim([0, yMax])
-    
+
     # adjust the main plot to make room for the sliders
     plt.subplots_adjust(left=0.25)
 
