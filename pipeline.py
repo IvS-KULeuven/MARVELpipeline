@@ -137,7 +137,7 @@ class PipelineComponent():
 
 
 
-    def saveImage(self, image, fileName):
+    def saveImageAndAddToDatabase(self, image, fileName):
         """
         Save the image and add it to the database
         """
@@ -233,7 +233,7 @@ class MasterBias(PipelineComponent):
         masterBias = np.median(biases, axis=0)
 
         if outputFileName is not None:
-            self.saveImage(masterBias, outputFileName)
+            self.saveImageAndAddToDatabase(masterBias, outputFileName)
             print("Master bias image saved to fits file")
 
         # That's it!
@@ -335,7 +335,7 @@ class MasterDark(PipelineComponent):
         masterDark = np.median(darks, axis=0)
 
         if outputFileName is not None:
-            self.saveImage(masterDark, outputFileName)
+            self.saveImageAndAddToDatabase(masterDark, outputFileName)
             print("Master dark image saved to fits file")
 
         # That's it!
@@ -451,7 +451,7 @@ class MasterFlat(PipelineComponent):
                   masterFlat = masterFlat -np.min(masterFlat)
 
         if outputFileName is not None:
-            self.saveImage(masterFlat, outputFileName)
+            self.saveImageAndAddToDatabase(masterFlat, outputFileName)
             print("Master flat image saved to fits file")
 
         # That's it!
@@ -575,7 +575,7 @@ class CalibratedScienceFrames(PipelineComponent):
 
 
         if outputFileName is not None:
-            self.saveImage(calibratedScience, outputFileName)
+            self.saveImageAndAddToDatabase(calibratedScience, outputFileName)
             print("Calibrated science image saved to fits file")
 
         # That's it!
@@ -720,7 +720,7 @@ class CalibratedEtalonImage(PipelineComponent):
 
         # If required, save to FITS
         if outputFileName is not None:
-            self.saveImage(calibratedEtalon, outputFileName)
+            self.saveImageAndAddToDatabase(calibratedEtalon, outputFileName)
             print("Calibrated etalon image saved to fits file")
 
         # That's it!
