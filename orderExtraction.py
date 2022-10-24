@@ -44,20 +44,17 @@ class OrderExtraction(PipelineComponent):
         imageAndMaskHash = self.inputHashes
 
         if self.checkSanityOfInputTypes(**imageAndMaskHash):
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/"
-            self.outputType = "Extracted " + self.extractedType + " Orders"
-            self.orderMaskHash = imageAndMaskHash["ExtractedOrders"]
-            self.imageHash = imageAndMaskHash[self.extractedType + "Images"]
-            self.debug = debug
+            self.outputPath      = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/"
+            self.outputType      = "Extracted " + self.extractedType + " Orders"
+            self.orderMaskHash   = imageAndMaskHash["ExtractedOrders"]
+            self.imageHash       = imageAndMaskHash[self.extractedType + "Images"]
+            self.imageCollection = self.db[self.extractedType + "Images"]
+            self.debug           = debug
 
         else:
             raise Exception("Error: The input hashes do not match the correct type: Aborting")
             exit(1)
 
-        # +=============================================================+
-        self.imageCollection = self.db[self.extractedType + "Images"]
-        self.orderMaskCollection = self.db["ExtractedOrders"]
-        # +=============================================================+
 
         if not os.path.isdir(self.outputPath):
             os.mkdir(self.outputPath)

@@ -1,16 +1,22 @@
-from pipeline import PipelineComponent
-from pymongo import MongoClient
-from numba import njit, jit, vectorize, prange
-from tqdm import tqdm
-from astropy.io import fits
-from datetime import datetime
-import matplotlib.pyplot as plt
-import numpy as np
 import hashlib
 import os
 import tools
 import debug
 import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from pipeline   import PipelineComponent
+from pymongo    import MongoClient
+from numba      import njit, jit, vectorize, prange
+from database   import DatabaseFromLocalFiles
+from tqdm       import tqdm
+from astropy.io import fits
+from datetime   import datetime
+
+
+
 
 
 class OptimalExtraction(PipelineComponent):
@@ -19,90 +25,110 @@ class OptimalExtraction(PipelineComponent):
     This reduces the 2D spectrum to a 1D spectrum.
     """
 
-    def __init__(self, extractedImageHash, extractedFlatHash , extractedType, debug=0):
+    def __init__(self, database=None, debug=0, **optimalExtractionHash):
         """
         Initializes the optimal extraction component.
 
         Input:
-            extractedImageHash:  string containing the hash of the image with extracted orders.
-            extractedFlatHash:   string containing the hash of the fits file containing the mask
-                                 of the orders (derived from a flat) and their flux values.
-            extractedType:       string. Type of the extracted order images. Can be either "Science"
-                                 or "Etalon".
-            debug:               0, 1, 2 or 3: 0 meaning no debug output, 3 meaning lots of debug output.
+            database:              If not None, DatabaseFromLocalFiles object that is used to
+                                   find the input hashes. If is None, mongoDB is used as database.
+            debug:                 0, 1, 2 or 3: 0 meaning no debug output, 3 meaning lots of debug output.
+
+            optimalExtractionHash: dictionary with key/value the imagetType/hash(or path) of images used to
+                                   determine the optimal extraction. Types should be extracter flat image,
+                                   or extracted science (or etalon) image.
 
         Output:
             None
         """
 
-        self.extractedType = extractedType                                # Image type, e.g. "Science" or "Etalon"
-        super().__init__([extractedImageHash, extractedFlatHash])
+        super().__init__(database, **optimalExtractionHash)
+        optimalExtractionHash = self.inputHashes
+        self.extractedFlatHash  = None
+        self.extractedImageHash = None
 
-        isSane = self.checkSanityOfInputHashes(extractedImageHash, extractedFlatHash, extractedType)
-        if not isSane:
-            print("Input hashes not sane. Aborting.")
+        if self.checkSanityOfInputTypes(**optimalExtractionHash):
+            self.outputPath         = os.getcwd() + "/Data/ProcessedData/OptimalExtraction/"
+            self.outputType         = f"Optimal Extracted {self.extractedType}"
+            self.imageCollection    = self.db["ExtractedOrders"]
+            self.debug              = debug
+        else:
+            raise Exception("Error: The input hashes do not match the correct type: Aborting")
             exit(1)
 
-        self.imageCollection = self.db["ExtractedOrders"]
-        self.extractedImageHash = extractedImageHash
-        self.extractedFlatHash  = extractedFlatHash
-        self.debug = debug
-        self.outputPath = os.getcwd() + "/Data/ProcessedData/OptimalExtraction/"
+
+
+
+
+
 
         if not os.path.isdir(self.outputPath):
             os.mkdir(self.outputPath)
 
-        self.outputType = "Optimal Extracted {}".format(extractedType)
+        
 
 
 
 
 
 
-    def checkSanityOfInputHashes(self, extractedImageHash, extractedFlatHash, extractedType):
+    def checkSanityOfInputTypes(self, **optimalExtractionHash):
         """
-        Check if the extractedImageHash indeed corresponds to an image of the correct format (given by
-        extractedType) and that extractedFlatHash corresponds to a fits file containing the order masks
-        and their flux values.
+        This function is ran after we run checkSanityOfInputHashes. This function checks the the
+        input types that are given is able to generate an optimal extracted image.
 
         Input:
-            extractedImageHash:   string containing the hashe of the images that we want to optimaly extract.
-            extractedFlatHash:    string containing the hash of the fits file containing the mask of the
-                                  orders (derived from a flat) and their flux values.
-            extractedType:        string. Type of the extracted order images. Can be either "Science" or "Etalon".
-            debug:                0, 1, 2 or 3: 0 meaning no debug output, 3 meaning lots of debug output.
+            optimalExtractionHash: dictionary with key/value the imagetType/hash of images used to
+                                   determine the optimal extraction. Types should be extracted flat image,
+                                   or extracted science (or etalon) image.        
 
         Output:
             isSane: boolean. True if both input hashes correspond to images with the correct type, False if at
                              least one of these hashes does not.
         """
 
-        # Check if the extraded image hash is of the type specified.
+        types = list(optimalExtractionHash.keys())
+        values = list(optimalExtractionHash.values())
 
-        if extractedType == "Science":
-            image = self.db["ExtractedOrders"].find_one({"_id": extractedImageHash})
-            if image is None:
-                return False
-            elif image["type"] != "Extracted Science Orders":
-                return False
-        elif extractedType == "Etalon":
-            image = self.db["ExtractedOrders"].find_one({"_id": extractedImageHash})
-            if image is None:
-                return False
-            elif image["type"] != "Extracted Etalon Orders":
-                return False
+        # Check that the keys are of the right format. For optimal order extraction there should be one
+        # extracted flat image and one extracted etalon or science frame.
 
-        # check if the extractedFlatHash indeed corresponds to an order mask.
+        isExtracted = (len(types) == 1) and ("ExtractedOrders" in types)
 
-        image = self.db["ExtractedOrders"].find_one({"_id": extractedFlatHash})
-        if image is None:
+        # We should check that the values corresponding to Extracted Orders are a list with two hashes.
+
+        if isExtracted and type(values[0]) == list:
+            if len(values[0]) == 2:
+                typesOfFiles = [(self.db["ExtractedOrders"].find_one({"_id": iHash})["type"], iHash)
+                                for iHash in values[0]]
+
+                for iType, iHash in typesOfFiles:
+                    # if hash is extracted flat order 
+                    if iType == "Extracted Flat Orders":
+                        self.extractedFlatHash = iHash
+                    # if hash is extracted image order 
+                    elif (iType == "Extracted Science Orders" or iType == "Extracted Etalon Orders"):
+                        if iType == "Extracted Science Orders":
+                            self.extractedImageHash = iHash
+                            self.extractedType = "Science"
+                        elif iType == "Extracted Etalon Orders":
+                            self.extractedImageHash = iHash
+                            self.extractedType = "Science"
+                    # if hash is neither extracted image or extracted flat order
+                    else:
+                        return False
+                
+            else:
+                return False
+        else:
             return False
-        elif image["type"] != "Extracted Flat Orders":
-            return False
 
-        # If we reach this point, nothing abnormal was detected.
+        # If we reach this point, nothing abnormal was detected. We should check that we have found
+        # one extracted image hash and one extracted flat hash
 
-        return True
+        return (self.extractedImageHash is not None) and (self.extractedFlatHash is not None)
+
+
 
 
 
@@ -492,16 +518,39 @@ def getOptimalSpectrum(xValues, yValues, flatFlux, imageFlux, readout=2000):
 
 if __name__ == "__main__":
 
+    db = DatabaseFromLocalFiles("pipelineDatabase.txt")
+    print("")
+
     # Optimal extract the orders of an extracted science image
+
     extractedScienceHash = "b6e9f312efa62bcb90d66b5fee19eae4a6f930e0b3999650fa9c944b5075a4da"
-    extractedFlatHash  = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
+    extractedSciencePath = "Data/ProcessedData/ExtractedOrders/extractedScienceTestF.fits"
 
+    extractedFlatHash = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
+    extractedFlatPath = "Data/ProcessedData/ExtractedOrders/testFMask.fits"
 
-    optimalScience = OptimalExtraction(extractedScienceHash, extractedFlatHash, "Science", debug=3)
-    dummy = optimalScience.run()
+    optimalScience1 = OptimalExtraction(db, debug=3, ExtractedOrders=[extractedSciencePath, extractedFlatPath])
+    optimalScience2 = OptimalExtraction(debug=3, ExtractedOrders=[extractedScienceHash, extractedFlatHash])
+
+    optimalScience1.run()
+    print("+============================+")    
+    optimalScience2.run()
+    print("+============================+")    
+    
 
     # Optimal extract the orders of an extracted etalon image
     extractedEtalonHash = "92fe37cba12963e4ec23a44bd4fb312cb59b2d1c50933dac479fa2181bc333b2"
+    extractedEtalonPath = "Data/ProcessedData/ExtractedOrders/extractedEtalonTestF.fits"
 
-    optimalEtalon = OptimalExtraction(extractedEtalonHash, extractedFlatHash, "Etalon", debug=3)
-    dummy = optimalEtalon.run()
+    optimalEtalon1 = OptimalExtraction(db, debug=3, ExtractedOrders=[extractedEtalonPath, extractedFlatPath])
+    optimalEtalon2 = OptimalExtraction(debug=3, ExtractedOrders=[extractedEtalonHash, extractedFlatHash])
+    optimalEtalon1.run()
+    print("+============================+")    
+    optimalEtalon2.run()
+
+    db.saveToFile("pipelineDatabase.txt")
+    
+
+
+
+
