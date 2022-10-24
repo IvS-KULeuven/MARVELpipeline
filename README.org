@@ -1,0 +1,78 @@
+#+TITLE:MARVELpipeline
+Data processing and radial velocity estimation pipeline of the MARVEL spectrograph
+
+
+#+BEGIN_SRC emacs-lisp :var table=dot-eg-table :results output :exports none
+  (mapcar #'(lambda (x)
+              (princ (format "%s [label =\"%s\", shape = \"box\"];\n"
+                             (first x) (second x)))) table)
+              (princ (format "%s -- %s;\n" (first (first table)) (first (second table))))
+#+END_SRC
+
+** Running the different components of the database
+
+The database is made out off different components that can run one after the other. Every time a
+component finishes it will create a file with the intemediate results saved into it. This file can
+then serve as input for another component. An example of how these components rely on results of
+previous components is illustrated in the following graph:
+
+#+BEGIN_SRC dot :file my_output_file.png :cmdline -Kdot -Tpng
+  digraph G {
+    "Raw Flats" -> "Master Flat";
+    "Master Bias" -> "Master Flat";
+    "Master Flat" -> "Order Mask Extraction";
+    "Order Mask Extraction" -> "Optimal Extraction";
+    "Master Dark" -> "Calibrated Science";
+    "Master Bias" -> "Calibrated Science";
+    "Raw Science" -> "Calibrated Science";
+    "Calibrated Science" -> "Science Order Extraction";
+    "Order Mask Extraction" -> "Science Order Extraction";
+    "Science Order Extraction" -> "Optimal Extraction";
+    }
+#+END_SRC
+
+#+RESULTS:
+[[file:my_output_file.png]]
+
+
+** Running the pipeline without MongoDB
+
+Normally the pipeline should work in conjunction with a database that keeps track of all the
+files and meta data that get generated during the different steps in the pipeline. For local
+users, it is possible to use the software without needing to install the database. This can be
+done by using a =DatabaseFromLocalFiles= object. This object is set up by using the local files
+that are pressent in =/Data/RawData/=. It mimics the behaviour of a database in that it keeps track
+of files that are created while running the database. After
+
+*** Creating a =DatabaseFromLocalFiles= object
+
+When running the pipeline for the first time while using a =DatabaseFromLocalFiles= object, the
+=DatabaseFromLocalFiles= object gets createad by running
+
+#+begin_src python
+  from database import DatabaseFromLocalFiles
+
+  # Create a DatabaseFromLocalFiles object
+  db = DatabaseFromLocalFiles()
+
+  ...
+
+  # After running the pipeline we might want to keep track of the files that were created.
+  # This can be done by saving the database into a txt file.
+
+  db.saveToFile("database_object_file.txt")
+#+end_src
+
+If at a later date we want to continue using the this database we can simply create a =DatabaseFromLocalFiles=
+object with as argument the path to our txt file.
+
+#+begin_src python
+  db = DatabaseFromLocalFiles("database_object_file.txt")
+#+end_src
+
+
+
+
+
+
+
