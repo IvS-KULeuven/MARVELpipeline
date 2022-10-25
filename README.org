@@ -98,7 +98,8 @@ ran the component and the object is added to the database.
 It is not simple for every component to keep track of the files that are needed to run the component.
 The whole pipeline is given here to give in a schematic overview of the currently implemented pipeline. 
 
-
+#+CAPTION:Overview of entire pipeline
+#+NAME: fig:whole_pipeline
 [[./Docs/Images/whole_pipeline_file.png]]
 
 ** Running the pipeline without MongoDB
