@@ -4,29 +4,14 @@ Data processing and radial velocity estimation pipeline of the MARVEL spectrogra
 
 ** Running the different components of the database
 
-The database is made out off different components that can run one after the other.
-Every time a component finishes it will create a file with the intemediate results
+The database is made out of different components that can run one after the other.
+Every time a component finishes it will create a file with the intermediate results
 saved into it. This file can then serve as input for another component. An example of
-how these components rely on results of previous components is illustrated in the following graph:
+how these components rely on the results of previous components is illustrated in the following graph:
 
-#+BEGIN_SRC dot :file my_output_file.png :cmdline -Kdot -Tpng
-  digraph G {
-    "Raw Flats" -> "Master Flat";
-    "Master Bias" -> "Master Flat";
-    "Master Flat" -> "Order Mask Extraction";
-    "Order Mask Extraction" -> "Optimal Extraction";
-    "Master Dark" -> "Calibrated Science";
-    "Master Bias" -> "Calibrated Science";
-    "Raw Science" -> "Calibrated Science";
-    "Calibrated Science" -> "Science Order Extraction";
-    "Order Mask Extraction" -> "Science Order Extraction";
-    "Science Order Extraction" -> "Optimal Extraction";
-    }
-#+END_SRC
-
-#+RESULTS:
-[[file:my_output_file.png]]
-
+#+CAPTION:Shows components needed to create an "Optimal Science Extraction" image and how these are in turn dependent on other components.
+#+NAME: fig:Optimal Extraction
+[[./Docs/Images/my_output_file.png]]
 
 
 
@@ -34,15 +19,15 @@ how these components rely on results of previous components is illustrated in th
 
 *** Initializing a component
 
-In order for the components to be created we will need (at least) two kinds of inputs.
+For the components to be created we will need (at least) two kinds of inputs.
 
-The first input is the database that will be used. The can be a =DatabaseFromLocalFiles= object or
+The first input is the database that will be used. This can be a =DatabaseFromLocalFiles= object or
 it can be None, in which case MongoDB will be used as a database.
 
 Secondly, there are the input hashes or the input paths of the fits files that will be used as
-input to the component. The are given as keyword arguments (Keywaord=Value), where the keys signify which location in
+input to the component. These are given as keyword arguments (Keywaord=Value), where the keys signify which location in
 the database these files can be found (Collection) and the values are either a string with a path (or hash, both work) of
-the file or a list of string with paths (or hashes or a mixture of both) to files a mutiple files are needed.
+the file or a list of strings of paths (or hashes or a mixture of both) to multiple files are needed.
 The following table gives an overview of which location in the database (keys of the input) contains which kind of
 files.
 
@@ -58,7 +43,7 @@ files.
 
 
 
-In some cases, there is an optinal argument that will signifies the debug
+In some cases, there is an optional argument that will signify the debug
 mode when running the component. The debug option can be an int ranging from 0 to 3, where 0 means no debug output
 and 3 means lots of debug output.
 
@@ -71,8 +56,8 @@ need a *Calibrated Science* and *Order Mask Extraction* as input.
   from orderExtraction import OrderExtraction
 
   # We run a DatabaseFromLocalFiles object.
-  # Since by default such a object only keeps track of raw images, we need to load in a previously generated txt file
-  # that also contains a "Calibrated Science Image" and a "Extracted Flat Image".
+  # Since by default such an object only keeps track of raw images, we need to load in a previously generated txt file
+  # that also contains a "Calibrated Science Image" and an "Extracted Flat Image".
 
   db = DatabaseFromLocalFiles("input_file_name.txt")
 

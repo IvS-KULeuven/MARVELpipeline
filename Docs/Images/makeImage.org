@@ -1,0 +1,14 @@
+#+BEGIN_SRC dot :file my_output_file.png :cmdline -Kdot -Tpng
+  digraph G {
+    "Raw Flats" -> "Master Flat";
+    "Master Bias" -> "Master Flat";
+    "Master Flat" -> "Order Mask Extraction";
+    "Order Mask Extraction" -> "Optimal Extraction";
+    "Master Dark" -> "Calibrated Science";
+    "Master Bias" -> "Calibrated Science";
+    "Raw Science" -> "Calibrated Science";
+    "Calibrated Science" -> "Science Order Extraction";
+    "Order Mask Extraction" -> "Science Order Extraction";
+    "Science Order Extraction" -> "Optimal Extraction";
+    }
+#+END_SRC
