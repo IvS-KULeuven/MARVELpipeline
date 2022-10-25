@@ -89,6 +89,7 @@ class PipelineComponent():
             if type(inputHash[imageType]) == list:
                 for hash in inputHash[imageType]:
                     image = self.db[imageType].find_one({"_id": hash})
+
                     if image is None:
                         return False
 
@@ -803,7 +804,7 @@ if __name__ == "__main__":
 
 
     # Master Dark Image
-    raw_dark_hashes =  ['6128a1e361aca3d5b17e366511efc75b0aeffbada070cbc4a3aebdd1cb1d66db',
+    raw_dark_hashes =  ['628a1e361aca3d5b17e366511efc75b0aeffbada070cbc4a3aebdd1cb1d66db',
                         '649d0b67d7be70ef286d86c9629bd017716cd3667fde46beeab35dcd27a98f0c',
                         'f53e4b7837347cdcddf0bf41a1cd5ac40f7594c4561ac8b71b08fb4da541f1f5']
     masterD1 = MasterDark(db, DarkImages=raw_dark_hashes)
