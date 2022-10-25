@@ -62,14 +62,15 @@ def addToDataBase(metaData, db, overWrite=False):
     We should have proper error catching for:
     1. We want to add somthing that already exist
     2. image is not in the dictornary
-    3. Check that dict is in the right format 
+    3. Check that dict is in the right format
     """
 
-    images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages", 
-                  "Calibrated Science Image" : "ScienceImages", "Calibrated Etalon Image":"EtalonImages", "Extracted Flat Orders" : "ExtractedOrders",   
-                  "Extracted Science Orders" : "ExtractedOrders","Extracted Etalon Orders": "ExtractedOrders", 
+    images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages",
+                  "Calibrated Science Image" : "ScienceImages", "Calibrated Etalon Image":"EtalonImages", "Extracted Flat Orders" : "ExtractedOrders",
+                  "Extracted Science Orders" : "ExtractedOrders","Extracted Etalon Orders": "ExtractedOrders",
                   "Optimal Extracted Science" : "OptimalExtracted", "Optimal Extracted Etalon" : "OptimalExtracted"}
     typeImage  = metaData["type"]
+
     collection = db[images[typeImage]]
     isInCollection = collection.find_one({"_id": metaData["_id"]})
 
@@ -81,9 +82,13 @@ def addToDataBase(metaData, db, overWrite=False):
         collection.insert_one(metaData)
     else:
         print("Document is already in database")
-    
-    
-        
+
+
+
+
+
+
+
 def getPositionsOfOrders():
     p = {}
 
@@ -507,7 +512,7 @@ def convertPathToHash(path, db):
     dirToDataBase = {"Bias": "BiasImages", "Dark": "DarkImages",
                      "Etalon": "EtalonImages", "Flat": "FlatImages",
                      "ScienceFrames": "ScienceImages", "CalibratedScience":
-                     "ScienceImages", "ExtractedOrders": "ExtractedOrders",
+                     "ScienceImages", "CalibratedEtalon": "EtalonImages", "ExtractedOrders": "ExtractedOrders",
                      "MasterBias": "BiasImages", "MasterDark": "DarkImages",
                      "MasterFlat": "FlatImages",
                      "OptimalExtraction": "OptimalExtracted"}
@@ -547,7 +552,7 @@ def convertPathToHash(path, db):
 
 
 
-    
+
 
 
 

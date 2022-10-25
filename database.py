@@ -94,6 +94,9 @@ class DatabaseFromLocalFiles():
 
 
     def __getitem__(self, item):
+        if not item in self.localDataBase.keys():
+            dat = { "_id": [], "path": [], "type": [], "date_created": []}
+            self.localDataBase[item] = Collection(pd.DataFrame.from_dict(data=dat))
         return self.localDataBase[item]
 
 
