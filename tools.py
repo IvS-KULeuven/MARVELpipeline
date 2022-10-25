@@ -280,7 +280,7 @@ def getExtractedPosition(path, order, fiber):
 
     # First we check that the input that is provided is sensible
     table = checkInputExtractedData(path, order, fiber)
-    
+
     # If it is sensible, we return the Positions
     if table is None:
         return
@@ -306,9 +306,9 @@ def getExtractedFlux(path, order, fiber):
 
 def getFibersAndOrders(path):
     """
-    This function returns the fibers and orders that are in the extracted data. 
-    INPUT: path of the extracted flux fits file 
-    OUTPUT: list of fibers, list of fibers 
+    This function returns the fibers and orders that are in the extracted data.
+    INPUT: path of the extracted flux fits file
+    OUTPUT: list of fibers, list of orders
     """
     # Check that path exist
     if not os.path.isfile(path):
@@ -338,14 +338,14 @@ def getFibersAndOrders(path):
 
 
 def getAllExtractedSpectrum(path):
-    """ 
-    This function extracts all the info (positions and flux) for all the orders from 
-    extracted images. 
+    """
+    This function extracts all the info (positions and flux) for all the orders from
+    extracted images.
     INPUT: path to the extracted images.
-    OUPUT: dictionary with keys the orders and values a dictorionary with fibers/(positions, flux) 
-           as key/values. 
-    REMARK: The idea behind this function is that we only open the file one time and extract all the 
-            information at once instead of opening and closing the same file for different orders. 
+    OUPUT: dictionary with keys the orders and values a dictorionary with fibers/(positions, flux)
+           as key/values.
+    REMARK: The idea behind this function is that we only open the file one time and extract all the
+            information at once instead of opening and closing the same file for different orders.
     """
 
     fibers, orders = getFibersAndOrders(path)

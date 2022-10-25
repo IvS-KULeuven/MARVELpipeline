@@ -1,0 +1,44 @@
+nono#+BEGIN_SRC dot :file my_output_file.png :cmdline -Kdot -Tpng
+  digraph G {
+    "Raw Flats" -> "Master Flat";
+    "Master Bias" -> "Master Flat";
+    "Master Flat" -> "Order Mask Extraction";
+    "Order Mask Extraction" -> "Optimal Extraction";
+    "Master Dark" -> "Calibrated Science";
+    "Master Bias" -> "Calibrated Science";
+    "Raw Science" -> "Calibrated Science";
+    "Calibrated Science" -> "Science Order Extraction";
+    "Order Mask Extraction" -> "Science Order Extraction";
+    "Science Order Extraction" -> "Optimal Extraction";
+    }
+#+END_SRCnoyes
+
+
+
+#+BEGIN_SRC dot :file whole_pipeline_file.png :cmdline -Kdot -Tpng
+  digraph G {
+    "Raw Bias" -> "Master Bias";
+    "Raw Flats" -> "Master Flat";
+    "Raw Darks" -> "Master Dark";
+    "Master Bias" -> "Master Flat";
+    "Master Bias" -> "Calibrated Etalon";
+    "Master Dark" -> "Calibrated Science";
+    "Master Dark" -> "Calibrated Etalon";
+    "Master Flat" -> "Order Mask Extraction";    
+    "Master Bias" -> "Calibrated Science";
+    "Raw Science" -> "Calibrated Science";
+    "Raw Etalon" -> "Calibrated Etalon";
+    "Order Mask Extraction" -> "Science Order Extraction";
+    "Order Mask Extraction" -> "Etalon Order Extraction";
+    "Order Mask Extraction" -> "Optimal Science Extraction";        
+    "Calibrated Science" -> "Science Order Extraction";
+    "Calibrated Etalon" -> "Etalon Order Extraction";
+    "Science Order Extraction" -> "Optimal Science Extraction";
+    "Etalon Order Extraction" -> "Optimal Etalon Extraction";
+    "Order Mask Extraction" -> "Optimal Etalon Extraction";            
+    }
+#+END_SRC
+
+#+RESULTS:
+[[file:whole_pipeline_file.png]]
+
