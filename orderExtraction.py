@@ -252,8 +252,8 @@ class OrderExtraction(PipelineComponent):
         primary_hdr["hash"] = hash
         primary_hdr["path"] = path
         primary_hdr["type"] = self.outputType
-        primary_hdr["orders"] = str(set(orders))
-        primary_hdr["fibers"] = str(set(fibers))
+        primary_hdr["orders"] = str(set(np.unique(orders)))
+        primary_hdr["fibers"] = str(set(np.unique(fibers)))
         primary_hdr["input"] = str([self.orderMaskHash, self.imageHash])
 
 

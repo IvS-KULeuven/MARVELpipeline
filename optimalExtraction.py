@@ -65,7 +65,7 @@ class OptimalExtraction(PipelineComponent):
         if not os.path.isdir(self.outputPath):
             os.mkdir(self.outputPath)
 
-        
+
 
 
 
@@ -80,7 +80,7 @@ class OptimalExtraction(PipelineComponent):
         Input:
             optimalExtractionHash: dictionary with key/value the imagetType/hash of images used to
                                    determine the optimal extraction. Types should be extracted flat image,
-                                   or extracted science (or etalon) image.        
+                                   or extracted science (or etalon) image.
 
         Output:
             isSane: boolean. True if both input hashes correspond to images with the correct type, False if at
@@ -103,10 +103,10 @@ class OptimalExtraction(PipelineComponent):
                                 for iHash in values[0]]
 
                 for iType, iHash in typesOfFiles:
-                    # if hash is extracted flat order 
+                    # if hash is extracted flat order
                     if iType == "Extracted Flat Orders":
                         self.extractedFlatHash = iHash
-                    # if hash is extracted image order 
+                    # if hash is extracted image order
                     elif (iType == "Extracted Science Orders" or iType == "Extracted Etalon Orders"):
                         if iType == "Extracted Science Orders":
                             self.extractedImageHash = iHash
@@ -117,7 +117,7 @@ class OptimalExtraction(PipelineComponent):
                     # if hash is neither extracted image or extracted flat order
                     else:
                         return False
-                
+
             else:
                 return False
         else:
@@ -163,7 +163,7 @@ class OptimalExtraction(PipelineComponent):
 
         # If required, save to FITS
         if outputFileName is not None:
-            self.saveImage(spectrum, xPixels, yPixels, orders)
+            self.saveImageAndAddToDatabase(outputFileName, spectrum, xPixels, yPixels, orders)
             print("Optimal extracted orders saved to fits file.")
 
         # That's it!
@@ -315,45 +315,46 @@ class OptimalExtraction(PipelineComponent):
 
 
 
-    def saveImage(self, spectrum, xPixels, yPixels):
+    def saveImageAndAddToDatabase(self, outputFileName, spectrum, xPixels, yPixels, orders):
         """
         Save the image and add it to the database
 
         Input:
-            spectrum: optimal extracted flux for every fiber/order
-            xPixels:  xPixels for every fiber/order
-            yPixels:  yPixels for every fiber/order
+            outputFileName : string with the name of the file
+            spectrum       : optimal extracted flux for every fiber/order
+            xPixels        : xPixels for every fiber/order
+            yPixels        : yPixels for every fiber/order
+            orders         : fiber/orders
+
         """
 
         # output hash gets generated and set path for output file
 
-        hash = hashlib.sha256(bytes("".join(self.input), 'utf-8' )).hexdigest()
-        path = self.outputPath + self.getFileName()
+        combinedHash = self.extractedImageHash + self.extractedFlatHash
+        hash = hashlib.sha256(bytes(combinedHash, 'utf-8' )).hexdigest()
 
+        path = self.outputPath + outputFileName
         # Save the included fiber/orders
-
-        fibers = np.unique(self.fibers)
-        orders = np.unique(self.orders)
+        orders, fibers = zip(*orders)
 
         # Make header of fits file
-
         primary_hdr = fits.Header()
         primary_hdr["hash"] = hash
         primary_hdr["path"] = path
-        primary_hdr["type"] = self.type
-        primary_hdr["orders"] = str(set(orders))
-        primary_hdr["fibers"] = str(set(fibers))
-        primary_hdr["input"] = str(self.input)
+        primary_hdr["type"] = self.outputType
+        primary_hdr["orders"] = str(set(np.unique(orders)))
+        primary_hdr["fibers"] = str(set(np.unique(fibers)))
+        primary_hdr["input"] = str([self.extractedImageHash, self.extractedFlatHash])
 
         hdu = fits.PrimaryHDU(header=primary_hdr)
         hdul = fits.HDUList([hdu])
 
-        # Add the flux and x,y coordinates 
+        # Add the flux and x,y coordinates
 
         for i in np.arange(len(spectrum)):
             hdr1 = fits.Header()
-            hdr1["order"] = self.orders[i]
-            hdr1["fiber"] = self.fibers[i]
+            hdr1["order"] = orders[i]
+            hdr1["fiber"] = fibers[i]
 
             spect1 = np.array(spectrum[i], dtype=np.float64)
             col1 = fits.Column(name="Spectrum", format='D', array=spect1)
@@ -374,8 +375,11 @@ class OptimalExtraction(PipelineComponent):
         # Add image to the database
 
         currentTime = datetime.now()
-        dict = {"_id" : hash, "path" : path, "type" : self.type, "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
-        tools.addToDataBase(dict, overWrite = True)
+        dict = {"_id" : hash,
+                "path" : path,
+                "type" : self.outputType,
+                "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
+        tools.addToDataBase(dict, self.db, overWrite = True)
 
 
 
@@ -529,27 +533,27 @@ if __name__ == "__main__":
     extractedFlatHash = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
     extractedFlatPath = "Data/ProcessedData/ExtractedOrders/testFMask.fits"
 
-    optimalScience1 = OptimalExtraction(db, debug=3, ExtractedOrders=[extractedSciencePath, extractedFlatPath])
-    optimalScience2 = OptimalExtraction(debug=3, ExtractedOrders=[extractedScienceHash, extractedFlatHash])
+    optimalScience1 = OptimalExtraction(db, debug=1, ExtractedOrders=[extractedSciencePath, extractedFlatPath])
+    optimalScience2 = OptimalExtraction(debug=1, ExtractedOrders=[extractedScienceHash, extractedFlatHash])
 
-    optimalScience1.run()
-    print("+============================+")    
-    optimalScience2.run()
-    print("+============================+")    
-    
+    optimalScience1.run("optimal_extracted_science_flux1.fits")
+    print("+============================+")
+    optimalScience2.run("optimal_extracted_science_flux.fits")
+    print("+============================+")
+
 
     # Optimal extract the orders of an extracted etalon image
     extractedEtalonHash = "92fe37cba12963e4ec23a44bd4fb312cb59b2d1c50933dac479fa2181bc333b2"
     extractedEtalonPath = "Data/ProcessedData/ExtractedOrders/extractedEtalonTestF.fits"
 
-    optimalEtalon1 = OptimalExtraction(db, debug=3, ExtractedOrders=[extractedEtalonPath, extractedFlatPath])
-    optimalEtalon2 = OptimalExtraction(debug=3, ExtractedOrders=[extractedEtalonHash, extractedFlatHash])
-    optimalEtalon1.run()
-    print("+============================+")    
-    optimalEtalon2.run()
+    optimalEtalon1 = OptimalExtraction(db, debug=1, ExtractedOrders=[extractedEtalonPath, extractedFlatPath])
+    optimalEtalon2 = OptimalExtraction(debug=1, ExtractedOrders=[extractedEtalonHash, extractedFlatHash])
+    optimalEtalon1.run("optimal_extracted_etalon_flux1.fits")
+    print("+============================+")
+    optimalEtalon2.run("optimal_extracted_etalon_flux.fits")
 
     db.saveToFile("pipelineDatabase.txt")
-    
+
 
 
 
