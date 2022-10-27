@@ -267,57 +267,25 @@ class MasterBias(PipelineComponent):
 
 
 
-class MasterDark(PipelineComponent):
-    """
-    Class that creates the master dark image. Such an image is obtained by taking the median of multiple
-    raw dark images.
-    """
+# class MasterDark(PipelineComponent):
+#     """
+#     Class that creates the master dark image. Such an image is obtained by taking the median of multiple
+#     raw dark images.
+#     """
 
 
-    def __init__(self, database=None, **darkHashes):
-        super().__init__(database, **darkHashes)
-        darkHashes = self.inputHashes
+#     def __init__(self, database=None, **darkHashes):
+#         super().__init__(database, **darkHashes)
+#         darkHashes = self.inputHashes
 
-        if self.checkSanityOfinputTypes(**darkHashes):
+#         if self.checkSanityOfinputTypes(**darkHashes):
 
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/MasterDark/"
-            self.type = "Master Dark Image"
-            self.rawDarkHashes = darkHashes["DarkImages"]
-        else:
-            raise Exception("Error: The input hashes do not match the correct type: Aborting")
-            exit(1)
-
-
-
-
-
-
-
-
-    def checkSanityOfinputTypes(self, **input):
-        """
-        This function is ran after we run checkSanityOfInputHashes. This function checks the the
-        input types that are given is able to generate a master bias output file.
-        """
-
-        types  = list(input.keys())
-        values = list(input.values())
-
-        # Check that the keys are of the right format. For a master dark these should only be DarkImages
-
-        keysAreCorrect = (len(types)) == 1 and types[0] == "DarkImages"
-
-        valuesAreCorrect = (len(values) == 1) and (len(values[0]) > 1)
-
-        if keysAreCorrect and valuesAreCorrect:
-            areRawImages = np.all([ self.db[types[0]].find_one({"_id": hash})["type"] == "Raw Dark Image"
-                                    for hash in values[0]])
-        else:
-            return False
-
-        # If we get here, the input is sane if the hashes correspond to raw Images
-
-        return areRawImages
+#             self.outputPath = os.getcwd() + "/Data/ProcessedData/MasterDark/"
+#             self.type = "Master Dark Image"
+#             self.rawDarkHashes = darkHashes["DarkImages"]
+#         else:
+#             raise Exception("Error: The input hashes do not match the correct type: Aborting")
+#             exit(1)
 
 
 
@@ -325,51 +293,83 @@ class MasterDark(PipelineComponent):
 
 
 
-    def run(self, outputFileName=None):
-        """
-        We run through the alghorim to create the master dark image.
 
-        Input:
-            outputFileName: If None, nothings is saved. Otherwise, a string with the name fo the outputfile,
-                            incl. the extension ".fits".
+#     def checkSanityOfinputTypes(self, **input):
+#         """
+#         This function is ran after we run checkSanityOfInputHashes. This function checks the the
+#         input types that are given is able to generate a master bias output file.
+#         """
 
-        Output:
-            masterDark:     master dark image [ADU]
-        """
+#         types  = list(input.keys())
+#         values = list(input.values())
 
-        # Get all the paths of the files corresponding to these hashes
-        paths = [ (self.db["DarkImages"].find_one({"_id": hash}))["path"] for hash in self.rawDarkHashes]
+#         # Check that the keys are of the right format. For a master dark these should only be DarkImages
 
-        # Get all the fits files corresponding to these hashes
-        darks = tools.getImages(paths)
+#         keysAreCorrect = (len(types)) == 1 and types[0] == "DarkImages"
 
-        # Use the image in the fits files, and use mean_combining to obtain the the master image
-        masterDark = np.median(darks, axis=0)
+#         valuesAreCorrect = (len(values) == 1) and (len(values[0]) > 1)
 
-        if outputFileName is not None:
-            self.saveImageAndAddToDatabase(masterDark, outputFileName)
-            print("Master dark image saved to fits file")
+#         if keysAreCorrect and valuesAreCorrect:
+#             areRawImages = np.all([ self.db[types[0]].find_one({"_id": hash})["type"] == "Raw Dark Image"
+#                                     for hash in values[0]])
+#         else:
+#             return False
 
-        # That's it!
+#         # If we get here, the input is sane if the hashes correspond to raw Images
 
-        print("Block generated!")
-        return masterDark
+#         return areRawImages
 
 
 
 
 
 
-    def getHashOfOutputfile(self):
-        """
-        This function returns the hash id for the output file.
-        This hash is made from the hash files that are used as input.
 
-        Ouput:
-            hash. string containing the output hash
-        """
-        hash = hashlib.sha256(bytes("".join(self.rawDarkHashes), 'utf-8')).hexdigest()
-        return hash
+#     def run(self, outputFileName=None):
+#         """
+#         We run through the alghorim to create the master dark image.
+
+#         Input:
+#             outputFileName: If None, nothings is saved. Otherwise, a string with the name fo the outputfile,
+#                             incl. the extension ".fits".
+
+#         Output:
+#             masterDark:     master dark image [ADU]
+#         """
+
+#         # Get all the paths of the files corresponding to these hashes
+#         paths = [ (self.db["DarkImages"].find_one({"_id": hash}))["path"] for hash in self.rawDarkHashes]
+
+#         # Get all the fits files corresponding to these hashes
+#         darks = tools.getImages(paths)
+
+#         # Use the image in the fits files, and use mean_combining to obtain the the master image
+#         masterDark = np.median(darks, axis=0)
+
+#         if outputFileName is not None:
+#             self.saveImageAndAddToDatabase(masterDark, outputFileName)
+#             print("Master dark image saved to fits file")
+
+#         # That's it!
+
+#         print("Block generated!")
+#         return masterDark
+
+
+
+
+
+
+#     def getHashOfOutputfile(self):
+#         """
+#         This function returns the hash id for the output file.
+#         This hash is made from the hash files that are used as input.
+
+#         Ouput:
+#             hash. string containing the output hash
+#         """
+#         hash = hashlib.sha256(bytes("".join(self.rawDarkHashes), 'utf-8')).hexdigest()
+#         return hash
 
 
 
@@ -509,7 +509,6 @@ class CalibratedScienceFrames(PipelineComponent):
             self.outputPath = os.getcwd() + "/Data/ProcessedData/CalibratedScience/"
             self.type = "Calibrated Science Image"
             self.masterBiasHash = inputScienceHashes["BiasImages"]
-            self.masterDarkHash = inputScienceHashes["DarkImages"]
             self.rawScienceHash = inputScienceHashes["ScienceImages"]
         else:
             raise Exception("Error: The input hashes do not match the correct type: Aborting")
@@ -534,8 +533,8 @@ class CalibratedScienceFrames(PipelineComponent):
         # Check that the keys are of the right format. For a calibrated science image, these should be science
         # images, dark images and bias images.
 
-        correctKeysFormat = ["ScienceImages", "DarkImages", "BiasImages"]
-        keysAreCorrect = (len(types) == 3) and np.all([key in types for key in correctKeysFormat])
+        correctKeysFormat = ["ScienceImages", "BiasImages"]
+        keysAreCorrect = (len(types) == 2) and np.all([key in types for key in correctKeysFormat])
 
         if keysAreCorrect:
             valuesAreCorrectType = np.all([ isinstance(value, str) for value in values])
@@ -544,14 +543,12 @@ class CalibratedScienceFrames(PipelineComponent):
 
         if valuesAreCorrectType:
 
-            isMasterDarkImage = self.db["DarkImages"].find_one({"_id": inputScienceHashes["DarkImages"]})["type"] == "Master Dark Image"
-
             isMasterBiasImage = self.db["BiasImages"].find_one({"_id": inputScienceHashes["BiasImages"]})["type"] == "Master Bias Image"
             isRawScienceImage = self.db["ScienceImages"].find_one({"_id": inputScienceHashes["ScienceImages"]})["type"] == "Raw Science Image"
         else:
             return False
 
-        return isMasterDarkImage and isMasterBiasImage and isRawScienceImage
+        return isMasterBiasImage and isRawScienceImage
 
 
 
@@ -573,16 +570,14 @@ class CalibratedScienceFrames(PipelineComponent):
         """
 
         # Get all the paths of the files corresponding to these hashes
-        darkPath    = self.db["DarkImages"].find_one({"_id": self.masterDarkHash })["path"]
         biasPath    = self.db["BiasImages"].find_one({"_id": self.masterBiasHash })["path"]
         sciencePath = self.db["ScienceImages"].find_one({"_id": self.rawScienceHash})["path"]
 
         # Get all the fits files corresponding to these hashes
-        dark    = tools.getImage(darkPath)
         bias    = tools.getImage(biasPath)
         science = tools.getImage(sciencePath)
 
-        calibratedScience = science - bias - dark
+        calibratedScience = science - bias
 
         # Add offset so that all the values in the MasterFlat are positive
         if np.min(calibratedScience) < 0:
@@ -611,7 +606,7 @@ class CalibratedScienceFrames(PipelineComponent):
         Ouput:
            hash. string containing the output hash
         """
-        combinedHashes = self.masterDarkHash + self.masterBiasHash + self.rawScienceHash
+        combinedHashes =  self.masterBiasHash + self.rawScienceHash
         hash = hashlib.sha256(bytes(combinedHashes, 'utf-8')).hexdigest()
         return hash
 
@@ -652,7 +647,6 @@ class CalibratedEtalonImage(PipelineComponent):
             self.type       = "Calibrated Etalon Image"
             self.rawEtalonHash  = inputEtalonHashes["EtalonImages"]
             self.masterBiasHash = inputEtalonHashes["BiasImages"]
-            self.masterDarkHash = inputEtalonHashes["DarkImages"]
         else:
             raise Exception("Error: The input hashes do not match the correct type: Aborting")
             exit(1)
@@ -675,8 +669,8 @@ class CalibratedEtalonImage(PipelineComponent):
         # Check that the keys are of the right format. For a calibrated science image, these should be science
         # images, dark images and bias images.
 
-        correctKeysFormat = ["EtalonImages", "DarkImages", "BiasImages"]
-        keysAreCorrect = (len(types) == 3) and np.all([key in types for key in correctKeysFormat])
+        correctKeysFormat = ["EtalonImages", "BiasImages"]
+        keysAreCorrect = (len(types) == 2) and np.all([key in types for key in correctKeysFormat])
 
         if keysAreCorrect:
             valuesAreCorrectType = np.all([ isinstance(value, str) for value in values])
@@ -685,14 +679,12 @@ class CalibratedEtalonImage(PipelineComponent):
 
         if valuesAreCorrectType:
 
-            isMasterDarkImage = self.db["DarkImages"].find_one({"_id": inputEtalonHashes["DarkImages"]})["type"] == "Master Dark Image"
-
             isMasterBiasImage = self.db["BiasImages"].find_one({"_id": inputEtalonHashes["BiasImages"]})["type"] == "Master Bias Image"
             isRawEtalonImage = self.db["EtalonImages"].find_one({"_id": inputEtalonHashes["EtalonImages"]})["type"] == "Raw Etalon Image"
         else:
             return False
 
-        return isMasterDarkImage and isMasterBiasImage and isRawEtalonImage
+        return isMasterBiasImage and isRawEtalonImage
 
 
 
@@ -719,17 +711,15 @@ class CalibratedEtalonImage(PipelineComponent):
 
         etalonPath = self.db["EtalonImages"].find_one({"_id": self.rawEtalonHash})["path"]
         biasPath   = self.db["BiasImages"].find_one({"_id": self.masterBiasHash})["path"]
-        darkPath    = self.db["DarkImages"].find_one({"_id": self.masterDarkHash})["path"]
 
         # Get all the images that correspond to these paths
 
         etalon = tools.getImage(etalonPath)
         bias   = tools.getImage(biasPath)
-        dark   = tools.getImage(darkPath)
 
         # Use these images to get the calibrated etalon image.
 
-        calibratedEtalon = etalon - bias - dark
+        calibratedEtalon = etalon - bias 
         if np.min(calibratedEtalon) < 0:
             calibratedEtalon = calibratedEtalon - np.min(calibratedEtalon)
 
@@ -755,7 +745,7 @@ class CalibratedEtalonImage(PipelineComponent):
         Ouput:
            hash. string containing the output hash
         """
-        combinedHashes = self.masterDarkHash + self.masterBiasHash + self.rawEtalonHash
+        combinedHashes = self.masterBiasHash + self.rawEtalonHash
         hash = hashlib.sha256(bytes(combinedHashes, 'utf-8')).hexdigest()
         return hash
 
@@ -817,15 +807,15 @@ if __name__ == "__main__":
     print("")
 
 
-    # Master Dark Image
-    raw_dark_hashes =  ['6128a1e361aca3d5b17e366511efc75b0aeffbada070cbc4a3aebdd1cb1d66db',
-                        '649d0b67d7be70ef286d86c9629bd017716cd3667fde46beeab35dcd27a98f0c',
-                        'f53e4b7837347cdcddf0bf41a1cd5ac40f7594c4561ac8b71b08fb4da541f1f5']
-    masterD1 = MasterDark(db, DarkImages=raw_dark_hashes)
-    masterD2 = MasterDark(DarkImages=raw_dark_hashes)
-    masterD1.run("testFDark.fits")
-    masterD2.run("testDDark.fits")
-    print("")
+    # # Master Dark Image
+    # raw_dark_hashes =  ['6128a1e361aca3d5b17e366511efc75b0aeffbada070cbc4a3aebdd1cb1d66db',
+    #                     '649d0b67d7be70ef286d86c9629bd017716cd3667fde46beeab35dcd27a98f0c',
+    #                     'f53e4b7837347cdcddf0bf41a1cd5ac40f7594c4561ac8b71b08fb4da541f1f5']
+    # masterD1 = MasterDark(db, DarkImages=raw_dark_hashes)
+    # masterD2 = MasterDark(DarkImages=raw_dark_hashes)
+    # masterD1.run("testFDark.fits")
+    # masterD2.run("testDDark.fits")
+    # print("")
 
 
 
@@ -847,19 +837,14 @@ if __name__ == "__main__":
     # Calibrated Science Image
     rawScienceHash = "d99dff18a15ab83b51af4ecdca9dc99c2069bdc17eb6a5d1cdb67e7e86c92e4a"
 
-    master_dark_pathF = "Data/ProcessedData/MasterDark/testFDark.fits"
-    master_dark_pathD = "Data/ProcessedData/MasterDark/testDDark.fits"
-
     master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
     master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
 
 
     print(" ")
     calibration1 = CalibratedScienceFrames(db, ScienceImages=rawScienceHash,
-                                              DarkImages=master_dark_pathF,
                                               BiasImages=master_bias_pathF)
     calibration2 = CalibratedScienceFrames(ScienceImages=rawScienceHash,
-                                           DarkImages=master_dark_pathD,
                                            BiasImages=master_bias_pathD)
 
     calibration1.run("testFScience.fits")
@@ -869,18 +854,13 @@ if __name__ == "__main__":
     # Calibrated Etalon Image
     raw_etalon_hash  = "e0ac021d19ce5520d0ba92df1d5aadf6541f35f76a84121576828287937ca508"
 
-    master_dark_pathF = "Data/ProcessedData/MasterDark/testFDark.fits"
-    master_dark_pathD = "Data/ProcessedData/MasterDark/testDDark.fits"
-
     master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
     master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
 
     print(" ")
     calibratedEtalon1 = CalibratedEtalonImage(db, EtalonImages=raw_etalon_hash,
-                                                 DarkImages=master_dark_pathF,
                                                  BiasImages=master_bias_pathF)
     calibratedEtalon2 = CalibratedEtalonImage(EtalonImages=raw_etalon_hash,
-                                              DarkImages=master_dark_pathD,
                                               BiasImages=master_bias_pathD)
     calibratedEtalon1.run("testFEtalon.fits")
     calibratedEtalon2.run("testDEtalon.fits")
