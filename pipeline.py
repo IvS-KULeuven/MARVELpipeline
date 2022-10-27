@@ -485,6 +485,9 @@ class MasterFlat(PipelineComponent):
 
 
 class CalibratedScienceFrames(PipelineComponent):
+    """ 
+    TODO: documentation. What is this class for?
+    """
 
     def __init__(self, database=None, **inputScienceHashes):
         super().__init__(database, **inputScienceHashes)
@@ -547,14 +550,14 @@ class CalibratedScienceFrames(PipelineComponent):
 
     def run(self, outputFileName=None):
         """
-        We run through the alghoritm to create the calibrated science images.
+        We run through the algorithm to create the calibrated science images.
 
         Input:
             outputFileName: If None, nothing is saved. Otherwise, a string with the name of the outputfile,
                             incl. the extension ".fits".
 
         Output:
-            masterFlat:     calibrated science image [ADU]
+            calibratedScience:     calibrated science image [ADU]
         """
 
         # Get all the paths of the files corresponding to these hashes
