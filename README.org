@@ -93,8 +93,8 @@ ran the component and the product is added to the database.
 
 *** Running the whole pipeline
 
-It is not simple for every component to keep track of the files that are needed to run the component.
-The whole pipeline is shown in the following schematic overview of the current implementation.
+It is usefull to keep track of all the files that are needed to run every the component.
+The whole pipeline is given here to give in a schematic overview of the currently implemented pipeline. 
 
 #+CAPTION:Overview of entire pipeline
 #+NAME: fig:whole_pipeline
@@ -112,14 +112,14 @@ ascii file. The latter can be instantiated and used, for example by:
   from database import DatabaseFromLocalFiles
 
   # Create a DatabaseFromLocalFiles object
-  db = DatabaseFromLocalFiles()
+  db = DatabaseFromLocalFiles("database_object_file.txt")
 
   ...
 
   # After running the pipeline we might want to keep track of the files that were created.
   # This can be done by saving the database into a txt file.
 
-  db.saveToFile("database_object_file.txt")
+  db.save()
 #+end_src
 
 

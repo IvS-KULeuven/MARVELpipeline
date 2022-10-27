@@ -9,7 +9,7 @@ import numpy as np
 
 from astropy.io import fits
 from datetime   import datetime
-from database   import DatabaseFromLocalFiles
+from database   import DatabaseFromLocalFile
 from numba      import njit, jit, vectorize
 from scipy      import ndimage
 from tqdm       import tqdm
@@ -741,7 +741,7 @@ def identify(positions, observed, polynomials, xValues, fibers, orders, shift):
 
 if __name__ == "__main__":
 
-    db = DatabaseFromLocalFiles("pipelineDatabase.txt")
+    db = DatabaseFromLocalFile("pipelineDatabase.txt")
     print("")
 
     masterflat_hash = "641f2b56be1a8a86848c29abbd81858ddd15e42359ae84473050962efb9dea06"
@@ -753,6 +753,6 @@ if __name__ == "__main__":
     print("==================")
     maskExtractor2.run("testDMask.fits")
 
-    db.saveToFile("pipelineDatabase.txt")
+    db.save()
 
 

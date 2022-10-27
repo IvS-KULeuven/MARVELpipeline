@@ -10,7 +10,7 @@ import numpy as np
 from pipeline   import PipelineComponent
 from pymongo    import MongoClient
 from numba      import njit, jit, vectorize, prange
-from database   import DatabaseFromLocalFiles
+from database   import DatabaseFromLocalFile
 from tqdm       import tqdm
 from astropy.io import fits
 from datetime   import datetime
@@ -30,7 +30,7 @@ class OptimalExtraction(PipelineComponent):
         Initializes the optimal extraction component.
 
         Input:
-            database:              If not None, DatabaseFromLocalFiles object that is used to
+            database:              If not None, DatabaseFromLocalFile object that is used to
                                    find the input hashes. If is None, mongoDB is used as database.
             debug:                 0, 1, 2 or 3: 0 meaning no debug output, 3 meaning lots of debug output.
 
@@ -522,7 +522,7 @@ def getOptimalSpectrum(xValues, yValues, flatFlux, imageFlux, readout=2000):
 
 if __name__ == "__main__":
 
-    db = DatabaseFromLocalFiles("pipelineDatabase.txt")
+    db = DatabaseFromLocalFile("pipelineDatabase.txt")
     print("")
 
     # Optimal extract the orders of an extracted science image
@@ -552,7 +552,7 @@ if __name__ == "__main__":
     print("+============================+")
     optimalEtalon2.run("optimal_extracted_etalon_flux.fits")
 
-    db.saveToFile("pipelineDatabase.txt")
+    db.saveToFile()
 
 
 
