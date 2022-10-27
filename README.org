@@ -95,7 +95,7 @@ ran the component and the object is added to the database.
 
 *** Overview of whole pipeline
 
-It is not simple for every component to keep track of the files that are needed to run the component.
+It is usefull to keep track of all the files that are needed to run every the component.
 The whole pipeline is given here to give in a schematic overview of the currently implemented pipeline. 
 
 #+CAPTION:Overview of entire pipeline
@@ -120,14 +120,14 @@ When running the pipeline for the first time while using a =DatabaseFromLocalFil
   from database import DatabaseFromLocalFiles
 
   # Create a DatabaseFromLocalFiles object
-  db = DatabaseFromLocalFiles()
+  db = DatabaseFromLocalFiles("database_object_file.txt")
 
   ...
 
   # After running the pipeline we might want to keep track of the files that were created.
   # This can be done by saving the database into a txt file.
 
-  db.saveToFile("database_object_file.txt")
+  db.save()
 #+end_src
 
 If at a later date we want to continue using this database we can simply create a =DatabaseFromLocalFiles=

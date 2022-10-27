@@ -9,7 +9,7 @@ from numba      import njit, jit, vectorize
 from astropy.io import fits
 from datetime   import datetime
 from pipeline   import PipelineComponent
-from database   import DatabaseFromLocalFiles
+from database   import DatabaseFromLocalFile
 
 
 
@@ -27,7 +27,7 @@ class OrderExtraction(PipelineComponent):
         Initialize the order extraction component
 
         Input:
-            database:      if not None, DatabaseFromLocalFiles object to be used as database.
+            database:      if not None, DatabaseFromLocalFile object to be used as database.
                            else MongoDB is used as database.
 
             debug:         0, 1, 2, or 3:  0 meaning no debug output, 3 meaning lots of debug output.
@@ -296,7 +296,7 @@ class OrderExtraction(PipelineComponent):
 
 if __name__ == "__main__":
 
-    db = DatabaseFromLocalFiles("pipelineDatabase.txt")
+    db = DatabaseFromLocalFile("pipelineDatabase.txt")
     print("")
 
     # Extract the orders of a science image
@@ -335,5 +335,5 @@ if __name__ == "__main__":
     print("+============================+")
     etalonExtractor2.run("extractedEtalonTestD.fits")
 
-    db.saveToFile("pipelineDatabase.txt")
+    db.saveToFile()
 

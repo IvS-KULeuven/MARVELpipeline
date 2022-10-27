@@ -13,14 +13,14 @@ from io       import StringIO
 
 
 
-class DatabaseFromLocalFiles():
+class DatabaseFromLocalFile():
     """
     This class is used for locally running the pipeline without needing to install
     mongodb. This is only advisable if you are dealing with a small amount of fits
     files. The database object in this case is a pandas dataframe.
     """
 
-    def __init__(self, initializationFilePath=None):
+    def __init__(self, initializationFilePath):
         """
         Initializes the database object.
 
@@ -30,20 +30,17 @@ class DatabaseFromLocalFiles():
                                 file from wich the database gets created.
         """
 
-        if initializationFilePath is None:
+        self.outputFilePath = initializationFilePath
+        # If no file exist
+        if not os.path.isfile(initializationFilePath):
 
             # Create database from the files in the raw data directory
             dataDirectoryPath = os.getcwd() + "/Data/RawData/"
             self.localDataBase = self.makeDataBaseLocally(dataDirectoryPath)
 
-
         else:
 
-            # Check that file exists
-            if not os.path.isfile(initializationFilePath):
-                print(f"Input hash: {initializationFilePath} does not correspond to vallid file")
-            else:
-                self.localDataBase = self.loadFromFile(initializationFilePath)
+            self.localDataBase = self.loadFromFile(initializationFilePath)
 
 
 
@@ -101,7 +98,7 @@ class DatabaseFromLocalFiles():
 
 
 
-    def saveToFile(self, outputFilePath):
+    def save(self):
         """
         Save the information in the database object to text file.
 
@@ -115,7 +112,7 @@ class DatabaseFromLocalFiles():
 
         fileAsDictionary = dict(zip(keys, values))
 
-        file = open(outputFilePath, "w")
+        file = open(self.outputFilePath, "w")
         file.write(str(fileAsDictionary))
         file.close()
 
@@ -366,7 +363,7 @@ def initializeDataBaseWithRawImages(clearIfExist=False):
 if __name__ == "__main__":
 
     #    initializeDataBaseWithRawImages(clearIfExist=True)
-    db = DatabaseFromLocalFiles()
-    db.saveToFile("Test.txt")
+    db = DatabaseFromLocalFile("Test.txt")
+    db.save()
     db.loadFromFile("Test.txt")
-    db.saveToFile("Test2.txt")
+    db.save()

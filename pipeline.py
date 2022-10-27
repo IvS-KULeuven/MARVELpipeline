@@ -11,7 +11,7 @@ import numpy as np
 import hashlib
 from datetime import datetime
 import matplotlib.pyplot as plt
-from database import DatabaseFromLocalFiles
+from database import DatabaseFromLocalFile
 
 client = MongoClient()
 
@@ -50,7 +50,7 @@ class PipelineComponent():
             inputHashes: imageType/hash (or path) of the fits file that is given as input.
         """
 
-        if isinstance(database, DatabaseFromLocalFiles):
+        if isinstance(database, DatabaseFromLocalFile):
             self.db = database
         else:
             if not "databaseMARVEL" in client.list_database_names():
@@ -85,7 +85,6 @@ class PipelineComponent():
         for imageType in inputHash:
 
             # If there are multiple hashes corresponding to one imagetype
-
             if type(inputHash[imageType]) == list:
                 for hash in inputHash[imageType]:
                     image = self.db[imageType].find_one({"_id": hash})
@@ -568,7 +567,7 @@ class CalibratedScienceFrames(PipelineComponent):
         bias    = tools.getImage(biasPath)
         science = tools.getImage(sciencePath)
 
-        calibratedScience = science - bias
+        calibratedScience = science - bias - dark
 
         # Add offset so that all the values in the MasterFlat are positive
         if np.min(calibratedScience) < 0:
@@ -715,7 +714,7 @@ class CalibratedEtalonImage(PipelineComponent):
 
         # Use these images to get the calibrated etalon image.
 
-        calibratedEtalon = etalon - bias
+        calibratedEtalon = etalon - bias - dark
         if np.min(calibratedEtalon) < 0:
             calibratedEtalon = calibratedEtalon - np.min(calibratedEtalon)
 
@@ -784,7 +783,7 @@ Whenever we want to execute a component from the pipeline.
 
 if __name__ == "__main__":
 
-    db = DatabaseFromLocalFiles()
+    db = DatabaseFromLocalFile("pipelineDatabase.txt")
     print("")
 
     # Master Bias Image
@@ -804,7 +803,7 @@ if __name__ == "__main__":
 
 
     # Master Dark Image
-    raw_dark_hashes =  ['628a1e361aca3d5b17e366511efc75b0aeffbada070cbc4a3aebdd1cb1d66db',
+    raw_dark_hashes =  ['6128a1e361aca3d5b17e366511efc75b0aeffbada070cbc4a3aebdd1cb1d66db',
                         '649d0b67d7be70ef286d86c9629bd017716cd3667fde46beeab35dcd27a98f0c',
                         'f53e4b7837347cdcddf0bf41a1cd5ac40f7594c4561ac8b71b08fb4da541f1f5']
     masterD1 = MasterDark(db, DarkImages=raw_dark_hashes)
@@ -872,4 +871,4 @@ if __name__ == "__main__":
     calibratedEtalon2.run("testDEtalon.fits")
 
 
-    db.saveToFile("pipelineDatabase.txt")
+    db.save()
