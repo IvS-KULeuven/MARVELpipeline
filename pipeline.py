@@ -165,9 +165,15 @@ class PipelineComponent():
 
 
 class MasterBias(PipelineComponent):
+    """
+    Class that creates the master bias image. Such an image is obtained by taking the median of multiple
+    raw bias images.
+    """
 
     def __init__(self, database=None, **input):
         super().__init__(database, **input)
+        input = self.inputHashes
+
         if self.checkSanityOfinputTypes(**input):
 
             self.outputPath = os.getcwd() + "/Data/ProcessedData/MasterBias/"
@@ -262,9 +268,15 @@ class MasterBias(PipelineComponent):
 
 
 class MasterDark(PipelineComponent):
+    """
+    Class that creates the master dark image. Such an image is obtained by taking the median of multiple
+    raw dark images.
+    """
+
 
     def __init__(self, database=None, **darkHashes):
         super().__init__(database, **darkHashes)
+        darkHashes = self.inputHashes
 
         if self.checkSanityOfinputTypes(**darkHashes):
 
