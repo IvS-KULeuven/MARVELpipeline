@@ -172,6 +172,19 @@ class DatabaseFromLocalFile():
 
 
 
+    def list_collection_names(self):
+        """
+        Returns the name of the collections that are in the databse.
+        """
+        return list(self.localDataBase.keys())
+
+
+
+
+
+
+
+
 
 
 
