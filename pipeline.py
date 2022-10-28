@@ -59,8 +59,21 @@ class PipelineComponent():
                 self.db = client["databaseMARVEL"]
         inputHashes = self.convertInputToHash(**inputHashes)
 
+
+
+
         if not (self.checkSanityOfInput(**inputHashes)):
-            raise Exception("Input is not correct format")
+            keysInDatabase = np.array([key in self.db.list_collection_names() for key in inputHashes.keys()])
+
+
+
+            if not np.all(keysInDatabase):
+                unrecognizedKeys = np.array(list(inputHashes.keys()))[~keysInDatabase]
+                unrecognizedKeys = list(unrecognizedKeys)
+                keys = str(unrecognizedKeys)[1:-1]
+                raise Exception(f"Keyvalues:  {keys} not found in database")
+            else:
+                raise Exception("One of the input hashes/paths is not found in databse")
         self.inputHashes = inputHashes
 
 
@@ -83,21 +96,23 @@ class PipelineComponent():
         """
 
         for imageType in inputHash:
+            if imageType not in self.db.list_collection_names():
+                return False
+            else:
+                # If there are multiple hashes corresponding to one imagetype
+                if type(inputHash[imageType]) == list:
+                    for hash in inputHash[imageType]:
+                        image = self.db[imageType].find_one({"_id": hash})
 
-            # If there are multiple hashes corresponding to one imagetype
-            if type(inputHash[imageType]) == list:
-                for hash in inputHash[imageType]:
-                    image = self.db[imageType].find_one({"_id": hash})
+                        if image is None:
+                            return False
 
+                # If there is one hash corresponding to one imageType
+                else:
+
+                    image = self.db[imageType].find_one({"_id":  inputHash[imageType]})
                     if image is None:
                         return False
-
-            # If there is one hash corresponding to one imageType
-            else:
-
-                image = self.db[imageType].find_one({"_id":  inputHash[imageType]})
-                if image is None:
-                    return False
 
         # If we get here, the hashes were found at the correct location
 
@@ -497,7 +512,7 @@ class MasterFlat(PipelineComponent):
 
 
 class CalibratedScienceFrames(PipelineComponent):
-    """ 
+    """
     TODO: documentation. What is this class for?
     """
 
@@ -719,7 +734,7 @@ class CalibratedEtalonImage(PipelineComponent):
 
         # Use these images to get the calibrated etalon image.
 
-        calibratedEtalon = etalon - bias 
+        calibratedEtalon = etalon - bias
         if np.min(calibratedEtalon) < 0:
             calibratedEtalon = calibratedEtalon - np.min(calibratedEtalon)
 
