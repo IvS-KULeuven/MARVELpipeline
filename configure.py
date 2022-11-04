@@ -1,5 +1,0 @@
-
-
-
-def save_image():
-...

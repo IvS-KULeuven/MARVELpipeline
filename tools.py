@@ -18,40 +18,110 @@ db = client["databaseMARVEL"]
 
 
 
-def saveFigure(figure):
-    ...
-
 def getImages(paths):
-    return np.array([getImage(path) for path in paths])
+    """
+    This function returns an array containing arrays with the data from different FITS files.
+
+    INPUT:
+        paths: list with strings that point to the different FITS files.
+
+    OUTPUT:
+        image: np.array with data from the FITS files.
+
+    NOTE:
+       This function assumes that image is stored in hdul[0] of the fits file.
+    """
+    image = np.array([getImage(path) for path in paths])
+    return image
+
+
+
 
 
 def getImage(path):
+    """
+    Returns the image that is contained in a FITS file.
+
+    INPUT:
+       path: string contains the path to the FITS file
+
+    OUTPUT:
+       np.array containing the data in hdul[0] of the fits file
+    """
+
     hdul = fits.open(path)
     return hdul[0].data
 
+
 @njit()
 def getGain(path):
-    # TODO: This should be read from the fits file [e/ADU]
+    """
+    Returns the gain in a FITS file.
+
+    INPUT:
+       path: string containing the path of the FITS file
+
+    OUTPUT:
+       gain. gain that corresponds to the FITS file. [e/ADU]
+
+    NOTE:
+       For now this function always returns a constant value for every
+       FITS file. In the future this value should be saved in the FITS
+       file and this function will read in that value from the file.
+    """
+
     return 9.4
+
 
 @njit()
 def getExposureTime(path):
-    # TODO: This should be read from the fits file [s]
+    """
+    Returns the exposure time of an image
+
+    INPUT:
+       path: string containing the path of the FITS file
+
+    OUTPUT:
+        exposureTime: exposure time that correspond to the FITS file [s]
+
+    NOTE:
+       For now this function always returns a constant value for every
+       FITS file. In the future this value should be saved in the FITS
+       file and this function will read in that value from the file.
+    """
     return 5
+
+
+
 
 @njit()
 def getDarkRate(path):
-    # TODO: This should be read from the fits file [e/pix/s]
+    """
+    Returns the Dark Rate of an image
+
+    INPUT:
+        path: string containing the path of the FITS file
+
+    OUTPUT:
+        DarkRate: dark rate that corresponds to the FITS file
+
+    NOTE:
+       For now this function always returns a constant value for every
+       FITS file. In the future this value should be saved in the FITS
+       file and this function will read in that value from the file.
+    """
     return 0.1
+
+
 
 
 
 
 def addToDataBase(metaData, db, overWrite=False):
     """
-    Add the input dict to database object
+    Add the input dict to the database object
 
-    Input:
+    INPUT:
         metaData:  dictionary containing the metadata that we want to add to the database image
         db:        database image to which we add metadata
         overWrite: bool. If True, we overwrite the row if a row already exists with the same "_id"
@@ -59,18 +129,26 @@ def addToDataBase(metaData, db, overWrite=False):
     Output:
         None
 
-    We should have proper error catching for:
-    1. We want to add somthing that already exist
-    2. image is not in the dictornary
-    3. Check that dict is in the right format
+    TODO:
+        We should have proper error catching for:
+        1. We want to add somthing that already exist
+        2. image is not in the dictornary
     """
+
+    # We should make sure that keys of the metadata can be added to the database
+    expectedKeys = {"_id", "path", "type", "date_created"}
+    if metaData.keys() != expectedKeys:
+        raise Exception(f"Error: The input metadata keys: {metaData.keys()}"
+                        f"do not match the expected keys {expectedKeys}")
+        exit(1)
+
 
     images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages",
                   "Calibrated Science Image" : "ScienceImages", "Calibrated Etalon Image":"EtalonImages", "Extracted Flat Orders" : "ExtractedOrders",
                   "Extracted Science Orders" : "ExtractedOrders","Extracted Etalon Orders": "ExtractedOrders",
                   "Optimal Extracted Science" : "OptimalExtracted", "Optimal Extracted Etalon" : "OptimalExtracted"}
-    typeImage  = metaData["type"]
 
+    typeImage  = metaData["type"]
     collection = db[images[typeImage]]
     isInCollection = collection.find_one({"_id": metaData["_id"]})
 
@@ -90,7 +168,12 @@ def addToDataBase(metaData, db, overWrite=False):
 
 
 def getPositionsOfOrders():
-    p = {}
+    """
+    This function returns an initial guess of where the fibers/orders would fall on the cross
+    section of the CCD. These values are guesses taken from simulations. At some point we might
+    save this information into the FITS file itself, so that it can be read in from there as well.
+    """
+
 
     positions = [ 291.32511331,  308.13650784,  324.87281272,  341.54605083,  358.18362429,
                   559.03889327,  575.74417217,  592.37975593,  608.98547766,  625.55506675,
@@ -160,18 +243,10 @@ def getPositionsOfOrders():
                   9418.35583235, 9433.33273106, 9448.30956075, 9463.27443336, 9478.23426121]
 
 
-    fibers = []
-    orders = []
-
-    for i in np.arange(np.size(positions)):
-        order = 98 - int((i)/5)
-        fiber = 5 - int(i%5)
-        if (fiber == 0):
-            fiber=5
-
-        fibers.append(fiber)
-        orders.append(order)
-
+    nFibers = int(np.size(positions) / 5)
+    fibers = np.array([np.arange(5,0,-1)]).repeat(nFibers).reshape((5,nFibers))
+    fibers = np.transpose(fibers).reshape(nFibers*5)
+    orders = list(np.arange(98,32,-1).repeat(5))
     p = np.array([fibers, orders, positions])
 
     return p
@@ -181,60 +256,23 @@ def getPositionsOfOrders():
 
 
 
-def checkInputOptimalExtractedData(path, order, fiber):
-    """
-    Tis function checks that for the functions getExtractedPosition and getExtractedFlux the input
-    that is specified is sensible. If this is the case the function returns the specified table, if
-    not the function return None.
-    """
-    # Check that path exist
-    if not os.path.isfile(path):
-        print("Error: path does not exist")
-        return
-
-    # Check that type of fits file is Extracted Flux
-    hdul = fits.open(path)
-
-    fileType = hdul[0].header["type"]
-
-    if not (fileType == "Optimal Extracted"):
-        print("Error: filetype {} is not a type of Optimal Extracted".format(fileType))
-        return
-
-    # Try to find order/fiber:
-    # First try find correct table at expect location
-    idx = (order-1)*5 + fiber
-
-    if ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber)):
-        table = hdul[idx]
-    else:
-        # If the correct table is not at the expected location, we loop over every order
-        # and check if the correct table among them.
-        locationFound = False
-        for idx in np.arange(np.size(hdul)):
-            try:
-                correctLocation = ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber))
-            except:
-                continue
-            if correctLocation:
-                locationFound = True
-                table = hdul[idx]
-                break
-        if not locationFound:
-            print("order {o} and fiber {f} not found in file {file}.".format(o=order, f=fiber, file=path))
-            return
-    return table
-
-
-
-
-
-
 def checkInputExtractedData(path, order, fiber):
     """
     Tis function checks that for the functions getExtractedPosition and getExtractedFlux the input
-    that is specified is sensible. If this is the case the function returns the specified table, if
-    not the function return None.
+    that is specified is sensible. If this is the case the function returns the table for the specified
+    order/fiber, if not the function return None.
+
+    INPUT:
+       path:  string that contains the path to the extractedOrder FITS file of which we want to extract information.
+
+       order: The order for which we want to extract the table
+
+       fiber: The fiber for which we want to extract the table.
+
+    OUTPUT:
+       table. Table for the corresponding fiber/order in the FITS file. If this table is not found
+              returns None.
+
     """
 
     # Check that path exist
@@ -276,7 +314,25 @@ def checkInputExtractedData(path, order, fiber):
     return table
 
 
+
+
+
+
 def getExtractedPosition(path, order, fiber):
+    """
+    Returns the extracted position for a certain order/fiber of an ExtractedOrders image.
+
+    INPUT:
+        path: string containing the path to the FITS file
+
+        order: order of the table we want to extract
+
+        fiber: fiber of the positions we want to extract
+
+    OUTPUT:
+        if order/fiber is not found in the FITS file, return None. Else it returns an array
+        with the (x,y) pixel coordinates.
+    """
 
     # First we check that the input that is provided is sensible
     table = checkInputExtractedData(path, order, fiber)
@@ -291,6 +347,20 @@ def getExtractedPosition(path, order, fiber):
 
 
 def getExtractedFlux(path, order, fiber):
+    """
+    Returns the flux of the pixels for a certain order/fiber of an ExtractedOrder image.
+
+    INPUT:
+        path: string containing the path to the FITS file
+
+        order: order of the table we want to extract
+
+        fiber: fiber of the positions we want to extract
+
+    OUTPUT:
+        if order/fiber is not found in the FITS file, return None. Else it returns an array
+        with the fluxes.
+    """
 
     # First we check that the input that is provided is sensible
     table = checkInputExtractedData(path, order, fiber)
@@ -307,7 +377,9 @@ def getExtractedFlux(path, order, fiber):
 def getFibersAndOrders(path):
     """
     This function returns the fibers and orders that are in the extracted data.
+
     INPUT: path of the extracted flux fits file
+
     OUTPUT: list of fibers, list of orders
     """
     # Check that path exist
@@ -340,10 +412,13 @@ def getFibersAndOrders(path):
 def getAllExtractedSpectrum(path):
     """
     This function extracts all the info (positions and flux) for all the orders from
-    extracted images.
+    extractedOrders images.
+
     INPUT: path to the extracted images.
+
     OUPUT: dictionary with keys the orders and values a dictorionary with fibers/(positions, flux)
            as key/values.
+
     REMARK: The idea behind this function is that we only open the file one time and extract all the
             information at once instead of opening and closing the same file for different orders.
     """
@@ -394,7 +469,7 @@ def getAllExtractedSpectrum(path):
             table = getTable(o, f)
             if table is None:
                 print("Error in file {}. Not correct format.".format(path))
-                return 
+                return
             flux = (table.data["Flux"]).astype(np.float64)
             xPos = (table.data['X']).astype(np.int16)
             yPos = (table.data['Y']).astype(np.int16)
@@ -413,42 +488,48 @@ def getAllExtractedSpectrum(path):
 
 
 
-def createReferenceList(path1="Data/MARVEL_2021_11_22_detector1.hdf", path2="Data/MARVEL_2021_11_22.hdf"):
+def createReferenceList(path="Data/MARVEL_2021_11_22_detector1.hdf"):
+    """
+    Convert the input hdf file that is used by pyechelle simulator into a csv
+    during wavelength calibration
 
-   hdrs = ["x_pixels", "y_Coordinate", "wavelength", "Fiber", "Orders"]
-   fibers = [1, 2, 3, 4, 5]
-   orders = np.arange(30, 99)
-   h5file = h5py.File(path1)
-   h5file1 = h5py.File(path2)
+    INPUT:
+        path: string. that contains the path to the hdf file.
 
-   df = pd.DataFrame(columns=hdrs)
-   f1_wavelengths = h5file["wavelengths"]
-   f1_yCoordinates = h5file["yCoordinates"]
-   print(f1_wavelengths)
-   print(f1_yCoordinates)
+    OUTPUT:
+        None
+    """
+    hdrs = ["x_pixels", "y_Coordinate", "wavelength", "Fiber", "Orders"]
+    fibers = [1, 2, 3, 4, 5]
+    orders = np.arange(30, 99)
+    h5file = h5py.File(path)
 
-   for fE, fP in zip(fibers[::-1], fibers):
-       fbr = "fiber_{}".format(fE)
-       f1f_wavelengths = f1_wavelengths[fbr]
-       f1f_yCoordinates = f1_yCoordinates[fbr]
-       for oE, oP in zip(orders[::-1], orders):
-           f1o_wavelengths = f1f_wavelengths["order_{}".format(oE)]
-           f1o_yCoordinates = f1f_yCoordinates["order_{}".format(oE)]
-           row = [ [n, x, lmda]+[fP, oP-29] for n, (x, lmda) in enumerate(zip(f1o_yCoordinates, f1o_wavelengths))]
-           row  = np.array(row)
-           df = pd.concat([df, pd.DataFrame(data=row, index=None, columns=hdrs)])
-   df.to_csv("Data/ReferenceLineList.csv")
-   print("done")
+    df = pd.DataFrame(columns=hdrs)
+    f1_wavelengths = h5file["wavelengths"]
+    f1_yCoordinates = h5file["yCoordinates"]
+
+    for fE, fP in zip(fibers[::-1], fibers):
+        fbr = "fiber_{}".format(fE)
+        f1f_wavelengths = f1_wavelengths[fbr]
+        f1f_yCoordinates = f1_yCoordinates[fbr]
+        for oE, oP in zip(orders[::-1], orders):
+            f1o_wavelengths = f1f_wavelengths["order_{}".format(oE)]
+            f1o_yCoordinates = f1f_yCoordinates["order_{}".format(oE)]
+            row = [ [n, x, lmda]+[fP, oP-29] for n, (x, lmda) in enumerate(zip(f1o_yCoordinates, f1o_wavelengths))]
+            row  = np.array(row)
+            df = pd.concat([df, pd.DataFrame(data=row, index=None, columns=hdrs)])
+    df.to_csv("Data/ReferenceLineList.csv")
+    print("done")
 
 
 
 
 def getAllOptimalExtractedSpectrum(path):
-   """ 
-   Get a dictionary with pixel and flux values of all fibers of all orders
+   """
+   Get a dictionary with pixel and flux values of all fibers of all orders for OptimalExtracted orders
 
    Input:
-       path: relative path of the FITS file containing the spectra of all fibers 
+       path: relative path of the FITS file containing the spectra of all fibers
              The path is relative to the root dir of this git repository.
 
    Output:
@@ -458,7 +539,7 @@ def getAllOptimalExtractedSpectrum(path):
                  flux: observed flux level at the given pixel      [ADU]
                  order: echelle order number
                  fiber: fiber number (1, 2, 3, 4, or 5)
-   """ 
+   """
 
    fibers, orders = getFibersAndOrders(path)
    # Check that path exist
@@ -497,7 +578,7 @@ def getAllOptimalExtractedSpectrum(path):
                print("order {o} and fiber {f} not found in file {file}.".format(o=order, f=fiber, file=path))
                return
        return table
-       
+
 
    spectra = {}
 
@@ -507,7 +588,7 @@ def getAllOptimalExtractedSpectrum(path):
 
            if table is None:
                print("Error in file {}. Not correct format.".format(path))
-               return 
+               return
            flux = (table.data["Spectrum"]).astype(np.float64)
            xPos = (table.data['xPixels']).astype(np.int16)
            yPos = (table.data['yPixels']).astype(np.int16)
@@ -527,7 +608,13 @@ def convertPathToHash(path, db):
     """
     This method converts returns the hash that corresponds to the file at
     the location of the input path.
+
     REMARK: This method uses the marvel database.
+
+    INPUT: path: string that contains the path that we want to convert
+           db: database object that is used to look up the hashes
+
+    OUTPUT: hash of the image
     """
     dirToDataBase = {"Bias": "BiasImages", "Dark": "DarkImages",
                      "Etalon": "EtalonImages", "Flat": "FlatImages",
@@ -562,13 +649,6 @@ def convertPathToHash(path, db):
     # 4. Return the hash from the database
 
     return image["_id"]
-
-
-
-
-
-
-
 
 
 
