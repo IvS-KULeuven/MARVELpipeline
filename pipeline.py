@@ -171,7 +171,6 @@ class PipelineComponent():
         # Add Image to database
         currentTime = datetime.now()
         dict = {"_id" : hash, "path" : path, "type" : self.type, "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
-
         tools.addToDataBase(dict, self.db, overWrite = True)
 
 

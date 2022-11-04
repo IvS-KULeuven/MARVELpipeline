@@ -21,13 +21,13 @@ how these components rely on the results of previous components is illustrated i
 
 For the components to be created we will need (at least) two kinds of input arguments.
 
-The first input argument is the database that will be used. This can be a =DatabaseFromLocalFiles= object 
-in which case an ascii file will be used to keep track of all pipeline input/output files, or it can be None, 
+The first input argument is the database that will be used. This can be a =DatabaseFromLocalFiles= object
+in which case an ascii file will be used to keep track of all pipeline input/output files, or it can be None,
 in which case MongoDB will be used as a database.
 
-The second argument is a keyword argument Collection=[list of FITS files] where Collection 
+The second argument is a keyword argument Collection=[list of FITS files] where Collection
 is one of the collection names in the left column in the table below. The right-hand column shows what
-type of data products they can be given as values. The list of FITS files can be either a list of file paths 
+type of data products they can be given as values. The list of FITS files can be either a list of file paths
 (strings) relative to the base dir of this project, or a list of unique identification hashes (strings).
 
 | Collection       | Files                                                                    |
@@ -41,10 +41,10 @@ type of data products they can be given as values. The list of FITS files can be
 | OptimalExtracted | Optimal Extracted Science, Optimal Extracted Etalon                      |
 
 
-In some cases, there is an optional argument that will signify the debug mode when running the component. 
+In some cases, there is an optional argument that will signify the debug mode when running the component.
 The debug option can be an int ranging from 0 to 3, where 0 means no debug output and 3 means lots of debug output.
 
-We illustrate how to run a component with an example. From the previous image, we can see that in order to obtain 
+We illustrate how to run a component with an example. From the previous image, we can see that in order to obtain
 a *Science Order Extraction* component, we need a *Calibrated Science* and *Order Mask Extraction* as input.
 
 #+begin_src python
