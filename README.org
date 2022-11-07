@@ -32,7 +32,6 @@ type of data products they can be given as values. The list of FITS files can be
 
 | Collection       | Files                                                                    |
 |------------------+--------------------------------------------------------------------------|
-| DarkImages       | Raw Dark Images, Master Dark Images                                      |
 | BiasImages       | Raw Bias Images, Master Bias Images                                      |
 | Flat Images      | Raw Flat Images, Master Flat Images                                      |
 | EtalonImages     | Raw Etalon Images, Calibrated Etalon Images                              |
@@ -86,7 +85,7 @@ ran the component and the product is added to the database.
   # After having added the "Extracted Science Orders" to the database we want
   # be able to call this file later by saving the new database to an output file
 
-  db.saveToFile("output_file_name.txt")
+  db.save()
 
 #+end_src
 
@@ -94,7 +93,7 @@ ran the component and the product is added to the database.
 *** Running the whole pipeline
 
 It is usefull to keep track of all the files that are needed to run every the component.
-The whole pipeline is given here to give in a schematic overview of the currently implemented pipeline. 
+The whole pipeline is given here to give in a schematic overview of the currently implemented pipeline.
 
 #+CAPTION:Overview of entire pipeline
 #+NAME: fig:whole_pipeline
@@ -104,9 +103,9 @@ The whole pipeline is given here to give in a schematic overview of the currentl
 
 Normally the pipeline should work in conjunction with a database that keeps track of all the
 files and metadata that is generated during the different steps in the pipeline. This is done
-either with a MongoDB server (a cross-platform document-oriented NoSQL database program) 
-running at the observatory or, if you want to do local tests, with a database based on a local 
-ascii file. The latter can be instantiated and used, for example by: 
+either with a MongoDB server (a cross-platform document-oriented NoSQL database program)
+running at the observatory or, if you want to do local tests, with a database based on a local
+ascii file. The latter can be instantiated and used, for example by:
 
 #+begin_src python
   from database import DatabaseFromLocalFiles
@@ -117,7 +116,8 @@ ascii file. The latter can be instantiated and used, for example by:
   ...
 
   # After running the pipeline we might want to keep track of the files that were created.
-  # This can be done by saving the database into a txt file.
+  # This can be done by saving the database. This will save a text file that can be used to
+  # initialize another database object containing the same information.
 
   db.save()
 #+end_src
