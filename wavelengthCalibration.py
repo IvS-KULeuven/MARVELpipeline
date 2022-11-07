@@ -6,11 +6,25 @@ import pandas as pd
 import h5py
 from astropy.io import fits
 import statsmodels.api as sm
-from lmfit.models import ConstantModel, GaussianModel
+import lmfit
+from scipy.special import erf
 
 from matplotlib import pyplot as plt
+from matplotlib.colors import Normalize
+import matplotlib.colors as colors
 
 from tools import getAllOptimalExtractedSpectrum
+
+
+
+plt.rc('font',   size=14)          # controls default text sizes
+plt.rc('axes',   titlesize=14)     # fontsize of the axes title
+plt.rc('axes',   labelsize=14)     # fontsize of the x and y labels
+plt.rc('xtick',  labelsize=14)     # fontsize of the tick labels
+plt.rc('ytick',  labelsize=14)     # fontsize of the tick labels
+plt.rc('legend', fontsize=14)      # legend fontsize
+plt.rc('figure', titlesize=14)     # fontsize of the figure title
+
 
 
 
@@ -75,7 +89,7 @@ def initialThArGaussianParameterGuesses(pathThArSpectrum):
 
     for order in range(30, 99):
 
-        print("Processing order #{0} to do a crude estimate of the ThAr line centers".format(order))
+        print("Processing order #{0}: initial guess of the ThAr line centers".format(order))
 
         # Extract the PyEchelle info for the relevant order. The ThAr fiber is fiber nr 5.
         
@@ -166,139 +180,118 @@ def initialThArGaussianParameterGuesses(pathThArSpectrum):
 
 
 
+def discretizedGaussian(x, offset, amplitude, mu, sigma):
+    """ 
+    Compute the value  
+    \int_a^b (c + A e^{-(x-μ)^2/(2σ^2)}) dx 
+         = c (b-a) + A σ \sqrt{π/2} [erf((b-μ)/sqrt{2}/σ) - erf((a-μ)/sqrt{2}/σ)]}
+
+   
+    Input:
+        x:        1D Numpy array: along-dispersion pixel coordinates [pix] 
+        offset:   offset of the gaussian to be fitted. 
+        mu:       mean of the gaussian 
+        sigma:    standard deviation of the gaussian 
+
+    Output:
+        flux:     1D Numpy array of length equal to 'x'. y-values of the gaussian.
+    """
+
+    a = np.floor(x)                # Lower boundary of the pixel
+    b = np.ceil(x)                 # Upper boundary of the pixel  
+    b[b==a] += 1                   # a == b if x is exactly on a pixel boundary (i.e. an integer number)
+    return offset * (b-a)     \
+           + amplitude * sigma * np.sqrt(np.pi / 2)  * (erf((b - mu)/(sigma * np.sqrt(2.))) - erf((a - mu)/(sigma * np.sqrt(2.))))
+    
 
 
-def wavelengthCalibrationOfOneOrderCrude(xpix, flux, centerGuesses, amplitudeGuesses, stdevGuesses, lambdaTrue):
+
+
+
+def fitThArLines(xpix, flux, centerGuesses, amplitudeGuesses, stdevGuesses, lambdaTrue):
+
     """
     Returns the fitted centers [pix] of the given ThAr lines using a non-linear fit of a constant + Gaussian 
     as well as the coefficients of the polynomial relating the pixel coordinates [pix] to the wavelengths [nm]
    
     INPUT:
-        xpix:             1D Numpy array: x- pixel coordinates of one order of the the observed ThAr spectrum                 [pix]
+        xpix:             1D Numpy array: x-pixel coordinates of one order of the the observed ThAr spectrum                  [pix]
         flux:             1D Numpy arary: corresponding flux of the observed ThAr spectrum
         centerGuesses:    1D Numpy array: for each ThAr line to be included in the fit: first guess of its center             [pix]
         amplitudeGuesses: 1D Numpy array: for each ThAr line to be included in the fit: first guess of its height 
         stdevGuesses:     1D Numpy array: for each ThAr line to be included in the fit: first guess of its standard deviation [pix]
-        lambdaTrue:       1D Numpy array: Ritz wavelengths of the ThAr lines used to do a wavelength calibration  [nm]
+        lambdaTrue:       1D Numpy array: Ritz wavelengths of the ThAr lines used to do a wavelength calibration              [nm]
 
     OUTPUT:
-        fittedGaussianCenters: 1D Numpy array, same length as centerGuesses. Resulting centers of the Gaussian 
-                               fits of each of the given ThAr lines.                                                          [pix]
-        polynomialCoefficients: coefficients of a polynomial that relates the x-coordinate [pix] to the wavelength [nm] 
-                                a[n] contains the coefficient of x^n
-
+        fittedGaussianCenters:    1D Numpy array, same length as centerGuesses. Resulting centers of the Gaussian 
+                                  fits of each of the given ThAr lines.                                                          [pix]
+        fittedGaussianStdevs:     Corresponding standard deviations of the Gaussian fits of each of the given ThAr lines.        [pix]
+        fittedGaussianAmplitudes: Corresponding amplitudes of the Gaussian fits of each of the given ThAr lines.
+        fittedGaussianOffsets:    Corresponding constant offsets of the Gaussian fits of each of the given ThAr lines.
+        chiSquares:               Corresponding chi-square value of the fits for each of the given ThAr lines.
     """
-
-    # First fit each ThAr line individually with a constant + Gaussian 
-    
-    print("    - fith the individual ThAr lines")
 
     Ngaussians = len(centerGuesses)
     fittedGaussianCenters = []
+    fittedGaussianStdevs = []
+    fittedGaussianAmplitudes = []
+    fittedGaussianOffsets = []
+    chiSquares = []
     for n in range(Ngaussians):
 
-        model = ConstantModel()
-        params = model.make_params()
-        params['c'].set(value = 0.01, min=0.0)
-
-        gauss = GaussianModel()
-        model += gauss
-        params.update(gauss.make_params())
-
-        params['center'].set(value=centerGuesses[n])
-        params['amplitude'].set(value=amplitudeGuesses[n])
-        params['sigma'].set(value=stdevGuesses[n])
+        myModel = lmfit.Model(discretizedGaussian)
+        myModel.set_param_hint('offset', value=0.01, min=0.0)
+        myModel.set_param_hint('amplitude', value=amplitudeGuesses[n], min=0.0)
+        myModel.set_param_hint('mu', value=centerGuesses[n], min=0.0)
+        myModel.set_param_hint('sigma', value=stdevGuesses[n], min=0.0)
 
         regionAroundLine = (xpix >= centerGuesses[n] - 8) & (xpix <= centerGuesses[n] + 8) 
 
-        myFit = model.fit(flux[regionAroundLine], params, x=xpix[regionAroundLine])
-        fittedGaussianCenters += [myFit.best_values['center']]
+        myFit = myModel.fit(flux[regionAroundLine], x=xpix[regionAroundLine])
+        fittedGaussianCenters    += [myFit.best_values['mu']]
+        fittedGaussianStdevs     += [myFit.best_values['sigma']]
+        fittedGaussianAmplitudes += [myFit.best_values['amplitude']]
+        fittedGaussianOffsets    += [myFit.best_values['offset']]
+        chiSquares += [myFit.chisqr]
 
-    print("    - determine a polynomial wavelength solution")
-
-    fittedGaussianCenters = np.array(fittedGaussianCenters)
-
-    # Given the fitted ThAr pixel positions and their true wavelengths, fit a polynomial to this relation
-    # Use the Akaike Information Criterion (AIC) to determine the optimal degree.
-
-    AIC = []
-    polynomialCoefficients = []
-    candidatePolynomialDegrees = [2,3,4,5,6]
-    for polynomialDegree in candidatePolynomialDegrees:
-        X = np.vander(fittedGaussianCenters, polynomialDegree+1, increasing=True)
-        olsFit = sm.OLS(lambdaTrue, X).fit()
-        AIC += [olsFit.aic]
-
-    bestAICindex = np.argmin(AIC)
-    bestPolynomialDegree = candidatePolynomialDegrees[bestAICindex]
-    X = np.vander(fittedGaussianCenters, bestPolynomialDegree+1, increasing=True)
-    olsFit = sm.OLS(lambdaTrue, X).fit()
-    
-    return fittedGaussianCenters, olsFit.params
+    return np.array(fittedGaussianCenters), np.array(fittedGaussianStdevs), np.array(fittedGaussianAmplitudes), \
+           np.array(fittedGaussianOffsets), np.array(chiSquares)
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-def wavelengthCalibrationOfOneOrderFine(xpix, flux, polynomialCoefficientGuesses, lambdaTrue):
+def crudeWavelengthCalibrationOfOneOrder(xpix, flux, centerGuesses, amplitudeGuesses, stdevGuesses, lambdaTrue):
     """
-    Returns the fitted centers of the given ThAr lines using a non-linear fit of a constant + Gaussian                        [pix] 
+    Returns the fitted centers [pix] of the given ThAr lines using a non-linear fit of a constant + Gaussian 
+    as well as the coefficients of the polynomial relating the pixel coordinates [pix] to the wavelengths [nm]
    
     INPUT:
-        xpix:                         1D Numpy array: x- pixel coordinates of one order of the the observed ThAr spectrum     [pix]
-        flux:                         1D Numpy arary: corresponding flux of the observed ThAr spectrum
-        polynomialCoefficientGuesses: 1D Numpy array: a[n] contains coefficient of x^n.
-        lambdaTrue:                   1D Numpy array: Ritz wavelengths of the ThAr lines used to do a wavelength calibration  [nm]
+        xpix:             1D Numpy array: x-pixel coordinates of one order of the the observed ThAr spectrum                  [pix]
+        flux:             1D Numpy arary: corresponding flux of the observed ThAr spectrum
+        centerGuesses:    1D Numpy array: for each ThAr line to be included in the fit: first guess of its center             [pix]
+        amplitudeGuesses: 1D Numpy array: for each ThAr line to be included in the fit: first guess of its height 
+        stdevGuesses:     1D Numpy array: for each ThAr line to be included in the fit: first guess of its standard deviation [pix]
+        lambdaTrue:       1D Numpy array: Ritz wavelengths of the ThAr lines used to do a wavelength calibration              [nm]
 
     OUTPUT:
-        fittedGaussianCenters: 1D Numpy array, same length as centerGuesses. Resulting centers of the Gaussian 
-                               fits of each of the given ThAr lines.                                                          [pix]
-        polynomialCoefficients: coefficients of a polynomial that relates the x-coordinate [pix] to the wavelength [nm] 
+        fittedGaussianCenters:  1D Numpy array, same length as centerGuesses. Resulting centers of the Gaussian 
+                                fits of each of the given ThAr lines.                                                          [pix]
+        chiSquare:              Corresponding chi-square values of the fits for each of the given ThAr lines.
+        polynomialCoefficients: Coefficients of a polynomial that relates the x-coordinate [pix] to the wavelength [nm] 
                                 a[n] contains the coefficient of x^n
-
     """
 
     # First fit each ThAr line individually with a constant + Gaussian 
     
     print("    - fith the individual ThAr lines")
 
-    Ngaussians = len(centerGuesses)
-    fittedGaussianCenters = []
-    for n in range(Ngaussians):
-
-        model = ConstantModel()
-        params = model.make_params()
-        params['c'].set(value = 0.01, min=0.0)
-
-        gauss = GaussianModel()
-        model += gauss
-        params.update(gauss.make_params())
-
-        params['center'].set(value=centerGuesses[n])
-        params['amplitude'].set(value=amplitudeGuesses[n])
-        params['sigma'].set(value=stdevGuesses[n])
-
-        regionAroundLine = (xpix >= centerGuesses[n] - 8) & (xpix <= centerGuesses[n] + 8) 
-
-        myFit = model.fit(flux[regionAroundLine], params, x=xpix[regionAroundLine])
-        fittedGaussianCenters += [myFit.best_values['center']]
-
-    print("    - determine a polynomial wavelength solution")
-
-    fittedGaussianCenters = np.array(fittedGaussianCenters)
+    fittedGaussianCenters, fittedGaussianStdevs, fittedGaussianAmplitudes, fittedGaussianOffsets, chiSquares = \
+                fitThArLines(xpix, flux, centerGuesses, amplitudeGuesses, stdevGuesses, lambdaTrue)
 
     # Given the fitted ThAr pixel positions and their true wavelengths, fit a polynomial to this relation
     # Use the Akaike Information Criterion (AIC) to determine the optimal degree.
+
+    print("    - determine a polynomial wavelength solution")
 
     AIC = []
     polynomialCoefficients = []
@@ -313,12 +306,7 @@ def wavelengthCalibrationOfOneOrderFine(xpix, flux, polynomialCoefficientGuesses
     X = np.vander(fittedGaussianCenters, bestPolynomialDegree+1, increasing=True)
     olsFit = sm.OLS(lambdaTrue, X).fit()
     
-    return fittedGaussianCenters, olsFit.params
-
-
-
-
- 
+    return fittedGaussianCenters, fittedGaussianStdevs, fittedGaussianAmplitudes, fittedGaussianOffsets, chiSquares, olsFit.params
 
 
 
@@ -330,15 +318,12 @@ def wavelengthCalibrationOfOneOrderFine(xpix, flux, polynomialCoefficientGuesses
 
 
 
+    
 
 
-
- 
-
-
-
-
-if __name__ == "__main__":
+def wavelength_calibration():
+    """ 
+    """
 
     pathThArSpectrum = "Data/ProcessedData/OptimalExtraction/optimal_extracted_science_flux.fits"
     lineParameterGuesses = initialThArGaussianParameterGuesses(pathThArSpectrum)
@@ -347,6 +332,12 @@ if __name__ == "__main__":
 
     fiber = 5                      # ThAr fiber
     bestFitCoefficients = {}
+    orders = []
+    fittedGaussianCenters = np.array([])
+    fittedGaussianStdevs = np.array([])
+    fittedGaussianAmplitudes = np.array([])
+    fittedGaussianOffsets = np.array([])
+    chiSquares = np.array([])
 
     for order in range(30, 99):
 
@@ -367,11 +358,132 @@ if __name__ == "__main__":
             print("No ThAr lines for order {0}. Skipping order.".format(order))
             continue
 
-        fittedGaussianCenters, polynomialCoefficients = wavelengthCalibrationOfOneOrderCrude(xobs, fluxobs, centerGuesses, amplitudeGuesses, stdevGuesses, lambdaTrue)
+        centers, stdevs, amplitudes, offsets, chiSquare, polynomialCoefficients =  \
+                crudeWavelengthCalibrationOfOneOrder(xobs, fluxobs, centerGuesses, amplitudeGuesses, stdevGuesses, lambdaTrue)
+
+        fittedGaussianCenters = np.append(fittedGaussianCenters, centers)
+        fittedGaussianStdevs = np.append(fittedGaussianStdevs, stdevs)
+        fittedGaussianAmplitudes = np.append(fittedGaussianAmplitudes, amplitudes)
+        fittedGaussianOffsets = np.append(fittedGaussianOffsets, offsets)
+        chiSquares = np.append(chiSquares, chiSquare)
 
         bestFitCoefficients[order] = polynomialCoefficients
+        orders = orders + len(centers) * [order]
+
+    # That's it!
+
+    return fittedGaussianCenters, fittedGaussianStdevs, fittedGaussianAmplitudes, fittedGaussianOffsets, chiSquares, bestFitCoefficients, orders
+
+    
 
 
+
+def assessment():
+    """ 
+        
+    INPUT:
+
+    OUTPUT:
+        linecenters_even: 
+        velocities_even:
+        linecenters_odd:
+        velocities_odd: 
+
+    """
+
+    pathThArSpectrum = "Data/ProcessedData/OptimalExtraction/optimal_extracted_science_flux.fits"
+    lineParameterGuesses = initialThArGaussianParameterGuesses(pathThArSpectrum)
+
+    spectraAllFibersAllOrders = getAllOptimalExtractedSpectrum(pathThArSpectrum)
+
+    fiber = 5                      # ThAr fiber
+
+    unique_orders = []
+    velocities_even = {}
+    linecenters_even = {}
+    velocities_odd = {}
+    linecenters_odd = {}
+
+    for order in range(30, 99):
+
+        print("Wavelength calibration of order {0}".format(order))
+
+        if order in spectraAllFibersAllOrders:
+            xobs, yobs, fluxobs = spectraAllFibersAllOrders[order][fiber]         # x is in [pix]
+        else:
+            print("Order {0} not detected in observed spectrum. Skipping.".format(order))
+            continue
+
+        if order in lineParameterGuesses.keys():
+            centerGuesses = lineParameterGuesses[order]['center']
+            amplitudeGuesses = lineParameterGuesses[order]['amplitude']
+            stdevGuesses = 3.0 * np.ones_like(centerGuesses)
+            lambdaTrue = lineParameterGuesses[order]['lambdatrue']
+        else:
+            print("No ThAr lines for order {0}. Skipping order.".format(order))
+            continue
+
+        # Fit the even-indexed ThAr lines and compute a wavelength solution 
+
+        centers_even, stdevs_even, amplitudes_even, offsets_even, chiSquare_even, polynomialCoefficients_even =  \
+                crudeWavelengthCalibrationOfOneOrder(xobs, fluxobs, centerGuesses[::2], amplitudeGuesses[::2], stdevGuesses[::2], lambdaTrue[::2])
+
+        linecenters_even[order] = centers_even
+
+        # Fit the odd-indexed ThAr lines and compute a wavelength solution 
+
+        centers_odd, stdevs_odd, amplitudes_odd, offsets_odd, chiSquare_odd, polynomialCoefficients_odd =  \
+                crudeWavelengthCalibrationOfOneOrder(xobs, fluxobs, centerGuesses[1::2], amplitudeGuesses[1::2], stdevGuesses[1::2], lambdaTrue[1::2])
+
+        linecenters_odd[order] = centers_odd
+
+        # Verify how well we can predict the even-indexed ThAr lines using the wavelength calibration of the odd-indexed ThAr lines
+ 
+        print("Predicting even-indexed ThAr lines using odd-index ThAr line wavelength calibration")
+
+        X_even = np.vander(centers_even, len(polynomialCoefficients_odd), increasing=True)
+        lambda_predicted = X_even @ polynomialCoefficients_odd
+        velocity = (lambda_predicted - lambdaTrue[::2]) / lambdaTrue[::2] * 299792458.0
+        velocities_even[order] = velocity
+        
+        # Verify how well we can predict the odd-indexed ThAr lines using the wavelength calibration of the even-indexed ThAr lines
+
+        print("Predicting odd-indexed ThAr lines using even-index ThAr line wavelength calibration")
+
+        X_odd = np.vander(centers_odd, len(polynomialCoefficients_even), increasing=True)
+        lambda_predicted = X_odd @ polynomialCoefficients_even
+        velocity = (lambda_predicted - lambdaTrue[1::2]) / lambdaTrue[1::2] * 299792458.0
+        velocities_odd[order] = velocity
+
+        # Keep the orders for the plot 
+
+        unique_orders += [order]
+
+        # That's it!
+
+    return unique_orders, linecenters_even, velocities_even, linecenters_odd, velocities_odd
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def plot(fitttedGaussianCenters, orders, chiSquares):
+    cmap = plt.colormaps["cividis"]
+    fig, ax = plt.subplots(figsize=(8,12))
+    scatterplot = ax.scatter(fittedGaussianCenters, orders, s=8, color=cmap(chiSquares), norm=colors.LogNorm())
+    fig.colorbar(scatterplot, ax=ax, location='bottom', pad=0.08, label="chi-square")
+    ax.set(xlabel="Along-dispersion coordinate [pix]", ylabel="order")
+    plt.show()
 
 
 
@@ -391,3 +503,39 @@ def plotOrderFits(bestFitCoefficients):
 
     plt.show()
     
+
+
+
+
+def plot_assessment(unique_orders, linecenters_even, velocities_even, linecenters_odd, velocities_odd):
+
+    cmap = plt.cm.get_cmap('plasma')
+    fig, ax = plt.subplots(figsize=(8,12))
+    orders = []
+    linecenters = []
+    velocities = []
+    for order in unique_orders:
+        orders      += [order] * len(linecenters_even[order])
+        linecenters += list(linecenters_even[order])
+        velocities  += list(velocities_even[order])
+        orders      += [order] * len(linecenters_odd[order])
+        linecenters += list(linecenters_odd[order])
+        velocities  += list(velocities_odd[order])
+
+    vmin, vmax = min(velocities), max(velocities),
+    scatterplot = ax.scatter(linecenters, orders, s=8, c=cmap(velocities), vmin=vmin, vmax=vmax, cmap=cmap)
+    cb = plt.colorbar(scatterplot, ax=ax, location='bottom', pad=0.08, shrink=0.9, label="velocity (m/s)")
+    ax.set(xlabel="Along-dispersion coordinate [pix]", ylabel="order")
+    plt.show()
+
+
+
+
+if __name__ == "__main__":
+
+    # fittedGaussianCenters, fittedGaussianStdevs, fittedGaussianAmplitudes, fittedGaussianOffsets,    \
+    # chiSquares, bestFitCoefficients, orders = wavelength_calibration()
+
+    unique_orders, linecenters_even, velocities_even, linecenters_odd, velocities_odd = assessment()
+    plot_assessment(unique_orders, linecenters_even, velocities_even, linecenters_odd, velocities_odd)
+
