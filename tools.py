@@ -146,7 +146,7 @@ def addToDataBase(metaData, db, overWrite=False):
     images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages",
                   "Calibrated Science Image" : "ScienceImages", "Calibrated Etalon Image":"EtalonImages", "Extracted Flat Orders" : "ExtractedOrders",
                   "Extracted Science Orders" : "ExtractedOrders","Extracted Etalon Orders": "ExtractedOrders",
-                  "Optimal Extracted Science" : "OptimalExtracted", "Optimal Extracted Etalon" : "OptimalExtracted"}
+                  "Optimal Extracted Science" : "OptimalExtracted", "Optimal Extracted Etalon" : "OptimalExtracted", "Wavelength Calibrated": "WavelengthCalibrated"}
 
     typeImage  = metaData["type"]
     collection = db[images[typeImage]]

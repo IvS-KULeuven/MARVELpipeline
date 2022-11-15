@@ -1,15 +1,16 @@
-import time
 import math
 import copy
 import numpy as np
 import pandas as pd
 import h5py
 import os
+import hashlib
 from astropy.io import fits
 import statsmodels.api as sm
 import lmfit
 #from scipy.special import erf
 
+from datetime   import datetime
 from numba import njit, jit
 from matplotlib import pyplot as plt
 from matplotlib.colors import Normalize
@@ -60,7 +61,7 @@ class WavelengthCalibration(PipelineComponent):
 
         if self.checkSanityOfInputTypes(**optimalScienceHash):
             self.outputPath                  = os.getcwd() + "/Data/ProcessedData/WaveCalibration/"
-            self.ouputType                   = "Wavelength Calibrated"
+            self.outputType                  = "Wavelength Calibrated"
             self.optimalExtractedScienceHash = optimalScienceHash["OptimalExtracted"]
             self.debug                       = debug
         else:
@@ -98,7 +99,7 @@ class WavelengthCalibration(PipelineComponent):
 
 
 
-    def run(self, outputFile=None):
+    def run(self, outputFileName=None):
         """
         Runs through the steps for the wavelength calibration
 
@@ -121,15 +122,17 @@ class WavelengthCalibration(PipelineComponent):
         fibers, orders = tools.getFibersAndOrders(pathThArSpectrum)
         fiber = 5
 
-        unique_orders = []
-        velocities_even = {}
-        linecenters_even = {}
-        velocities_odd = {}
-        linecenters_odd = {}
-        t_time = time.time()
+
+        bestFitCoefficients = {}
+        fittedGaussianCenters = []
+        fittedGaussianStdevs = []
+        fittedGaussianAmplitudes = []
+        fittedGaussianOffsets = []
+        chiSquares = []
+
         for order in orders:
-            s_loop = time.time()
-            print("Wavelength calibration of order {0}".format(order))
+
+            if self.debug > 1: print("Wavelength calibration of order {0}".format(order))
 
             if order in spectraAllFibersAllOrders:
                 xobs, yobs, fluxobs = spectraAllFibersAllOrders[order][fiber]         # x is in [pix]
@@ -143,49 +146,38 @@ class WavelengthCalibration(PipelineComponent):
                 stdevGuesses = 3.0 * np.ones_like(centerGuesses)
                 lambdaTrue = lineParameterGuesses[order]['lambdatrue']
             else:
-                print("No ThAr lines for order {0}. Skipping order.".format(order))
+                if self.debug > 1: print("No ThAr lines for order {0}. Skipping order.".format(order))
                 continue
 
-            # Fit the even-indexed ThAr lines and compute a wavelength solution
-            centers_even, stdevs_even, amplitudes_even, offsets_even, chiSquare_even, polynomialCoefficients_even =  \
-                crudeWavelengthCalibrationOfOneOrder(xobs, fluxobs, centerGuesses[::2], amplitudeGuesses[::2], stdevGuesses[::2], lambdaTrue[::2])
+            centers, stdevs, amplitudes, offsets, chiSquare, polynomialCoefficients =  \
+                crudeWavelengthCalibrationOfOneOrder(xobs, fluxobs, centerGuesses, amplitudeGuesses,
+                                                     stdevGuesses, lambdaTrue, self.debug)
 
-            linecenters_even[order] = centers_even
+            fittedGaussianCenters.append(centers)
+            fittedGaussianStdevs.append(stdevs)
+            fittedGaussianAmplitudes.append(amplitudes)
+            fittedGaussianOffsets.append(offsets)
+            chiSquares.append(chiSquare)
 
-            # Fit the odd-indexed ThAr lines and compute a wavelength solution
 
-            centers_odd, stdevs_odd, amplitudes_odd, offsets_odd, chiSquare_odd, polynomialCoefficients_odd =  \
-                crudeWavelengthCalibrationOfOneOrder(xobs, fluxobs, centerGuesses[1::2], amplitudeGuesses[1::2], stdevGuesses[1::2], lambdaTrue[1::2])
+            bestFitCoefficients[order] = polynomialCoefficients
 
-            linecenters_odd[order] = centers_odd
 
-            # Verify how well we can predict the even-indexed ThAr lines using the wavelength calibration of the odd-indexed ThAr lines
 
-            print("Predicting even-indexed ThAr lines using odd-index ThAr line wavelength calibration")
+        wavelengths = (compute_wavelengths(bestFitCoefficients))
 
-            X_even = np.vander(centers_even, len(polynomialCoefficients_odd), increasing=True)
-            lambda_predicted = X_even @ polynomialCoefficients_odd
-            velocity = (lambda_predicted - lambdaTrue[::2]) / lambdaTrue[::2] * 299792458.0
-            velocities_even[order] = velocity
+        if self.debug > 2: plot_wavelength_calibrated_spectra(wavelengths)
 
-            # Verify how well we can predict the odd-indexed ThAr lines using the wavelength calibration of the even-indexed ThAr lines
+        if outputFileName is not None:
+            self.saveImageAndAddToDatabase(outputFileName, wavelengths, fittedGaussianCenters,
+                                           fittedGaussianStdevs, fittedGaussianAmplitudes,
+                                           fittedGaussianOffsets, chiSquares, bestFitCoefficients)
+            print("Wavelength Calibration saved to fits file.")
 
-            print("Predicting odd-indexed ThAr lines using even-index ThAr line wavelength calibration")
+        # # That's is!
 
-            X_odd = np.vander(centers_odd, len(polynomialCoefficients_even), increasing=True)
-            lambda_predicted = X_odd @ polynomialCoefficients_even
-            velocity = (lambda_predicted - lambdaTrue[1::2]) / lambdaTrue[1::2] * 299792458.0
-            velocities_odd[order] = velocity
-
-            # Keep the orders for the plot
-
-            unique_orders += [order]
-            e_loop = time.time()
-            print("LOOP: ", e_loop-s_loop, "s")
-        # That's it!
-        t_e_loop = time.time()
-        print("TOTAL END: ", t_e_loop - t_time)
-        return unique_orders, linecenters_even, velocities_even, linecenters_odd, velocities_odd
+        print("Block Generated!")
+        # return unique_orders, linecenters_even, velocities_even, linecenters_odd, velocities_odd
 
 
 
@@ -311,35 +303,112 @@ class WavelengthCalibration(PipelineComponent):
 
 
 
+    def plot_assessment(self, unique_orders, linecenters_even, velocities_even, linecenters_odd, velocities_odd):
 
+        cmap = plt.cm.get_cmap('plasma')
+        fig, ax = plt.subplots(figsize=(8,12))
+        orders = []
+        linecenters = []
+        velocities = []
+        for order in unique_orders:
+            orders      += [order] * len(linecenters_even[order])
+            linecenters += list(linecenters_even[order])
+            velocities  += list(velocities_even[order])
+            orders      += [order] * len(linecenters_odd[order])
+            linecenters += list(linecenters_odd[order])
+            velocities  += list(velocities_odd[order])
 
+        vmin, vmax = min(velocities), max(velocities),
+        scatterplot = ax.scatter(linecenters, orders, s=8, c=velocities, vmin=vmin, vmax=vmax, cmap=cmap)
+        cb = plt.colorbar(scatterplot, ax=ax, location='bottom', pad=0.08, shrink=0.9, label="velocity (m/s)")
+        ax.set(xlabel="Along-dispersion coordinate [pix]", ylabel="order")
+        plt.show()
 
 
 
 
 
 
+    def saveImageAndAddToDatabase(self, outputFileName, wavelength, fittedGaussianCenters, fittedGaussianStdevs,
+                                  fittedGaussianAmplitudes, fittedGaussianOffsets,
+                                  chiSquares, bestFitCoefficients):
+        """
+        Save the image and add it to the database
 
+        Input:
+            outputFileName : string with the name of the file
+            spectrum       : optimal extracted flux for every fiber/order
+            xPixels        : xPixels for every fiber/order
+            yPixels        : yPixels for every fiber/order
+            orders         : fiber/orders
 
+        TODO: Add flux in there as well
+        """
 
+        hash = hashlib.sha256(bytes(self.optimalExtractedScienceHash, 'utf-8')).hexdigest()
+        path = self.outputPath + outputFileName
 
+        orders = list(wavelength.keys())
+        fibers = list(wavelength[list(orders)[0]].keys())
 
+        # Save wavelength calibration in the FITS file
 
+        primary_hdr = fits.Header()
+        primary_hdr["hash"] = hash
+        primary_hdr["path"] = path
+        primary_hdr["type"] = self.outputType
+        primary_hdr["orders"] = str(set(np.unique(orders)))
+        primary_hdr["fibers"] = str(set(np.unique(fibers)))
+        primary_hdr["input"] = str([self.optimalExtractedScienceHash])
 
+        hdu = fits.PrimaryHDU(header=primary_hdr)
+        hdul = fits.HDUList([hdu])
 
+        for i, order in enumerate(orders):
+            for j, fiber in enumerate(fibers):
 
+                hdr1 = fits.Header()
+                hdr1["order"] = order
+                hdr1["fiber"] = fiber
 
+                wLength = np.array((wavelength[order][fiber])["lambda"], dtype=np.float64)
+                col1    = fits.Column("wavelength", format='D', array=wLength)
 
+                flux = np.array((wavelength[order][fiber])["flux"], dtype=np.float64)
+                col2 = fits.Column("flux", format='D', array=flux)
 
+                bestFit = np.array(bestFitCoefficients[order], dtype=np.float64)
+                col3 = fits.Column("best fit coefficients", format='D', array=bestFit)
 
+                gaussianCenter = np.array(fittedGaussianCenters[i], dtype=np.float64)
+                col4 = fits.Column("fitted Gaussian centers", format='D', array=gaussianCenter)
 
+                gaussianStdevs = np.array(fittedGaussianStdevs[i], dtype=np.float64)
+                col5 = fits.Column("gaussian Stdevs", format='D', array=gaussianStdevs)
 
+                gaussianAmplitudes = np.array(fittedGaussianAmplitudes[i], dtype=np.float64)
+                col6 = fits.Column("gaussian amplitude", format='D', array=gaussianAmplitudes)
 
+                gaussianOffsets = np.array(fittedGaussianOffsets[i], dtype=np.float64)
+                col7 = fits.Column("gaussian offset", format='D', array=gaussianOffsets)
 
+                chiSquare = np.array(chiSquares[i], dtype=np.float64)
+                col8 = fits.Column("chi square", format='D', array=chiSquare)
 
+                cols = fits.ColDefs([col1, col2, col3, col4, col5, col6, col7, col8])
+                hdu1 = fits.BinTableHDU.from_columns(cols, header=hdr1)
 
+                hdul.append(hdu1)
 
+            hdul.writeto(path, overwrite=True)
 
+            # Add image to the database
+            currentTime = datetime.now()
+            dict = {"_id"  : hash,
+                    "path" : path,
+                    "type" : self.outputType,
+                    "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
+            tools.addToDataBase(dict, self.db, overWrite = True)
 
 
 
@@ -352,19 +421,49 @@ class WavelengthCalibration(PipelineComponent):
 
 
 
+def compute_wavelengths(polynomialCoefficients):
+    """
+    Compute the wavelengths corresponding to each x-coord pixel value of 1D science spectrum
 
+    INPUT: a dictionary P so that
+           P[order] contains a numpy array with the polynomial coefficients of the wavelength calibration
 
+    OUTPUT: a dictionary D so that
+            D[order][fiber]["lambda"] contains the wavelengths in [nm]
+            D[order][fiber]["flux"] contains the flux values
 
+            Here, fiber runs from 1 to 4 (incl) and order from 30 to 99.
+    """
 
+    scienceSpectrum = "Data/ProcessedData/OptimalExtraction/optimal_extracted_science_flux.fits"
+    spectraAllFibersAllOrders = tools.getAllOptimalExtractedSpectrum(scienceSpectrum)
 
+    wavelength_calibrated_spectra = {}
 
+    for order in polynomialCoefficients.keys():
+        wavelength_calibrated_spectra[order] = {1: {}, 2: {}, 3: {}, 4: {}}
+        for fiber in [1,2,3,4]:
+            xobs, yobs, fluxobs = spectraAllFibersAllOrders[order][fiber]                   # xobs is in [pix]
+            X = np.vander(xobs, len(polynomialCoefficients[order]), increasing=True)        # Design matrix
+            wavelength = X @ polynomialCoefficients[order]                                  # [nm]
+            wavelength_calibrated_spectra[order][fiber] = {"lambda": wavelength, "flux": fluxobs}
 
+    # That's it!
 
+    return wavelength_calibrated_spectra
 
 
 
 
+def plot_wavelength_calibrated_spectra(wavelength_calibrated_spectra):
 
+    fig, ax = plt.subplots(figsize=(9,12))
+    for order in wavelength_calibrated_spectra.keys():
+        for fiber in [1,2,3,4]:
+            wavelength = wavelength_calibrated_spectra[order][fiber]['lambda']
+            flux = wavelength_calibrated_spectra[order][fiber]['flux']
+            ax.scatter(wavelength, flux, s=2)
+    plt.show()
 
 
 
@@ -387,6 +486,49 @@ class WavelengthCalibration(PipelineComponent):
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@njit()
 def find_index_nearest(array, value):
     """
     Returns the index of the element in 'array' that is closest to the given 'value'.
@@ -400,17 +542,6 @@ def find_index_nearest(array, value):
         return idx-1
     else:
         return idx
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -536,7 +667,7 @@ def fitThArLines(xpix, flux, centerGuesses, amplitudeGuesses, stdevGuesses, lamb
 
 
 
-def crudeWavelengthCalibrationOfOneOrder(xpix, flux, centerGuesses, amplitudeGuesses, stdevGuesses, lambdaTrue):
+def crudeWavelengthCalibrationOfOneOrder(xpix, flux, centerGuesses, amplitudeGuesses, stdevGuesses, lambdaTrue, debug):
     """
     Returns the fitted centers [pix] of the given ThAr lines using a non-linear fit of a constant + Gaussian
     as well as the coefficients of the polynomial relating the pixel coordinates [pix] to the wavelengths [nm]
@@ -548,6 +679,7 @@ def crudeWavelengthCalibrationOfOneOrder(xpix, flux, centerGuesses, amplitudeGue
         amplitudeGuesses: 1D Numpy array: for each ThAr line to be included in the fit: first guess of its height
         stdevGuesses:     1D Numpy array: for each ThAr line to be included in the fit: first guess of its standard deviation [pix]
         lambdaTrue:       1D Numpy array: Ritz wavelengths of the ThAr lines used to do a wavelength calibration              [nm]
+        debug:            0, 1, 2, or 3:  0 meaning no debug output, 3 meaning lots of debug output.
 
     OUTPUT:
         fittedGaussianCenters:  1D Numpy array, same length as centerGuesses. Resulting centers of the Gaussian
@@ -559,7 +691,7 @@ def crudeWavelengthCalibrationOfOneOrder(xpix, flux, centerGuesses, amplitudeGue
 
     # First fit each ThAr line individually with a constant + Gaussian
 
-    print("    - fith the individual ThAr lines")
+    if debug > 1: print("    - fith the individual ThAr lines")
 
     fittedGaussianCenters, fittedGaussianStdevs, fittedGaussianAmplitudes, fittedGaussianOffsets, chiSquares = \
                 fitThArLines(xpix, flux, centerGuesses, amplitudeGuesses, stdevGuesses, lambdaTrue)
@@ -567,7 +699,7 @@ def crudeWavelengthCalibrationOfOneOrder(xpix, flux, centerGuesses, amplitudeGue
     # Given the fitted ThAr pixel positions and their true wavelengths, fit a polynomial to this relation
     # Use the Akaike Information Criterion (AIC) to determine the optimal degree.
 
-    print("    - determine a polynomial wavelength solution")
+    if debug > 1: print("    - determine a polynomial wavelength solution")
 
     AIC = []
     polynomialCoefficients = []
@@ -597,58 +729,6 @@ def crudeWavelengthCalibrationOfOneOrder(xpix, flux, centerGuesses, amplitudeGue
 
 
 
-def wavelength_calibration():
-    """
-    """
-
-    pathThArSpectrum = "Data/ProcessedData/OptimalExtraction/optimal_extracted_science_flux.fits"
-    lineParameterGuesses = initialThArGaussianParameterGuesses(pathThArSpectrum)
-
-    spectraAllFibersAllOrders = getAllOptimalExtractedSpectrum(pathThArSpectrum)
-
-    fiber = 5                      # ThAr fiber
-    bestFitCoefficients = {}
-    orders = []
-    fittedGaussianCenters = np.array([])
-    fittedGaussianStdevs = np.array([])
-    fittedGaussianAmplitudes = np.array([])
-    fittedGaussianOffsets = np.array([])
-    chiSquares = np.array([])
-
-    for order in range(30, 99):
-
-        print("Wavelength calibration of order {0}".format(order))
-
-        if order in spectraAllFibersAllOrders:
-            xobs, yobs, fluxobs = spectraAllFibersAllOrders[order][fiber]         # x is in [pix]
-        else:
-            print("Order {0} not detected in observed spectrum. Skipping.".format(order))
-            continue
-
-        if order in lineParameterGuesses.keys():
-            centerGuesses = lineParameterGuesses[order]['center']
-            amplitudeGuesses = lineParameterGuesses[order]['amplitude']
-            stdevGuesses = 3.0 * np.ones_like(centerGuesses)
-            lambdaTrue = lineParameterGuesses[order]['lambdatrue']
-        else:
-            print("No ThAr lines for order {0}. Skipping order.".format(order))
-            continue
-
-        centers, stdevs, amplitudes, offsets, chiSquare, polynomialCoefficients =  \
-                crudeWavelengthCalibrationOfOneOrder(xobs, fluxobs, centerGuesses, amplitudeGuesses, stdevGuesses, lambdaTrue)
-
-        fittedGaussianCenters = np.append(fittedGaussianCenters, centers)
-        fittedGaussianStdevs = np.append(fittedGaussianStdevs, stdevs)
-        fittedGaussianAmplitudes = np.append(fittedGaussianAmplitudes, amplitudes)
-        fittedGaussianOffsets = np.append(fittedGaussianOffsets, offsets)
-        chiSquares = np.append(chiSquares, chiSquare)
-
-        bestFitCoefficients[order] = polynomialCoefficients
-        orders = orders + len(centers) * [order]
-
-    # That's it!
-
-    return fittedGaussianCenters, fittedGaussianStdevs, fittedGaussianAmplitudes, fittedGaussianOffsets, chiSquares, bestFitCoefficients, orders
 
 
 
@@ -670,57 +750,37 @@ def wavelength_calibration():
 
 
 
-def plot(fitttedGaussianCenters, orders, chiSquares):
-    cmap = plt.colormaps["cividis"]
-    fig, ax = plt.subplots(figsize=(8,12))
-    scatterplot = ax.scatter(fittedGaussianCenters, orders, s=8, color=cmap(chiSquares), norm=colors.LogNorm())
-    fig.colorbar(scatterplot, ax=ax, location='bottom', pad=0.08, label="chi-square")
-    ax.set(xlabel="Along-dispersion coordinate [pix]", ylabel="order")
-    plt.show()
+# def plot(fitttedGaussianCenters, orders, chiSquares):
+#     cmap = plt.colormaps["cividis"]
+#     fig, ax = plt.subplots(figsize=(8,12))
+#     scatterplot = ax.scatter(fittedGaussianCenters, orders, s=8, color=cmap(chiSquares), norm=colors.LogNorm())
+#     fig.colorbar(scatterplot, ax=ax, location='bottom', pad=0.08, label="chi-square")
+#     ax.set(xlabel="Along-dispersion coordinate [pix]", ylabel="order")
+#     plt.show()
 
 
 
-def plotOrderFits(bestFitCoefficients):
-    """
+# def plotOrderFits(bestFitCoefficients):
+#     """
 
-    """
+#     """
 
-    x = np.arange(10500)
+#     x = np.arange(10500)
 
-    fig, ax = plt.subplots(figsize=(10,10))
-    for order in bestFitCoefficients.keys():
-        θ = bestFitCoefficients[order]
-        X = np.vander(x, len(θ), increasing=True)
-        y = X @ θ
-        ax.plot(x, y)
+#     fig, ax = plt.subplots(figsize=(10,10))
+#     for order in bestFitCoefficients.keys():
+#         θ = bestFitCoefficients[order]
+#         X = np.vander(x, len(θ), increasing=True)
+#         y = X @ θ
+#         ax.plot(x, y)
 
-    plt.show()
-
-
+#     plt.show()
 
 
 
-def plot_assessment(unique_orders, linecenters_even, velocities_even, linecenters_odd, velocities_odd):
 
-    cmap = plt.cm.get_cmap('plasma')
-    fig, ax = plt.subplots(figsize=(8,12))
-    orders = []
-    linecenters = []
-    velocities = []
-    for order in unique_orders:
-        orders      += [order] * len(linecenters_even[order])
-        linecenters += list(linecenters_even[order])
-        velocities  += list(velocities_even[order])
-        orders      += [order] * len(linecenters_odd[order])
-        linecenters += list(linecenters_odd[order])
-        velocities  += list(velocities_odd[order])
 
-    vmin, vmax = min(velocities), max(velocities),
-    print(vmin, vmax)
-    scatterplot = ax.scatter(linecenters, orders, s=8, c=cmap(velocities), vmin=vmin, vmax=vmax, cmap=cmap)
-    cb = plt.colorbar(scatterplot, ax=ax, location='bottom', pad=0.08, shrink=0.9, label="velocity (m/s)")
-    ax.set(xlabel="Along-dispersion coordinate [pix]", ylabel="order")
-    plt.show()
+
 
 
 
@@ -736,5 +796,5 @@ if __name__ == "__main__":
     extracted_science_hash = "28065b0282df4865863b0f4e1aa7d7367cf7cbe2226d642cef5b5a147e3d6e43"
     extracted_science_path = "Data/ProcessedData/OptimalExtraction/optimal_extracted_science_flux.fits"
     item = WavelengthCalibration(debug=1, OptimalExtracted=extracted_science_path)
-    item.run()
+    item.run("output_wave_calibration.fits")
 

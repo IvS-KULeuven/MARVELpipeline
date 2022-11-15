@@ -67,7 +67,7 @@ class OrderExtraction(PipelineComponent):
     def checkSanityOfInputTypes(self, **imageAndMaskHash):
         """
         This function is ran after we run checkSanityOfInputHashes. This function checks the the
-        input types that are given is able to generate a order extracted output file.
+        input types that are given are able to generate a order extracted output file.
         """
 
         types  = list(imageAndMaskHash.keys())
