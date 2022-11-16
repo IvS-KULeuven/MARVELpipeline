@@ -8,13 +8,13 @@ import hashlib
 from astropy.io import fits
 import statsmodels.api as sm
 import lmfit
-#from scipy.special import erf
 
-from datetime   import datetime
-from numba import njit, jit
-from matplotlib import pyplot as plt
+from datetime          import datetime
+from numba             import njit, jit
+from matplotlib        import pyplot as plt
 from matplotlib.colors import Normalize
-from pipeline   import PipelineComponent
+from pipeline          import PipelineComponent
+
 import matplotlib.colors as colors
 
 
@@ -37,6 +37,9 @@ plt.rc('figure', titlesize=14)     # fontsize of the figure title
 class WavelengthCalibration(PipelineComponent):
     """
     Class that prerforms the wavelength calibration
+
+    TODO: For new we assume that the 1th fiber image has etalon and 2-5 are science spectra.
+          this should be read in from the input file.
     """
 
     def __init__(self, database=None, debug=0, **optimalScienceHash):
@@ -120,7 +123,7 @@ class WavelengthCalibration(PipelineComponent):
 
         spectraAllFibersAllOrders = tools.getAllOptimalExtractedSpectrum(pathThArSpectrum)
         fibers, orders = tools.getFibersAndOrders(pathThArSpectrum)
-        fiber = 5
+        fiber = 1
 
 
         bestFitCoefficients = {}
@@ -174,10 +177,12 @@ class WavelengthCalibration(PipelineComponent):
                                            fittedGaussianOffsets, chiSquares, bestFitCoefficients)
             print("Wavelength Calibration saved to fits file.")
 
-        # # That's is!
+        # That's is!
 
         print("Block Generated!")
-        # return unique_orders, linecenters_even, velocities_even, linecenters_odd, velocities_odd
+        return wavelengths, fittedGaussianCenters, fittedGaussianStdevs, fittedGaussianAmplitudes, \
+            fittedGaussianOffsets, chiSquares, bestFitCoefficients
+
 
 
 
@@ -230,9 +235,9 @@ class WavelengthCalibration(PipelineComponent):
 
             if self.debug > 1: print("Processing order #{0}: initial guess of the ThAr line centers".format(order))
 
-            # Extract the PyEchelle info for the relevant order. The ThAr fiber is fiber nr 5.
+            # Extract the PyEchelle info for the relevant order. The ThAr fiber is fiber nr 1.
 
-            fiber = 5
+            fiber = 1
             dataset = pyEchelleOutputFile["wavelengths"]["fiber_{0:1d}".format(fiber)]["order_{0:2d}".format(order)]
 
             wavelength = np.array(dataset) * 1000.0                       # [nm]
@@ -365,11 +370,13 @@ class WavelengthCalibration(PipelineComponent):
         hdul = fits.HDUList([hdu])
 
         for i, order in enumerate(orders):
+            hdr1 = fits.Header()
+            hdr1["order"] = order
             for j, fiber in enumerate(fibers):
 
-                hdr1 = fits.Header()
-                hdr1["order"] = order
-                hdr1["fiber"] = fiber
+                hdr2 = fits.Header()
+                hdr2["order"] = order
+                hdr2["fiber"] = fiber
 
                 wLength = np.array((wavelength[order][fiber])["lambda"], dtype=np.float64)
                 col1    = fits.Column("wavelength", format='D', array=wLength)
@@ -377,28 +384,33 @@ class WavelengthCalibration(PipelineComponent):
                 flux = np.array((wavelength[order][fiber])["flux"], dtype=np.float64)
                 col2 = fits.Column("flux", format='D', array=flux)
 
-                bestFit = np.array(bestFitCoefficients[order], dtype=np.float64)
-                col3 = fits.Column("best fit coefficients", format='D', array=bestFit)
+                cols2 = fits.ColDefs([col1, col2])
+                hdu2 = fits.BinTableHDU.from_columns(cols2, header=hdr2)
 
-                gaussianCenter = np.array(fittedGaussianCenters[i], dtype=np.float64)
-                col4 = fits.Column("fitted Gaussian centers", format='D', array=gaussianCenter)
+                hdul.append(hdu2)
 
-                gaussianStdevs = np.array(fittedGaussianStdevs[i], dtype=np.float64)
-                col5 = fits.Column("gaussian Stdevs", format='D', array=gaussianStdevs)
+            bestFit = np.array(bestFitCoefficients[order], dtype=np.float64)
+            col3 = fits.Column("best fit coefficients", format='D', array=bestFit)
 
-                gaussianAmplitudes = np.array(fittedGaussianAmplitudes[i], dtype=np.float64)
-                col6 = fits.Column("gaussian amplitude", format='D', array=gaussianAmplitudes)
+            gaussianCenter = np.array(fittedGaussianCenters[i], dtype=np.float64)
+            col4 = fits.Column("fitted Gaussian centers", format='D', array=gaussianCenter)
 
-                gaussianOffsets = np.array(fittedGaussianOffsets[i], dtype=np.float64)
-                col7 = fits.Column("gaussian offset", format='D', array=gaussianOffsets)
+            gaussianStdevs = np.array(fittedGaussianStdevs[i], dtype=np.float64)
+            col5 = fits.Column("gaussian Stdevs", format='D', array=gaussianStdevs)
 
-                chiSquare = np.array(chiSquares[i], dtype=np.float64)
-                col8 = fits.Column("chi square", format='D', array=chiSquare)
+            gaussianAmplitudes = np.array(fittedGaussianAmplitudes[i], dtype=np.float64)
+            col6 = fits.Column("gaussian amplitude", format='D', array=gaussianAmplitudes)
 
-                cols = fits.ColDefs([col1, col2, col3, col4, col5, col6, col7, col8])
-                hdu1 = fits.BinTableHDU.from_columns(cols, header=hdr1)
+            gaussianOffsets = np.array(fittedGaussianOffsets[i], dtype=np.float64)
+            col7 = fits.Column("gaussian offset", format='D', array=gaussianOffsets)
 
-                hdul.append(hdu1)
+            chiSquare = np.array(chiSquares[i], dtype=np.float64)
+            col8 = fits.Column("chi square", format='D', array=chiSquare)
+
+            col1 = fits.ColDefs([col3, col4, col5, col6, col7, col8])
+            hdu1 = fits.BinTableHDU.from_columns(col1, header=hdr1)
+
+            hdul.append(hdu1)
 
             hdul.writeto(path, overwrite=True)
 
@@ -441,8 +453,8 @@ def compute_wavelengths(polynomialCoefficients):
     wavelength_calibrated_spectra = {}
 
     for order in polynomialCoefficients.keys():
-        wavelength_calibrated_spectra[order] = {1: {}, 2: {}, 3: {}, 4: {}}
-        for fiber in [1,2,3,4]:
+        wavelength_calibrated_spectra[order] = {2: {}, 3: {}, 4: {}, 5: {}}
+        for fiber in [2,3,4, 5]:
             xobs, yobs, fluxobs = spectraAllFibersAllOrders[order][fiber]                   # xobs is in [pix]
             X = np.vander(xobs, len(polynomialCoefficients[order]), increasing=True)        # Design matrix
             wavelength = X @ polynomialCoefficients[order]                                  # [nm]
@@ -458,11 +470,18 @@ def compute_wavelengths(polynomialCoefficients):
 def plot_wavelength_calibrated_spectra(wavelength_calibrated_spectra):
 
     fig, ax = plt.subplots(figsize=(9,12))
-    for order in wavelength_calibrated_spectra.keys():
-        for fiber in [1,2,3,4]:
-            wavelength = wavelength_calibrated_spectra[order][fiber]['lambda']
-            flux = wavelength_calibrated_spectra[order][fiber]['flux']
-            ax.scatter(wavelength, flux, s=2)
+    # for order in wavelength_calibrated_spectra.keys():
+    #     for fiber in [2,3,4, 5]:
+    #         wavelength = wavelength_calibrated_spectra[order][fiber]['lambda']
+    #         flux = wavelength_calibrated_spectra[order][fiber]['flux']
+    #         ax.scatter(wavelength, flux, label=f"fiber: {fiber}, order: {order}", s=2)
+
+    order = 80
+    for fiber in [2,3,4, 5]:
+        wavelength = wavelength_calibrated_spectra[order][fiber]['lambda']
+        flux = wavelength_calibrated_spectra[order][fiber]['flux']
+        ax.scatter(wavelength, flux, label=f"{fiber}, {order}", s=2)
+    plt.legend(loc="center left", bbox_to_anchor=(1, 0.5))
     plt.show()
 
 
@@ -795,6 +814,12 @@ if __name__ == "__main__":
 
     extracted_science_hash = "28065b0282df4865863b0f4e1aa7d7367cf7cbe2226d642cef5b5a147e3d6e43"
     extracted_science_path = "Data/ProcessedData/OptimalExtraction/optimal_extracted_science_flux.fits"
-    item = WavelengthCalibration(debug=1, OptimalExtracted=extracted_science_path)
+    item = WavelengthCalibration(debug=3, OptimalExtracted=extracted_science_path)
     item.run("output_wave_calibration.fits")
+
+
+    hdu_list = fits.open(os.getcwd() + "/Data/ProcessedData/WaveCalibration/output_wave_calibration.fits",
+                         memmap=True)
+
+    print(hdu_list.info())
 
