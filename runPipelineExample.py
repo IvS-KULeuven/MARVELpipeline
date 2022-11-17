@@ -6,6 +6,7 @@ from pipeline import MasterBias, MasterFlat, CalibratedScienceFrames
 from orderMaskExtraction import OrderMaskExtraction 
 from orderExtraction import OrderExtraction
 from optimalExtraction import OptimalExtraction
+from wavelengthCalibration import WavelengthCalibration
 
 
 
@@ -84,11 +85,19 @@ print("")
 # Extract a 1D spectrum for each order, not yet wavelength calibrated but corrected for
 # the instrumental response curve. We call this an "optimal science extraction".
 
-extractedSciencePath = "Data/ProcessedData/ExtractedOrders/extractedOrdersScience.fits"
-extractedFlatPath = "Data/ProcessedData/ExtractedOrders/orderMask.fits"
-optimalScience = OptimalExtraction(db, debug=1, ExtractedOrders=[extractedSciencePath, extractedFlatPath])
+extracted_science_path = "Data/ProcessedData/ExtractedOrders/extractedOrdersScience.fits"
+extracted_flat_path = "Data/ProcessedData/ExtractedOrders/orderMask.fits"
+optimalScience = OptimalExtraction(db, debug=1, ExtractedOrders=[extracted_science_path, extracted_flat_path])
 optimalScience.run("optimal_extracted_science_flux.fits")
 print("")
+
+
+# Do the wavelength calibration
+
+optimal_extracted_science_path = "Data/ProcessedData/OptimalExtraction/optimal_extracted_science_flux.fits"
+wavelength_calibration = WavelengthCalibration(db, debug=3, OptimalExtracted=optimal_extracted_science_path)
+wavelength_calibration.run("wavelength_calibrated_science.fits")
+
 
 
 # Save all the information of the pipeline process to the database. 
