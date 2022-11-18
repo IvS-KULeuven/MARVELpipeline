@@ -392,8 +392,8 @@ def getFibersAndOrders(path):
 
     fileType = hdul[0].header["type"]
 
-    if not (("Extracted" in fileType)):
-        print("Error: filetype {} is not a type of Extracted Orders".format(fileType))
+    if not (("Extracted" in fileType) or ("Wavelength" in fileType)):
+        print("Error: filetype {} is not a correct type".format(fileType))
         return
 
     orders = hdul[0].header["orders"]
@@ -599,6 +599,97 @@ def getAllOptimalExtractedSpectrum(path):
                spectra[order] = {fiber: (xPos, yPos, flux)}
 
    return spectra
+
+
+
+
+
+
+
+
+
+def getAllWavelengthVsFluxes(path):
+    """
+    Get a dictionary with the flux and wavelength for all the (science) orders
+    for a wavelength calibrated image.
+
+    Input:
+        path. String with the path to the wavelength calibrated file
+
+    Output:
+        wavelengthVsFlux. Dictionary D where D[order][fiber]['lambda'] is the
+                          wavelengths for every order/fiber and
+                          D[order][fiber]['flux'] the flux.
+    """
+
+    fibers, orders = getFibersAndOrders(path)
+    # Check that path exist
+    if not os.path.isfile(path):
+        print("Error: path does not exist")
+        return
+    # Check that type of fits file is Extracted Flux
+    hdul = fits.open(path)
+    fileType = hdul[0].header["type"]
+
+    if not (("Wavelength" in fileType)):
+        print("Error: filetype {} is not a type of Wavelength Calibrated".format(fileType))
+        return
+
+
+    def getTable(order, fiber):
+        # Try to find order/fiber:
+        # First try find correct table at expect location
+        idx = (order-np.min(orders))*5 + (fiber) - 1
+        if ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber)):
+            table = hdul[idx]
+
+        else:
+            # If the correct table is not at the expected location, we loop over every order
+            # and check if the correct table among them.
+            locationFound = False
+            for idx in np.arange(np.size(hdul)):
+                try:
+                    correctLocation = ((hdul[idx].header["order"] == order) and (hdul[idx].header["fiber"] == fiber))
+                except:
+                    continue
+                if correctLocation:
+                    locationFound = True
+                    table = hdul[idx]
+                    break
+                if not locationFound:
+                    print("order {o} and fiber {f} not found in file {file}.".format(o=order, f=fiber, file=path))
+                    return
+        return table
+
+
+    wavelengthVsFlux = {}
+
+    for order in orders:
+        for fiber in fibers:
+            table = getTable(order, fiber)
+
+            if table is None:
+                print("Error in file {}. Not correct format.".format(path))
+                return
+
+            flux = (table.data["flux"]).astype(np.float64)
+            wl    = (table.data['wavelength']).astype(np.int16)
+
+            if order in wavelengthVsFlux:
+                wavelengthVsFlux[order].update({fiber : {"lambda": wl, "flux": flux}})
+            else:
+                wavelengthVsFlux[order] = {fiber: {"lambda": wl, "flux": flux}}
+
+    return wavelengthVsFlux
+
+
+
+
+
+
+
+
+
 
 
 
