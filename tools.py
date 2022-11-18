@@ -673,7 +673,7 @@ def getAllWavelengthVsFluxes(path):
                 return
 
             flux = (table.data["flux"]).astype(np.float64)
-            wl    = (table.data['wavelength']).astype(np.int16)
+            wl    = (table.data['wavelength']).astype(np.float64)
 
             if order in wavelengthVsFlux:
                 wavelengthVsFlux[order].update({fiber : {"lambda": wl, "flux": flux}})
