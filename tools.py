@@ -144,9 +144,11 @@ def addToDataBase(metaData, db, overWrite=False):
 
 
     images     = {"Master Dark Image": "DarkImages", "Master Bias Image": "BiasImages", "Master Flat Image": "FlatImages",
-                  "Calibrated Science Image" : "ScienceImages", "Calibrated Etalon Image":"EtalonImages", "Extracted Flat Orders" : "ExtractedOrders",
+                  "Bias Corrected Science Image" : "ScienceImages", "Bias Corrected Etalon Image" : "EtalonImages",
+                  "Calibrated Etalon Image":"EtalonImages", "Extracted Flat Orders" : "ExtractedOrders",
                   "Extracted Science Orders" : "ExtractedOrders","Extracted Etalon Orders": "ExtractedOrders",
-                  "Optimal Extracted Science" : "OptimalExtracted", "Optimal Extracted Etalon" : "OptimalExtracted", "Wavelength Calibrated": "WavelengthCalibrated"}
+                  "Optimal Extracted Science" : "OptimalExtracted", "Optimal Extracted Etalon" : "OptimalExtracted",
+                  "Wavelength Calibrated": "WavelengthCalibrated"}
 
     typeImage  = metaData["type"]
     collection = db[images[typeImage]]
@@ -713,7 +715,7 @@ def convertPathToHash(path, db):
                      "ScienceImages", "CalibratedEtalon": "EtalonImages", "ExtractedOrders": "ExtractedOrders",
                      "MasterBias": "BiasImages", "MasterDark": "DarkImages",
                      "MasterFlat": "FlatImages",
-                     "OptimalExtraction": "OptimalExtracted"}
+                     "OptimalExtraction": "OptimalExtracted", "BiasCorrectedScience": "ScienceImages", "BiasCorrectedEtalon": "EtalonImages"}
 
     # 1. Make sure we have a path for which the file exist and that path refers
     # to the absolute path

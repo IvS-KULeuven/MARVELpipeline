@@ -74,14 +74,13 @@ class OrderExtraction(PipelineComponent):
         values = list(imageAndMaskHash.values())
 
         # Check that the keys are of the right format. For order extraction there should be one
-        # extracted flat image and one calibrated etalon or science frame.
+        # extracted flat image and one bias corrected etalon or science frame.
 
         hasMask = (len(types) == 2) and ("ExtractedOrders" in types)
         hasImages = ("ScienceImages" in types) or ("EtalonImages" in types)
         keysAreCorrect = hasMask and hasImages
 
         valuesAreCorrect = isinstance(values[0], str) and isinstance(values[1], str)
-
 
         # We can set the type of image, e.g. "Science" or "Etalon"
         if "ScienceImages" in types:
@@ -93,9 +92,8 @@ class OrderExtraction(PipelineComponent):
             hasExtractedFlat = self.db["ExtractedOrders"].find_one({"_id": imageAndMaskHash["ExtractedOrders"]})["type"] == "Extracted Flat Orders"
 
             imageType = self.extractedType+"Images"
-            hasCalibratedImage = self.db[imageType].find_one({"_id": imageAndMaskHash[imageType]})["type"] == "Calibrated " + self.extractedType + " Image"
-
-            return hasExtractedFlat and hasCalibratedImage
+            hasBiasCorrectedImage = self.db[imageType].find_one({"_id": imageAndMaskHash[imageType]})["type"] == "Bias Corrected " + self.extractedType + " Image"
+            return hasExtractedFlat and hasBiasCorrectedImage
         else:
             return False
 
@@ -299,29 +297,29 @@ if __name__ == "__main__":
     db = DatabaseFromLocalFile("pipelineDatabase.txt")
     print("")
 
-    # Extract the orders of a science image
+    # # Extract the orders of a science image
 
-    scienceImageHash = "b0ef6a99bde7cdbc968a46fcd7a57e450a554c548d9cc89d7a9555e7236fe05f"
-    scienceImagePath = "Data/ProcessedData/CalibratedScience/testFScience.fits"
+    # scienceImageHash = "f8de2134c497890e33f9e1d397e90cef2516730c5befd9c210f9a6f790c6168a"
+    # scienceImagePath = "Data/ProcessedData/BiasCorrectedScience/testFScience.fits"
 
-    orderMaskHash    = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
-    orderMaskPath    = "Data/ProcessedData/ExtractedOrders/testFMask.fits"
+    # orderMaskHash    = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
+    # orderMaskPath    = "Data/ProcessedData/ExtractedOrders/testFMask.fits"
 
-    scienceExtractor1 = OrderExtraction(db, debug=1, ExtractedOrders=orderMaskPath,
-                                        ScienceImages=scienceImagePath)
-    scienceExtractor2 = OrderExtraction(debug=1, ExtractedOrders=orderMaskHash,
-                                        ScienceImages=scienceImageHash)
+    # scienceExtractor1 = OrderExtraction(db, debug=1, ExtractedOrders=orderMaskPath,
+    #                                     ScienceImages=scienceImagePath)
+    # scienceExtractor2 = OrderExtraction(debug=1, ExtractedOrders=orderMaskHash,
+    #                                     ScienceImages=scienceImageHash)
 
-    scienceExtractor1.run("extractedScienceTestF.fits")
-    print("+============================+")
-    scienceExtractor2.run("extractedScienceTestD.fits")
-    print("+============================+")
+    # scienceExtractor1.run("extractedScienceTestF.fits")
+    # print("+============================+")
+    # scienceExtractor2.run("extractedScienceTestD.fits")
+    # print("+============================+")
 
 
     # Extract the orders of an Etalon image (Calibrated Etalon)
 
-    etalonImageHash = "372bd5de4de92bb991f6eb3991a05c423063b67788ab1275cf31d060a347d533"
-    etalonImagePath   = "Data/ProcessedData/CalibratedEtalon/testFEtalon.fits"
+    etalonImageHash = "9fa9f316df26b3ddf775fb9fafb2176b85c238b5e58bbaa308be4528433d281a"
+    etalonImagePath   = "Data/ProcessedData/BiasCorrectedEtalon/testFEtalon.fits"
 
     orderMaskHash = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
     orderMaskPath    = "Data/ProcessedData/ExtractedOrders/testFMask.fits"
@@ -335,5 +333,5 @@ if __name__ == "__main__":
     print("+============================+")
     etalonExtractor2.run("extractedEtalonTestD.fits")
 
-    db.saveToFile()
+    db.save()
 

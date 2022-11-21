@@ -510,7 +510,7 @@ class MasterFlat(PipelineComponent):
 
 
 
-class CalibratedScienceFrames(PipelineComponent):
+class BiasCorrectedScienceFrames(PipelineComponent):
     """
     TODO: documentation. What is this class for?
     """
@@ -520,8 +520,8 @@ class CalibratedScienceFrames(PipelineComponent):
         inputScienceHashes = self.inputHashes
 
         if self.checkSanityOfInputTypes(**inputScienceHashes):
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/CalibratedScience/"
-            self.type = "Calibrated Science Image"
+            self.outputPath = os.getcwd() + "/Data/ProcessedData/BiasCorrectedScience/"
+            self.type = "Bias Corrected Science Image"
             self.masterBiasHash = inputScienceHashes["BiasImages"]
             self.rawScienceHash = inputScienceHashes["ScienceImages"]
         else:
@@ -539,12 +539,12 @@ class CalibratedScienceFrames(PipelineComponent):
     def checkSanityOfInputTypes(self, **inputScienceHashes):
         """
         This function is ran after we run checkSanityOfInputHashes. This function checks the the
-        input types that are given is able to generate a calibrated science output file.
+        input types that are given is able to generate a bias corrected science output file.
         """
         types  = list(inputScienceHashes.keys())
         values = list(inputScienceHashes.values())
 
-        # Check that the keys are of the right format. For a calibrated science image, these should be science
+        # Check that the keys are of the right format. For a bias corrected science image, these should be science
         # images, dark images and bias images.
 
         correctKeysFormat = ["ScienceImages", "BiasImages"]
@@ -573,14 +573,14 @@ class CalibratedScienceFrames(PipelineComponent):
 
     def run(self, outputFileName=None):
         """
-        We run through the algorithm to create the calibrated science images.
+        We run through the algorithm to create the bias corrected science images.
 
         Input:
             outputFileName: If None, nothing is saved. Otherwise, a string with the name of the outputfile,
                             incl. the extension ".fits".
 
         Output:
-            calibratedScience:     calibrated science image [ADU]
+            calibratedScience:     bias corrected science image [ADU]
         """
 
         # Get all the paths of the files corresponding to these hashes
@@ -591,21 +591,21 @@ class CalibratedScienceFrames(PipelineComponent):
         bias    = tools.getImage(biasPath)
         science = tools.getImage(sciencePath)
 
-        calibratedScience = science - bias
+        biasCorrectedScience = science - bias
 
         # Add offset so that all the values in the MasterFlat are positive
-        if np.min(calibratedScience) < 0:
-            calibratedScience = calibratedScience - np.min(calibratedScience)
+        if np.min(biasCorrectedScience) < 0:
+            biasCorrectedScience = biasCorrectedScience - np.min(biasCorrectedScience)
 
 
         if outputFileName is not None:
-            self.saveImageAndAddToDatabase(calibratedScience, outputFileName)
-            print("Calibrated science image saved to fits file")
+            self.saveImageAndAddToDatabase(biasCorrectedScience, outputFileName)
+            print("Bias Corrected science image saved to fits file")
 
         # That's it!
 
         print("Block generated!")
-        return calibratedScience
+        return biasCorrectedScience
 
 
 
@@ -640,9 +640,9 @@ class CalibratedScienceFrames(PipelineComponent):
 
 
 
-class CalibratedEtalonImage(PipelineComponent):
+class BiasCorrectedEtalonImage(PipelineComponent):
     """
-    The component calculates the Calibrated Etalon Image. This  is caluculated
+    The component calculates the Bias Corrected Etalon Image. This  is caluculated
     by substracting a master bias image from the etalon calibration image. Finaly,
     if their are negative values in the output file we subtstract from this image
     its minimum value so that the new minimum is 0.
@@ -650,15 +650,15 @@ class CalibratedEtalonImage(PipelineComponent):
 
     def __init__(self, database=None, **inputEtalonHashes):
         """
-        Initialize the calibrated etalon image.
+        Initialize the bias corrected etalon image.
         """
 
         super().__init__(database, **inputEtalonHashes)
         inputEtalonHashes = self.inputHashes
 
         if self.checkSanityOfInputTypes(**inputEtalonHashes):
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/CalibratedEtalon/"
-            self.type       = "Calibrated Etalon Image"
+            self.outputPath = os.getcwd() + "/Data/ProcessedData/BiasCorrectedEtalon/"
+            self.type       = "Bias Corrected Etalon Image"
             self.rawEtalonHash  = inputEtalonHashes["EtalonImages"]
             self.masterBiasHash = inputEtalonHashes["BiasImages"]
         else:
@@ -675,12 +675,12 @@ class CalibratedEtalonImage(PipelineComponent):
     def checkSanityOfInputTypes(self, **inputEtalonHashes):
         """
         This function is ran after we run checkSanityOfInputHashes. This function checks the the
-        input types that are given is able to generate a calibrated science output file.
+        input types that are given is able to generate a bias corrected etalon output file.
         """
         types  = list(inputEtalonHashes.keys())
         values = list(inputEtalonHashes.values())
 
-        # Check that the keys are of the right format. For a calibrated science image, these should be science
+        # Check that the keys are of the right format. For a bias corrected etalon image, these should be etalon
         # images, dark images and bias images.
 
         correctKeysFormat = ["EtalonImages", "BiasImages"]
@@ -711,14 +711,14 @@ class CalibratedEtalonImage(PipelineComponent):
 
     def run(self, outputFileName=None):
         """
-        Runs through the steps to get the calibrated etalon image.
+        Runs through the steps to get the bias corrected etalon image.
 
         Input:
             outputFileName: If None, nothing is saved. Otherwise, a string with the name of the outputfile,
                             incl. the extension ".fits".
 
         Ouput:
-            array with the flux values of the calibrated etalon image.
+            array with the flux values of the bias corrected etalon image.
         """
 
         # Get all the paths of the files corresponding to the input hashes
@@ -731,7 +731,7 @@ class CalibratedEtalonImage(PipelineComponent):
         etalon = tools.getImage(etalonPath)
         bias   = tools.getImage(biasPath)
 
-        # Use these images to get the calibrated etalon image.
+        # Use these images to get the bias corrected etalon image.
 
         calibratedEtalon = etalon - bias
         if np.min(calibratedEtalon) < 0:
@@ -740,7 +740,7 @@ class CalibratedEtalonImage(PipelineComponent):
         # If required, save to FITS
         if outputFileName is not None:
             self.saveImageAndAddToDatabase(calibratedEtalon, outputFileName)
-            print("Calibrated etalon image saved to fits file")
+            print("Bias corrected etalon image saved to fits file")
 
         # That's it!
 
@@ -848,7 +848,7 @@ if __name__ == "__main__":
     masterF2.run("testsDFlat.fits")
 
 
-    # Calibrated Science Image
+    # bias corrected Science Image
     rawScienceHash = "d99dff18a15ab83b51af4ecdca9dc99c2069bdc17eb6a5d1cdb67e7e86c92e4a"
 
     master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
@@ -856,9 +856,9 @@ if __name__ == "__main__":
 
 
     print(" ")
-    calibration1 = CalibratedScienceFrames(db, ScienceImages=rawScienceHash,
+    calibration1 = BiasCorrectedScienceFrames(db, ScienceImages=rawScienceHash,
                                               BiasImages=master_bias_pathF)
-    calibration2 = CalibratedScienceFrames(ScienceImages=rawScienceHash,
+    calibration2 = BiasCorrectedScienceFrames(ScienceImages=rawScienceHash,
                                            BiasImages=master_bias_pathD)
 
     calibration1.run("testFScience.fits")
@@ -872,9 +872,9 @@ if __name__ == "__main__":
     master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
 
     print(" ")
-    calibratedEtalon1 = CalibratedEtalonImage(db, EtalonImages=raw_etalon_hash,
+    calibratedEtalon1 = BiasCorrectedEtalonImage(db, EtalonImages=raw_etalon_hash,
                                                  BiasImages=master_bias_pathF)
-    calibratedEtalon2 = CalibratedEtalonImage(EtalonImages=raw_etalon_hash,
+    calibratedEtalon2 = BiasCorrectedEtalonImage(EtalonImages=raw_etalon_hash,
                                               BiasImages=master_bias_pathD)
     calibratedEtalon1.run("testFEtalon.fits")
     calibratedEtalon2.run("testDEtalon.fits")
