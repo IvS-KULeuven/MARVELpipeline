@@ -552,7 +552,7 @@ if __name__ == "__main__":
     print("+============================+")
     optimalEtalon2.run("optimal_extracted_etalon_flux.fits")
 
-    db.saveToFile()
+    db.save()
 
 
 
