@@ -167,7 +167,7 @@ class WavelengthCalibration(PipelineComponent):
 
 
 
-        wavelengths = (compute_wavelengths(bestFitCoefficients))
+        wavelengths = (self.compute_wavelengths(pathThArSpectrum, bestFitCoefficients))
 
         if self.debug > 2: plot_wavelength_calibrated_spectra(wavelengths)
 
@@ -425,44 +425,36 @@ class WavelengthCalibration(PipelineComponent):
 
 
 
+    def compute_wavelengths(self, scienceSpectrum, polynomialCoefficients):
+        """
+        Compute the wavelengths corresponding to each x-coord pixel value of 1D science spectrum
 
+        INPUT: scienceSpectrum. string to the science spectrum
+                   a dictionary P so that
+                   P[order] contains a numpy array with the polynomial coefficients of the wavelength calibration
 
+        OUTPUT: a dictionary D so that
+                    D[order][fiber]["lambda"] contains the wavelengths in [nm]
+                    D[order][fiber]["flux"] contains the flux values
 
+        Here, fiber runs from 1 to 4 (incl) and order from 30 to 99.
+        """
 
+        spectraAllFibersAllOrders = tools.getAllOptimalExtractedSpectrum(scienceSpectrum)
 
+        wavelength_calibrated_spectra = {}
 
+        for order in polynomialCoefficients.keys():
+            wavelength_calibrated_spectra[order] = {2: {}, 3: {}, 4: {}, 5: {}}
+            for fiber in [2,3,4, 5]:
+                xobs, yobs, fluxobs = spectraAllFibersAllOrders[order][fiber]                   # xobs is in [pix]
+                X = np.vander(xobs, len(polynomialCoefficients[order]), increasing=True)        # Design matrix
+                wavelength = X @ polynomialCoefficients[order]                                  # [nm]
+                wavelength_calibrated_spectra[order][fiber] = {"lambda": wavelength, "flux": fluxobs}
 
+        # That's it!
 
-def compute_wavelengths(polynomialCoefficients):
-    """
-    Compute the wavelengths corresponding to each x-coord pixel value of 1D science spectrum
-
-    INPUT: a dictionary P so that
-           P[order] contains a numpy array with the polynomial coefficients of the wavelength calibration
-
-    OUTPUT: a dictionary D so that
-            D[order][fiber]["lambda"] contains the wavelengths in [nm]
-            D[order][fiber]["flux"] contains the flux values
-
-            Here, fiber runs from 1 to 4 (incl) and order from 30 to 99.
-    """
-
-    scienceSpectrum = "Data/ProcessedData/OptimalExtraction/optimal_extracted_science_flux.fits"
-    spectraAllFibersAllOrders = tools.getAllOptimalExtractedSpectrum(scienceSpectrum)
-
-    wavelength_calibrated_spectra = {}
-
-    for order in polynomialCoefficients.keys():
-        wavelength_calibrated_spectra[order] = {2: {}, 3: {}, 4: {}, 5: {}}
-        for fiber in [2,3,4, 5]:
-            xobs, yobs, fluxobs = spectraAllFibersAllOrders[order][fiber]                   # xobs is in [pix]
-            X = np.vander(xobs, len(polynomialCoefficients[order]), increasing=True)        # Design matrix
-            wavelength = X @ polynomialCoefficients[order]                                  # [nm]
-            wavelength_calibrated_spectra[order][fiber] = {"lambda": wavelength, "flux": fluxobs}
-
-    # That's it!
-
-    return wavelength_calibrated_spectra
+        return wavelength_calibrated_spectra
 
 
 
