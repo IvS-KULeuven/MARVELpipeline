@@ -702,7 +702,7 @@ def crudeWavelengthCalibrationOfOneOrder(xpix, flux, centerGuesses, amplitudeGue
 
     # First fit each ThAr line individually with a constant + Gaussian
 
-    if debug > 1: print("    - fith the individual ThAr lines")
+    if debug > 1: print("    - fitting the individual ThAr lines")
 
     fittedGaussianCenters, fittedGaussianStdevs, fittedGaussianAmplitudes, fittedGaussianOffsets, chiSquares = \
                 fitThArLines(xpix, flux, centerGuesses, amplitudeGuesses, stdevGuesses, lambdaTrue)
