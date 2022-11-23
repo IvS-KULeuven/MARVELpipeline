@@ -60,11 +60,8 @@ class PipelineComponent():
         inputHashes = self.convertInputToHash(**inputHashes)
 
 
-
-
         if not (self.checkSanityOfInput(**inputHashes)):
             keysInDatabase = np.array([key in self.db.list_collection_names() for key in inputHashes.keys()])
-
 
 
             if not np.all(keysInDatabase):
@@ -73,8 +70,11 @@ class PipelineComponent():
                 keys = str(unrecognizedKeys)[1:-1]
                 raise Exception(f"Keyvalues:  {keys} not found in database")
             else:
-                raise Exception("One of the input hashes/paths is not found in databse")
+                raise Exception("One of the input hashes/paths is not found in database")
         self.inputHashes = inputHashes
+
+        if not os.path.isdir(os.getcwd() + "/Data/ProcessedData"):
+            os.mkdir(os.getcwd() + "/Data/ProcessedData")
 
 
 
@@ -196,6 +196,10 @@ class MasterBias(PipelineComponent):
         else:
             raise Exception("Error: The input hashes do not match the correct type: Aborting")
             exit(1)
+
+
+        if not os.path.isdir(self.outputPath):
+            os.mkdir(self.outputPath)
 
 
 
@@ -407,6 +411,9 @@ class MasterFlat(PipelineComponent):
             raise Exception("Error: The input hashes do not match the correct type: Aborting")
             exit(1)
 
+        if not os.path.isdir(self.outputPath):
+            os.mkdir(self.outputPath)
+
 
 
 
@@ -528,7 +535,8 @@ class BiasCorrectedScienceFrames(PipelineComponent):
             raise Exception("Error: The input hashes do not match the correct type: Aborting")
             exit(1)
 
-
+        if not os.path.isdir(self.outputPath):
+            os.mkdir(self.outputPath)
 
 
 
@@ -665,7 +673,8 @@ class BiasCorrectedEtalonImage(PipelineComponent):
             raise Exception("Error: The input hashes do not match the correct type: Aborting")
             exit(1)
 
-
+        if not os.path.isdir(self.outputPath):
+            os.mkdir(self.outputPath)
 
 
 
@@ -806,13 +815,10 @@ if __name__ == "__main__":
     print("")
 
     # Master Bias Image
-    raw_bias_hashes = ['f2753cdd3370f5596a6c574a5e837fb2837e04bc4b2bbb1dc4bd26f270849d45',
-                       '6d6187e691a99e49aa54fef06bfa289867ee36bb0c70ad1845f3a2ec1354b0f6',
-                       '2ae6d82c0628c26af27553d7ba33c1121e32c755ef93c4fad13e66fb475c2127',
-                       '4e1b127813b2b8bd6a6f90285fbbc87cbdba697503606ea96eddbe5ec4affdbc',
-                       '3e947c38dee83746b746031d8dae57fa2d6a6f31c7fb0be31ad7f14b1f37b99b',
-                       '1902162ddc57a095c10a4571922cc3d76ead46eedeed3eefaac88c882097172a',
-                       '53fa9f81ffba0b3916bcb90603e49becb4e77eef0e73d6f8073132d8b585c703']
+    raw_bias_hashes = ["a951099fa7b4a048435d1f1f8795818323aa5b8c43c5718f1c792fe993779bd5",
+                       "c35040b75325d955b760084f3bccf68b73de5ce73e8f800a165e6bc73d383c09",
+                       "7a182ffe9fb529426c1b0b5f9798aa435771f667ece13d5ae4a0d0cb657136a4",
+                       "b71810d5c9069cb315c4ab888b92ca08d554583a52129d642f1987849e2c2346"]
 
     masterB1 = MasterBias(db, BiasImages=raw_bias_hashes)
     masterB2 = MasterBias(BiasImages=raw_bias_hashes)
@@ -834,11 +840,11 @@ if __name__ == "__main__":
 
 
     # Flat
-    raw_flat_hashes = ["9c43630b8c8865f9040ebf8938ece78b72849b4435a897e16291eed222801305",
-                       "e68a7f29ce87fb61d2aa58add658d18e08c78f679f3bbcc43071672c351fa6d6",
-                       "cd1e1ffd95b22875a79163ab977e5f96bb0eab9d0f22574374176e1c5ed605ee",
-                       "74bb4c8de06386600d1f99f6bdc390aa84edd99c11fbc648c12d0a039f4dee47",
-                       "6a6a2a048ea9c1c2fffd5fb3ca0f26df77866973300cf2de223d63dd9df32f93"]
+    raw_flat_hashes = ["4c529b1f1a4bfc13088a549c7b9832a9033702faa94b7dc22f4c50080fe25dcd",
+                       "da608b2c0f18373042b667caed3ef0dc28f8be5eb705a42cf451570e7ee9bd49",
+                       "d4245a76f143aa617e319e275aa31f994f034c43bf037b3324bd037ce2a4cdb3",
+                       "e08c3988e7f022fdece62d96988e6c5321ff113e46c6e59d25a285bb0820cbc4"]
+
     master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
     master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
     masterF1 = MasterFlat(db, FlatImages=raw_flat_hashes, BiasImages=master_bias_pathF)
@@ -849,7 +855,7 @@ if __name__ == "__main__":
 
 
     # bias corrected Science Image
-    rawScienceHash = "d99dff18a15ab83b51af4ecdca9dc99c2069bdc17eb6a5d1cdb67e7e86c92e4a"
+    rawScienceHash = "d2ad34be4443931a5128f3e035ce12c869fb801c017f856cb3c68c1e180d1267"
 
     master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
     master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
@@ -865,19 +871,19 @@ if __name__ == "__main__":
     calibration2.run("testDScience.fits")
 
 
-    # Calibrated Etalon Image
-    raw_etalon_hash  = "e0ac021d19ce5520d0ba92df1d5aadf6541f35f76a84121576828287937ca508"
+    # # Calibrated Etalon Image
+    # raw_etalon_hash  = "cd883d3e471c1be5176a74565f1d1b7a29fbe8a52c6e8ca1556a44cdac25c3b1"
 
-    master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
-    master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
+    # master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
+    # master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
 
-    print(" ")
-    calibratedEtalon1 = BiasCorrectedEtalonImage(db, EtalonImages=raw_etalon_hash,
-                                                 BiasImages=master_bias_pathF)
-    calibratedEtalon2 = BiasCorrectedEtalonImage(EtalonImages=raw_etalon_hash,
-                                              BiasImages=master_bias_pathD)
-    calibratedEtalon1.run("testFEtalon.fits")
-    calibratedEtalon2.run("testDEtalon.fits")
+    # print(" ")
+    # calibratedEtalon1 = BiasCorrectedEtalonImage(db, EtalonImages=raw_etalon_hash,
+    #                                              BiasImages=master_bias_pathF)
+    # calibratedEtalon2 = BiasCorrectedEtalonImage(EtalonImages=raw_etalon_hash,
+    #                                           BiasImages=master_bias_pathD)
+    # calibratedEtalon1.run("testFEtalon.fits")
+    # calibratedEtalon2.run("testDEtalon.fits")
 
 
     db.save()

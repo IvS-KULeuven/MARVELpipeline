@@ -350,9 +350,9 @@ def initializeDataBaseWithRawImages(clearIfExist=False):
 
     for imageType in ["Bias", "Dark", "Flat", "Etalon", "Science"]:
         if imageType == "Science":
-            imagePaths = glob(pathToRaw + "/ScienceFrames/*.fits")
+            imagePaths = glob(pathToRaw + "ScienceFrames/*.fits")
         else:
-            imagePaths = glob(pathToRaw + f"/CalibrationImages/{imageType}/*.fits")
+            imagePaths = glob(pathToRaw + f"CalibrationImages/{imageType}/*.fits")
 
         Nimages = len(imagePaths)
         print(f"Found {Nimages} {imageType} frames to be inserted in MongoDB")
@@ -375,8 +375,8 @@ def initializeDataBaseWithRawImages(clearIfExist=False):
 
 if __name__ == "__main__":
 
-    #    initializeDataBaseWithRawImages(clearIfExist=True)
-    db = DatabaseFromLocalFile("Test.txt")
+    initializeDataBaseWithRawImages(clearIfExist=True)
+
+    db = DatabaseFromLocalFile("pipelineDatabase.txt")
     db.save()
-    db.loadFromFile("Test.txt")
-    db.save()
+
