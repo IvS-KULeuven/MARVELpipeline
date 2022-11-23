@@ -533,7 +533,7 @@ if __name__ == "__main__":
     extractedFlatHash = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
     extractedFlatPath = "Data/ProcessedData/ExtractedOrders/testFMask.fits"
 
-    optimalScience1 = OptimalExtraction(db, debug=1, ExtractedOrders=[extractedSciencePath, extractedFlatPath])
+    optimalScience1 = OptimalExtraction(db, debug=3, ExtractedOrders=[extractedSciencePath, extractedFlatPath])
     optimalScience2 = OptimalExtraction(debug=1, ExtractedOrders=[extractedScienceHash, extractedFlatHash])
 
     optimalScience1.run("optimal_extracted_science_flux1.fits")

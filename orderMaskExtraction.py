@@ -118,17 +118,17 @@ class OrderMaskExtraction(PipelineComponent):
         image = tools.getImage(path).astype('float64')
 
         # Locate the orders on the return a polynomial fit of them
-        if (self.debug > 2):
+        if (self.debug > 1):
             print("Find the stripes:")
         x_values, polynomials = self.getStripes(image, debug=True)
 
         # Identify the stripes
-        if (self.debug > 2):
+        if (self.debug > 1):
             print("\nIdentify the Stripes")
         id_p = self.identifyStripes(image, polynomials, x_values)
 
         # Extract the stripes
-        if (self.debug > 2):
+        if (self.debug > 1):
             print("\nExtract the Stripes")
 
         xCoordinates, yCoordinates, fluxValues, orders =  self.extractFlatStripes(image, id_p)
@@ -370,7 +370,7 @@ class OrderMaskExtraction(PipelineComponent):
 
         polynomials = np.array([ p.coefficients for p in polynomials ])
 
-        if self.debug > 2:
+        if self.debug > 1:
             end = time.time()
             print("\tTime for the function identifyStripes is {}".format(end-start))
         p_id = identify(yPositions, yObserved, polynomials, xValues, fibers, orders, shift_calculated)
@@ -436,20 +436,20 @@ class OrderMaskExtraction(PipelineComponent):
             ax[2].imshow(cleaned_image, origin='lower')
             plt.show()
 
-        if self.debug > 1:
+        if self.debug > 2:
             plt.imshow(flat, origin='lower')
             plt.imshow(index_fiber, alpha=0.3, origin='lower')
             plt.show()
 
 
-        if self.debug > 2:
+        if self.debug > 1:
             end = time.time()
             print("\tTime for first part of the function extractFlatStripes is {}".format(end-start))
             start = time.time()
 
         xCoordinates, yCoordinates, fluxValues, orders = extractStripes(flat, index_fiber, index_order)
 
-        if self.debug > 2:
+        if self.debug > 1:
             end = time.time()
             print("\tTime for second part of the function extractFlatStripes is {}".format(end-start))
         return xCoordinates, yCoordinates, fluxValues, orders
@@ -605,7 +605,7 @@ def followOrders(max_row_0, dark_column, image):
         if (row_max == 1) or (row_max == nx):
             break
 
-        if getSignalToNoiseSinglePixel(value[column], dark_value) < 20:
+        if getSignalToNoiseSinglePixel(value[column], dark_value) < 50:
             break
 
     # Reset column and row_max and walk to the bottom of the image
@@ -627,7 +627,7 @@ def followOrders(max_row_0, dark_column, image):
         if (row_max == 1) or (row_max == nx):
             break
 
-        if getSignalToNoiseSinglePixel(value[column], dark_value) < 20:
+        if getSignalToNoiseSinglePixel(value[column], dark_value) < 50:
             break
 
     # Done!
@@ -744,10 +744,10 @@ if __name__ == "__main__":
     db = DatabaseFromLocalFile("pipelineDatabase.txt")
     print("")
 
-    masterflat_hash = "641f2b56be1a8a86848c29abbd81858ddd15e42359ae84473050962efb9dea06"
+    masterflat_hash = "aa3a32c4a7ed8bdc16b9590ffb38d7a3eb554f3bd7b58a77d6207b5453e30d1e"
     masterflat_path = "Data/ProcessedData/MasterFlat/testsFFlat.fits"
 
-    maskExtractor1 = OrderMaskExtraction(db, debug=1, FlatImages=masterflat_path)
+    maskExtractor1 = OrderMaskExtraction(db, debug=3, FlatImages=masterflat_path)
     maskExtractor2 = OrderMaskExtraction(debug=1, FlatImages=masterflat_hash)
     maskExtractor1.run("testFMask.fits")
     print("==================")
