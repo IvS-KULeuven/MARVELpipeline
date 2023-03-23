@@ -299,10 +299,10 @@ if __name__ == "__main__":
 
     # Extract the orders of a science image
 
-    scienceImageHash = "f8de2134c497890e33f9e1d397e90cef2516730c5befd9c210f9a6f790c6168a"
+    scienceImageHash = "657de090b117a4d5ce1b812237b687265e445dd026bfef1dbe2865dbe79078c8"
     scienceImagePath = "Data/ProcessedData/BiasCorrectedScience/testFScience.fits"
 
-    orderMaskHash    = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
+    orderMaskHash    = "f4d3a1d746aedf7add4583db75351d853cb792488dbe6adf5103199298837825"
     orderMaskPath    = "Data/ProcessedData/ExtractedOrders/testFMask.fits"
 
     scienceExtractor1 = OrderExtraction(db, debug=1, ExtractedOrders=orderMaskPath,

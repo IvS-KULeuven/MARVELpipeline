@@ -216,10 +216,11 @@ class OrderMaskExtraction(PipelineComponent):
         if self.debug > 2:
             print("\t{} number of peaks found".format(len(peak_idx)))
             plt.plot(centRow, "r")
+            plt.title("Identification of peaks on middle cross section")
             plt.plot(peak_idx, [centRow[i] for i in peak_idx], "bo")
             plt.show()
 
-            plotOrdersWithSlider(values)
+            plotOrdersWithSlider(values, title="Maximum flux as a function of x pixel")
 
             # Plot the selected pixels
             plt.imshow(image, origin='lower')
@@ -744,7 +745,7 @@ if __name__ == "__main__":
     db = DatabaseFromLocalFile("pipelineDatabase.txt")
     print("")
 
-    masterflat_hash = "aa3a32c4a7ed8bdc16b9590ffb38d7a3eb554f3bd7b58a77d6207b5453e30d1e"
+    masterflat_hash = "02d2d4c941a24d78fe20c2dab8b068c8fb155081b34783cf3b35dab5d4ea4339"
     masterflat_path = "Data/ProcessedData/MasterFlat/testsFFlat.fits"
 
     maskExtractor1 = OrderMaskExtraction(db, debug=3, FlatImages=masterflat_path)
