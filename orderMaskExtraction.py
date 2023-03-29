@@ -118,17 +118,17 @@ class OrderMaskExtraction(PipelineComponent):
         image = tools.getImage(path).astype('float64')
 
         # Locate the orders on the return a polynomial fit of them
-        if (self.debug > 2):
+        if (self.debug > 1):
             print("Find the stripes:")
         x_values, polynomials = self.getStripes(image, debug=True)
 
         # Identify the stripes
-        if (self.debug > 2):
+        if (self.debug > 1):
             print("\nIdentify the Stripes")
         id_p = self.identifyStripes(image, polynomials, x_values)
 
         # Extract the stripes
-        if (self.debug > 2):
+        if (self.debug > 1):
             print("\nExtract the Stripes")
 
         xCoordinates, yCoordinates, fluxValues, orders =  self.extractFlatStripes(image, id_p)
@@ -216,10 +216,11 @@ class OrderMaskExtraction(PipelineComponent):
         if self.debug > 2:
             print("\t{} number of peaks found".format(len(peak_idx)))
             plt.plot(centRow, "r")
+            plt.title("Identification of peaks on middle cross section")
             plt.plot(peak_idx, [centRow[i] for i in peak_idx], "bo")
             plt.show()
 
-            plotOrdersWithSlider(values)
+            plotOrdersWithSlider(values, title="Maximum flux as a function of x pixel")
 
             # Plot the selected pixels
             plt.imshow(image, origin='lower')
@@ -370,7 +371,7 @@ class OrderMaskExtraction(PipelineComponent):
 
         polynomials = np.array([ p.coefficients for p in polynomials ])
 
-        if self.debug > 2:
+        if self.debug > 1:
             end = time.time()
             print("\tTime for the function identifyStripes is {}".format(end-start))
         p_id = identify(yPositions, yObserved, polynomials, xValues, fibers, orders, shift_calculated)
@@ -436,20 +437,20 @@ class OrderMaskExtraction(PipelineComponent):
             ax[2].imshow(cleaned_image, origin='lower')
             plt.show()
 
-        if self.debug > 1:
+        if self.debug > 2:
             plt.imshow(flat, origin='lower')
             plt.imshow(index_fiber, alpha=0.3, origin='lower')
             plt.show()
 
 
-        if self.debug > 2:
+        if self.debug > 1:
             end = time.time()
             print("\tTime for first part of the function extractFlatStripes is {}".format(end-start))
             start = time.time()
 
         xCoordinates, yCoordinates, fluxValues, orders = extractStripes(flat, index_fiber, index_order)
 
-        if self.debug > 2:
+        if self.debug > 1:
             end = time.time()
             print("\tTime for second part of the function extractFlatStripes is {}".format(end-start))
         return xCoordinates, yCoordinates, fluxValues, orders
@@ -605,7 +606,7 @@ def followOrders(max_row_0, dark_column, image):
         if (row_max == 1) or (row_max == nx):
             break
 
-        if getSignalToNoiseSinglePixel(value[column], dark_value) < 20:
+        if getSignalToNoiseSinglePixel(value[column], dark_value) < 50:
             break
 
     # Reset column and row_max and walk to the bottom of the image
@@ -627,7 +628,7 @@ def followOrders(max_row_0, dark_column, image):
         if (row_max == 1) or (row_max == nx):
             break
 
-        if getSignalToNoiseSinglePixel(value[column], dark_value) < 20:
+        if getSignalToNoiseSinglePixel(value[column], dark_value) < 50:
             break
 
     # Done!
@@ -744,10 +745,10 @@ if __name__ == "__main__":
     db = DatabaseFromLocalFile("pipelineDatabase.txt")
     print("")
 
-    masterflat_hash = "641f2b56be1a8a86848c29abbd81858ddd15e42359ae84473050962efb9dea06"
+    masterflat_hash = "02d2d4c941a24d78fe20c2dab8b068c8fb155081b34783cf3b35dab5d4ea4339"
     masterflat_path = "Data/ProcessedData/MasterFlat/testsFFlat.fits"
 
-    maskExtractor1 = OrderMaskExtraction(db, debug=1, FlatImages=masterflat_path)
+    maskExtractor1 = OrderMaskExtraction(db, debug=3, FlatImages=masterflat_path)
     maskExtractor2 = OrderMaskExtraction(debug=1, FlatImages=masterflat_hash)
     maskExtractor1.run("testFMask.fits")
     print("==================")

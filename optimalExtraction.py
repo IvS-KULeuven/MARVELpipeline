@@ -221,9 +221,13 @@ class OptimalExtraction(PipelineComponent):
                                                             optimalSpectra, flatSpectra, yPixels, xPixels)
 
         if self.debug > 2:
-            debug.plotOrdersWithSlider(flatSpectra, xValues=xPixels, yMax=11800)
-            debug.plotOrdersWithSlider(imageSpectra, xValues=xPixels, yMax=7000)
-            debug.plotOrdersWithSlider(optimalSpectra, xValues=xPixels, yMax=2)
+            maxFlat = np.max(np.array([ np.max(row) for row in flatSpectra]))*1.1
+            maxImage = np.max(np.array([ np.max(row) for row in imageSpectra]))*1.1
+            maxOptimal = np.max(np.array([ np.max(row) for row in optimalSpectra]))*1.1
+
+            debug.plotOrdersWithSlider(flatSpectra, xValues=xPixels, yMax=maxFlat, title="Flat spectra")
+            debug.plotOrdersWithSlider(imageSpectra, xValues=xPixels, yMax=maxImage, title="TSSS Spectra")
+            debug.plotOrdersWithSlider(optimalSpectra, xValues=xPixels, yMax=3, title="Optimal Extracted Spectra")
 
         return optimalSpectra, xPixels, yPixels, fibersAndOrders
 
@@ -421,6 +425,7 @@ def getSpectrum(imageFlux, flatFlux, xPositions, yPositions, readout=2000):
 
     # Create the optimal order for every unique x value
 
+    idx = 0
     for i,x in enumerate(np.unique(xPositions)):
 
         # when x = -1 the values at this index can be ignored
@@ -439,23 +444,23 @@ def getSpectrum(imageFlux, flatFlux, xPositions, yPositions, readout=2000):
 
         # Calculate the average image and flat fluxes.
 
-        avgImageFluxes[i] = np.sum(image)/len(image)
-        avgFlatFluxes[i]  = np.sum(flat)/len(flat)
+        avgImageFluxes[idx] = np.sum(image)/len(image)
+        avgFlatFluxes[idx]  = np.sum(flat)/len(flat)
 
         # Calculate the average (weigthed) y coordinate value
 
         if np.sum(image) == 0:
-            avgYPosition[i] = np.sum(ycoord) / len(ycoord)
+            avgYPosition[idx] = np.sum(ycoord) / len(ycoord)
         else:
-            avgYPosition[i] = np.sum(ycoord * image) / np.sum(image)
+            avgYPosition[idx] = np.sum(ycoord * image) / np.sum(image)
 
         # Calculate the optimal extracted spectrum
 
         if not np.sum(w * flat * flat)  == 0:
-            optimalFluxes[i] = np.sum(w * flat * image) / np.sum(w * flat * flat)
+            optimalFluxes[idx] = np.sum(w * flat * image) / np.sum(w * flat * flat)
         else:
-            optimalFluxes[i] = 1
-
+            optimalFluxes[idx] = 1
+        idx += 1
     return optimalFluxes, avgImageFluxes, avgFlatFluxes, avgYPosition
 
 
@@ -486,7 +491,7 @@ def getOptimalSpectrum(xValues, yValues, flatFlux, imageFlux, readout=2000):
     # Initialize the output arrays
 
     amountOfLines   = len(imageFlux)
-    averageImages    = np.empty((amountOfLines, 10560))
+    averageImages   = np.empty((amountOfLines, 10560))
     averageYPixels  = np.empty((amountOfLines, 10560))
     averageXPixels  = np.empty((amountOfLines, 10560))
     averageFlats    = np.empty((amountOfLines, 10560))
@@ -501,6 +506,7 @@ def getOptimalSpectrum(xValues, yValues, flatFlux, imageFlux, readout=2000):
         optimalFlux, averageFlux, averageFlat, averageYPosition = getSpectrum(imageFlux[line],
                                                 flatFlux[line], xValues[line], yValues[line])
         xPositions = np.unique(xValues[line])
+        xPositions = xPositions[xPositions != -1]
 
         # Add the optimal spectrum, avg flux spectrum and average y-value to the output arrays
 
@@ -527,13 +533,13 @@ if __name__ == "__main__":
 
     # Optimal extract the orders of an extracted science image
 
-    extractedScienceHash = "b6e9f312efa62bcb90d66b5fee19eae4a6f930e0b3999650fa9c944b5075a4da"
+    extractedScienceHash = "c465daf3e5060b5fd22be8089a5e9499c85c574c8df8c1c8535d434d7143394f"
     extractedSciencePath = "Data/ProcessedData/ExtractedOrders/extractedScienceTestF.fits"
 
-    extractedFlatHash = "2133e1778dd6f8208763eeeed3a5ae6efd525fabb33a5fdf8809bd77bf89bb2b"
+    extractedFlatHash = "f4d3a1d746aedf7add4583db75351d853cb792488dbe6adf5103199298837825"
     extractedFlatPath = "Data/ProcessedData/ExtractedOrders/testFMask.fits"
 
-    optimalScience1 = OptimalExtraction(db, debug=1, ExtractedOrders=[extractedSciencePath, extractedFlatPath])
+    optimalScience1 = OptimalExtraction(db, debug=3, ExtractedOrders=[extractedSciencePath, extractedFlatPath])
     optimalScience2 = OptimalExtraction(debug=1, ExtractedOrders=[extractedScienceHash, extractedFlatHash])
 
     optimalScience1.run("optimal_extracted_science_flux1.fits")
@@ -552,7 +558,7 @@ if __name__ == "__main__":
     print("+============================+")
     optimalEtalon2.run("optimal_extracted_etalon_flux.fits")
 
-    db.saveToFile()
+    db.save()
 
 
 
