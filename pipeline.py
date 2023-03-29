@@ -65,8 +65,6 @@ class PipelineComponent():
         if not (self.checkSanityOfInput(**inputHashes)):
             keysInDatabase = np.array([key in self.db.list_collection_names() for key in inputHashes.keys()])
 
-
-
             if not np.all(keysInDatabase):
                 unrecognizedKeys = np.array(list(inputHashes.keys()))[~keysInDatabase]
                 unrecognizedKeys = list(unrecognizedKeys)
@@ -217,8 +215,7 @@ class MasterBias(PipelineComponent):
         valuesAreCorrect = (len(values) == 1) and (len(values[0]) > 1)
 
         if keysAreCorrect and valuesAreCorrect:
-            areRawImages = np.all([ self.db[types[0]].find_one({"_id": hash})["type"] == "Raw Bias Image"
-                                    for hash in values[0]])
+            areRawImages = np.all([ self.db[types[0]].find_one({"_id": hash})["type"] == "Raw Bias Image" for hash in values[0]])
         else:
             return False
 
@@ -802,7 +799,10 @@ Whenever we want to execute a component from the pipeline.
 
 if __name__ == "__main__":
 
-    db = DatabaseFromLocalFile("pipelineDatabase.txt")
+    databaseName = "pipelineDatabase.txt"
+    print("Creating a local database file with the name: ", databaseName)
+
+    db = DatabaseFromLocalFile(databaseName)
     print("")
 
     # Master Bias Image
@@ -856,10 +856,8 @@ if __name__ == "__main__":
 
 
     print(" ")
-    calibration1 = CalibratedScienceFrames(db, ScienceImages=rawScienceHash,
-                                              BiasImages=master_bias_pathF)
-    calibration2 = CalibratedScienceFrames(ScienceImages=rawScienceHash,
-                                           BiasImages=master_bias_pathD)
+    calibration1 = CalibratedScienceFrames(db, ScienceImages=rawScienceHash, BiasImages=master_bias_pathF)
+    calibration2 = CalibratedScienceFrames(ScienceImages=rawScienceHash, BiasImages=master_bias_pathD)
 
     calibration1.run("testFScience.fits")
     calibration2.run("testDScience.fits")
@@ -872,10 +870,8 @@ if __name__ == "__main__":
     master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
 
     print(" ")
-    calibratedEtalon1 = CalibratedEtalonImage(db, EtalonImages=raw_etalon_hash,
-                                                 BiasImages=master_bias_pathF)
-    calibratedEtalon2 = CalibratedEtalonImage(EtalonImages=raw_etalon_hash,
-                                              BiasImages=master_bias_pathD)
+    calibratedEtalon1 = CalibratedEtalonImage(db, EtalonImages=raw_etalon_hash, BiasImages=master_bias_pathF)
+    calibratedEtalon2 = CalibratedEtalonImage(EtalonImages=raw_etalon_hash, BiasImages=master_bias_pathD)
     calibratedEtalon1.run("testFEtalon.fits")
     calibratedEtalon2.run("testDEtalon.fits")
 
