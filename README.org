@@ -123,10 +123,3 @@ ascii file. The latter can be instantiated and used, for example by:
 #+end_src
 
 
-
-
-
-
-
-
-
