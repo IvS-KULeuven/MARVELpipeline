@@ -42,12 +42,11 @@ print("")
 
 # Create a Master Flat Image
 
-raw_flat_paths = ['Data/RawData/CalibrationImages/Flat/20221028T172658_FFFFF_H_0004.fits',
-                  'Data/RawData/CalibrationImages/Flat/20221028T173510_FFFFF_H_0004.fits',
-                  'Data/RawData/CalibrationImages/Flat/20221028T174304_FFFFF_H_0004.fits',
-                  'Data/RawData/CalibrationImages/Flat/20221028T175108_FFFFF_H_0004.fits',
-                  'Data/RawData/CalibrationImages/Flat/20221028T175908_FFFFF_H_0004.fits',
-                  'Data/RawData/CalibrationImages/Flat/20221028T180713_FFFFF_H_0004.fits']
+raw_flat_paths = ['Data/RawData/CalibrationImages/Flat/20221207T144412_FFFFF_H_0001.fits'
+                  'Data/RawData/CalibrationImages/Flat/20221207T150223_FFFFF_H_0001.fits'
+                  'Data/RawData/CalibrationImages/Flat/20221207T151223_FFFFF_H_0001.fits'
+                  'Data/RawData/CalibrationImages/Flat/20221207T145720_FFFFF_H_0001.fits'
+                  'Data/RawData/CalibrationImages/Flat/20221207T150714_FFFFF_H_0001.fits']
 
 master_bias_path = "Data/ProcessedData/MasterBias/masterBias.fits"
 masterFlat = MasterFlat(db, FlatImages=raw_flat_paths, BiasImages=master_bias_path)
