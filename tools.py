@@ -542,6 +542,7 @@ def getAllOptimalExtractedSpectrum(path):
    """
 
    fibers, orders = getFibersAndOrders(path)
+
    # Check that path exist
    if not os.path.isfile(path):
        print("Error: path does not exist")
@@ -622,12 +623,19 @@ def getAllWavelengthVsFluxes(path):
                           D[order][fiber]['flux'] the flux.
     """
 
-    fibers, orders = getFibersAndOrders(path)
+
     # Check that path exist
+
     if not os.path.isfile(path):
         print("Error: path does not exist")
         return
+
+    # Get the available fiber numbers and order numbers for this spectrum 
+
+    fibers, orders = getFibersAndOrders(path)
+
     # Check that type of fits file is Extracted Flux
+
     hdul = fits.open(path)
     fileType = hdul[0].header["type"]
 
