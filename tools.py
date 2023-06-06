@@ -641,7 +641,7 @@ def getAllWavelengthVsFluxes(path):
     hdul = fits.open(path)
     fileType = hdul[0].header["type"]
 
-    if not (("Wavelength" in fileType)):
+    if not (("Wavelength Calibrated" in fileType)):
         print("Error: filetype {} is not a type of Wavelength Calibrated".format(fileType))
         return
 
@@ -757,7 +757,3 @@ def convertPathToHash(path, db):
 
 
 
-
-if __name__ == "__main__":
-
-    createReferenceList()
