@@ -756,8 +756,7 @@ if __name__ == "__main__":
     item.run("output_wave_calibration.fits")
 
 
-    hdu_list = fits.open(os.getcwd() + "/Data/ProcessedData/WaveCalibration/output_wave_calibration.fits",
-                         memmap=True)
+    hdu_list = fits.open(os.getcwd() + "/Data/ProcessedData/WaveCalibration/output_wave_calibration.fits", memmap=True)
 
     print(hdu_list.info())
 

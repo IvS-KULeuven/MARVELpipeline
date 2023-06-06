@@ -47,7 +47,7 @@ class PipelineComponent():
 
         Input:
             database:    database object that is used to store and access information form the fits files.
-            inputHashes: imageType/hash (or path) of the fits file that is given as input.
+            inputHashes: imageType/hash (or path) of the FITS file that is given as input.
         """
 
         if isinstance(database, DatabaseFromLocalFile):
@@ -66,7 +66,7 @@ class PipelineComponent():
                 unrecognizedKeys = np.array(list(inputHashes.keys()))[~keysInDatabase]
                 unrecognizedKeys = list(unrecognizedKeys)
                 keys = str(unrecognizedKeys)[1:-1]
-                raise Exception(f"Keyvalues:  {keys} not found in database")
+                raise Exception(f"Keyvalues: {keys} not found in database")
             else:
                 raise Exception("One of the input hashes/paths is not found in database")
         self.inputHashes = inputHashes
