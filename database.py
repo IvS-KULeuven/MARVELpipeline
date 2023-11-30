@@ -3,7 +3,7 @@ import hashlib
 import os
 import pandas as pd
 import numpy  as np
-from pymongo  import MongoClient
+#from pymongo  import MongoClient
 from glob     import glob
 from datetime import datetime
 from io       import StringIO
@@ -312,62 +312,62 @@ def createHash(imageName, imageType):
 
 
 
-def initializeDataBaseWithRawImages(clearIfExist=False):
-    """
-    Create and initialize the MongoDB database with the information on the raw CCD fits images.
-    Only information is stored, not the actual fits files.
-    It is assumed that a MongoDB daemon is running, e.g. execute "mongod --dbpath ~/MongoDB" on the prompt.
+# def initializeDataBaseWithRawImages(clearIfExist=False):
+#     """
+#     Create and initialize the MongoDB database with the information on the raw CCD fits images.
+#     Only information is stored, not the actual fits files.
+#     It is assumed that a MongoDB daemon is running, e.g. execute "mongod --dbpath ~/MongoDB" on the prompt.
 
-    Input:
-        clearIfExist: clear all existing information if the database was already previously initialized.
+#     Input:
+#         clearIfExist: clear all existing information if the database was already previously initialized.
 
-    Output:
-        None
-    """
-    client = MongoClient()
+#     Output:
+#         None
+#     """
+#     client = MongoClient()
 
-    # Check if database already exist
+#     # Check if database already exist
 
-    if ("databaseMARVEL" in client.list_database_names() and not clearIfExist):
-        print("There already exist a Database for MARVEL. To explitly remake the database run:")
-        print("createDataBase(clearIfExist=True)")
-        return
+#     if ("databaseMARVEL" in client.list_database_names() and not clearIfExist):
+#         print("There already exist a Database for MARVEL. To explitly remake the database run:")
+#         print("createDataBase(clearIfExist=True)")
+#         return
 
-    db = client["databaseMARVEL"]
+#     db = client["databaseMARVEL"]
 
-    # If database already exist, make sure it is emptied before we start
+#     # If database already exist, make sure it is emptied before we start
 
-    if ("databaseMARVEL" in client.list_database_names() and clearIfExist):
-        print("Clearing existing database")
-        db["BiasImages"].drop()
-        db["DarkImages"].drop()
-        db["ScienceImages"].drop()
-        db["FlatImages"].drop()
-        db["EtalonImages"].drop()
+#     if ("databaseMARVEL" in client.list_database_names() and clearIfExist):
+#         print("Clearing existing database")
+#         db["BiasImages"].drop()
+#         db["DarkImages"].drop()
+#         db["ScienceImages"].drop()
+#         db["FlatImages"].drop()
+#         db["EtalonImages"].drop()
 
-    pathToRaw  = os.getcwd() + "/Data/RawData/"
-    print(f"Searching for raw images in {pathToRaw}")
+#     pathToRaw  = os.getcwd() + "/Data/RawData/"
+#     print(f"Searching for raw images in {pathToRaw}")
 
-    for imageType in ["Bias", "Dark", "Flat", "Etalon", "Science"]:
-        if imageType == "Science":
-            imagePaths = glob(pathToRaw + "ScienceFrames/*.fits")
-        else:
-            imagePaths = glob(pathToRaw + f"CalibrationImages/{imageType}/*.fits")
+#     for imageType in ["Bias", "Dark", "Flat", "Etalon", "Science"]:
+#         if imageType == "Science":
+#             imagePaths = glob(pathToRaw + "ScienceFrames/*.fits")
+#         else:
+#             imagePaths = glob(pathToRaw + f"CalibrationImages/{imageType}/*.fits")
 
-        Nimages = len(imagePaths)
-        print(f"Found {Nimages} {imageType} frames to be inserted in MongoDB")
-        if Nimages != 0:
-            imageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in imagePaths]
-            print(imageBaseNames)
-            collection = db[imageType+"Images"]
-            hashes = [createHash(imageBaseNames[n], f"Raw {imageType} Image") for n in range(Nimages)]
-            currentTime = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-            imageInfo = [{"_id":          hashes[n],
-                          "path":         imagePaths[n],
-                          "type":         f"Raw {imageType} Image",
-                          "date_created": currentTime
-                        } for n in range(Nimages)]
-            collection.insert_many(imageInfo)
+#         Nimages = len(imagePaths)
+#         print(f"Found {Nimages} {imageType} frames to be inserted in MongoDB")
+#         if Nimages != 0:
+#             imageBaseNames = [os.path.splitext(os.path.basename(imagePath))[0] for imagePath in imagePaths]
+#             print(imageBaseNames)
+#             collection = db[imageType+"Images"]
+#             hashes = [createHash(imageBaseNames[n], f"Raw {imageType} Image") for n in range(Nimages)]
+#             currentTime = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+#             imageInfo = [{"_id":          hashes[n],
+#                           "path":         imagePaths[n],
+#                           "type":         f"Raw {imageType} Image",
+#                           "date_created": currentTime
+#                         } for n in range(Nimages)]
+#             collection.insert_many(imageInfo)
 
 
 
@@ -375,8 +375,10 @@ def initializeDataBaseWithRawImages(clearIfExist=False):
 
 if __name__ == "__main__":
 
-    initializeDataBaseWithRawImages(clearIfExist=True)
+    #initializeDataBaseWithRawImages(clearIfExist=True)
 
     db = DatabaseFromLocalFile("pipelineDatabase.txt")
+
+
     db.save()
 

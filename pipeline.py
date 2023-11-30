@@ -4,16 +4,16 @@
 
 
 import os
-from pymongo import MongoClient
+#from pymongo import MongoClient
 from astropy.io import fits
 import tools
 import numpy as np
 import hashlib
 from datetime import datetime
-import matplotlib.pyplot as plt
+
 from database import DatabaseFromLocalFile
 
-client = MongoClient()
+#client = MongoClient()
 
 
 
@@ -50,18 +50,20 @@ class PipelineComponent():
             inputHashes: imageType/hash (or path) of the FITS file that is given as input.
         """
 
-        if isinstance(database, DatabaseFromLocalFile):
-            self.db = database
-        else:
-            if not "databaseMARVEL" in client.list_database_names():
-                raise Exception("MARVEL database does not exist.")
-            else:
-                self.db = client["databaseMARVEL"]
+        # if isinstance(database, DatabaseFromLocalFile):
+        #     self.db = database
+        # else:
+        #     if not "databaseMARVEL" in client.list_database_names():
+        #         raise Exception("MARVEL database does not exist.")
+        #     else:
+        #         self.db = client["databaseMARVEL"]
+        self.db = database
         inputHashes = self.convertInputToHash(**inputHashes)
 
 
         if not (self.checkSanityOfInput(**inputHashes)):
             keysInDatabase = np.array([key in self.db.list_collection_names() for key in inputHashes.keys()])
+            print(inputHashes.values())
             if not np.all(keysInDatabase):
                 unrecognizedKeys = np.array(list(inputHashes.keys()))[~keysInDatabase]
                 unrecognizedKeys = list(unrecognizedKeys)
@@ -176,458 +178,25 @@ class PipelineComponent():
 
 
 
-class MasterBias(PipelineComponent):
-    """
-    Class that creates the master bias image. Such an image is obtained by taking the median of multiple
-    raw bias images.
-    """
 
-    def __init__(self, database=None, **input):
-        super().__init__(database, **input)
-        input = self.inputHashes
 
-        if self.checkSanityOfinputTypes(**input):
 
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/MasterBias/"
-            self.type = "Master Bias Image"
-            self.rawBiasHashes = input["BiasImages"]
-        else:
-            raise Exception("Error: The input hashes do not match the correct type: Aborting")
-            exit(1)
 
 
-        if not os.path.isdir(self.outputPath):
-            os.mkdir(self.outputPath)
 
 
 
 
 
-    def checkSanityOfinputTypes(self, **input):
-        """
-        This function is ran after we run checkSanityOfInputHashes. This function checks the the
-        input types that are given is able to generate a master bias output file.
-        """
 
-        types  = list(input.keys())
-        values = list(input.values())
 
-        # Check that the keys are of the right format. For a master bias these should only be BiasImages
 
-        keysAreCorrect = (len(types) == 1) and types[0] == "BiasImages"
 
-        valuesAreCorrect = (len(values) == 1) and (len(values[0]) > 1)
 
-        if keysAreCorrect and valuesAreCorrect:
-            areRawImages = np.all([ self.db[types[0]].find_one({"_id": hash})["type"] == "Raw Bias Image" for hash in values[0]])
-        else:
-            return False
 
-        # If we get here, the input is sane if the hashes correspond to raw Images
 
-        return areRawImages
 
 
-
-
-
-
-    def run(self, outputFileName=None):
-        """
-        We run through the alghoritm to create the master bias images.
-
-        Input:
-            outputFileName: If None, nothing is saved. Otherwise, a string with the name of the outputfile,
-                            incl. the extension ".fits".
-
-        Output:
-            masterBias:     master bias image [ADU]
-        """
-
-        # Get all the paths of the files corresponding to these hashes
-        paths = [ (self.db["BiasImages"].find_one({"_id": hash}))["path"] for hash in self.rawBiasHashes]
-
-        # Get all the fits files corresponding to these hashes
-        biases = tools.getImages(paths)
-
-        # Use the image in the fits files, and use mean_combining to obtain the the master image
-        masterBias = np.median(biases, axis=0)
-
-        if outputFileName is not None:
-            self.saveImageAndAddToDatabase(masterBias, outputFileName)
-            print("Master bias image saved to fits file")
-
-        # That's it!
-
-        print("Block generated!")
-        return masterBias
-
-
-
-    def getHashOfOutputfile(self):
-        """
-        This function returns the hash id for the output file.
-        This hash is made from the hash files that are used as input.
-
-        Ouput:
-            hash. string containing the output hash
-        """
-        hash = hashlib.sha256(bytes("".join(self.rawBiasHashes), 'utf-8')).hexdigest()
-        return hash
-
-
-
-
-
-
-
-
-# class MasterDark(PipelineComponent):
-#     """
-#     Class that creates the master dark image. Such an image is obtained by taking the median of multiple
-#     raw dark images.
-#     """
-
-
-#     def __init__(self, database=None, **darkHashes):
-#         super().__init__(database, **darkHashes)
-#         darkHashes = self.inputHashes
-
-#         if self.checkSanityOfinputTypes(**darkHashes):
-
-#             self.outputPath = os.getcwd() + "/Data/ProcessedData/MasterDark/"
-#             self.type = "Master Dark Image"
-#             self.rawDarkHashes = darkHashes["DarkImages"]
-#         else:
-#             raise Exception("Error: The input hashes do not match the correct type: Aborting")
-#             exit(1)
-
-
-
-
-
-
-
-
-#     def checkSanityOfinputTypes(self, **input):
-#         """
-#         This function is ran after we run checkSanityOfInputHashes. This function checks the the
-#         input types that are given is able to generate a master bias output file.
-#         """
-
-#         types  = list(input.keys())
-#         values = list(input.values())
-
-#         # Check that the keys are of the right format. For a master dark these should only be DarkImages
-
-#         keysAreCorrect = (len(types)) == 1 and types[0] == "DarkImages"
-
-#         valuesAreCorrect = (len(values) == 1) and (len(values[0]) > 1)
-
-#         if keysAreCorrect and valuesAreCorrect:
-#             areRawImages = np.all([ self.db[types[0]].find_one({"_id": hash})["type"] == "Raw Dark Image"
-#                                     for hash in values[0]])
-#         else:
-#             return False
-
-#         # If we get here, the input is sane if the hashes correspond to raw Images
-
-#         return areRawImages
-
-
-
-
-
-
-
-#     def run(self, outputFileName=None):
-#         """
-#         We run through the alghorim to create the master dark image.
-
-#         Input:
-#             outputFileName: If None, nothings is saved. Otherwise, a string with the name fo the outputfile,
-#                             incl. the extension ".fits".
-
-#         Output:
-#             masterDark:     master dark image [ADU]
-#         """
-
-#         # Get all the paths of the files corresponding to these hashes
-#         paths = [ (self.db["DarkImages"].find_one({"_id": hash}))["path"] for hash in self.rawDarkHashes]
-
-#         # Get all the fits files corresponding to these hashes
-#         darks = tools.getImages(paths)
-
-#         # Use the image in the fits files, and use mean_combining to obtain the the master image
-#         masterDark = np.median(darks, axis=0)
-
-#         if outputFileName is not None:
-#             self.saveImageAndAddToDatabase(masterDark, outputFileName)
-#             print("Master dark image saved to fits file")
-
-#         # That's it!
-
-#         print("Block generated!")
-#         return masterDark
-
-
-
-
-
-
-#     def getHashOfOutputfile(self):
-#         """
-#         This function returns the hash id for the output file.
-#         This hash is made from the hash files that are used as input.
-
-#         Ouput:
-#             hash. string containing the output hash
-#         """
-#         hash = hashlib.sha256(bytes("".join(self.rawDarkHashes), 'utf-8')).hexdigest()
-#         return hash
-
-
-
-
-
-
-
-class MasterFlat(PipelineComponent):
-
-    def __init__(self, database=None, **flatAndBiasHashes):
-
-        super().__init__(database, **flatAndBiasHashes)
-        flatAndBiasHashes = self.inputHashes
-
-        if self.checkSanityOfInputTypes(**flatAndBiasHashes):
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/MasterFlat/"
-            self.type = "Master Flat Image"
-            self.masterBiasHash = flatAndBiasHashes["BiasImages"]
-            self.rawFlatHashes  = flatAndBiasHashes["FlatImages"]
-        else:
-            raise Exception("Error: The input hashes do not match the correct type: Aborting")
-            exit(1)
-
-        if not os.path.isdir(self.outputPath):
-            os.mkdir(self.outputPath)
-
-
-
-
-
-
-    def checkSanityOfInputTypes(self, **flatAndBiasHashes):
-        """
-        This function is ran after we run checkSanityOfInputHashes. This function checks the the
-        input types that are given is able to generate a master flat output file.
-        """
-
-        types  = list(flatAndBiasHashes.keys())
-        values = list(flatAndBiasHashes.values())
-
-        # Check that the keys are of the right format. For a master dark these should only be DarkImages
-
-        keysAreCorrect = (len(types)) == 2 and ("BiasImages" in types) and ("FlatImages" in types)
-
-        if keysAreCorrect:
-            valuesAreCorrect = (len(flatAndBiasHashes["FlatImages"]) > 1) and isinstance(flatAndBiasHashes["BiasImages"], str)
-        else:
-            return False
-
-        if valuesAreCorrect:
-            areRawFlatImages  = np.all([ self.db["FlatImages"].find_one({"_id": hash})["type"] == "Raw Flat Image"
-                                        for hash in flatAndBiasHashes["FlatImages"] ])
-            isMasterBiasImage = self.db["BiasImages"].find_one({"_id": flatAndBiasHashes["BiasImages"]})["type"] == "Master Bias Image"
-        else:
-            return False
-
-        # If we get here, the input is sane if the hashes correspond to raw flat images or one master bias image
-
-        return areRawFlatImages and isMasterBiasImage
-
-
-
-
-
-
-
-
-
-    def run(self, outputFileName=None):
-        """
-        We run through the alghoritm to create the master flat images.
-
-        Input:
-            outputFileName: If None, nothing is saved. Otherwise, a string with the name of the outputfile,
-                            incl. the extension ".fits".
-
-        Output:
-            masterFlat:     master flat image [ADU]
-        """
-
-        # Get all the paths of the files corresponding to these hashes
-        flatPaths = [ (self.db["FlatImages"].find_one({"_id": hash}))["path"] for hash in self.rawFlatHashes ]
-        biasPath  = self.db["BiasImages"].find_one({"_id": self.masterBiasHash})["path"]
-
-        # Get all the fits files corresponding to these hashes
-        flats = tools.getImages(flatPaths)
-        bias  = tools.getImage(biasPath)
-
-        # Use the image in the fits files, and use mean_combining to obtain the the master image
-        masterFlat = np.median(flats, axis=0) - bias
-
-        # Add offset so that all the values in the MasterFlat are positive
-        if np.min(masterFlat) < 0:
-                  masterFlat = masterFlat -np.min(masterFlat)
-
-        if outputFileName is not None:
-            self.saveImageAndAddToDatabase(masterFlat, outputFileName)
-            print("Master flat image saved to fits file")
-
-        # That's it!
-
-        print("Block generated!")
-        return masterFlat
-
-
-
-
-
-
-
-    def getHashOfOutputfile(self):
-        """
-        The function returns the hash id for the output file.
-        This hash is made from the hash files that are used as input.
-
-        Ouput:
-           hash. string containing the output hash
-        """
-        hash = hashlib.sha256(bytes("".join(self.rawFlatHashes) + self.masterBiasHash, 'utf-8')).hexdigest()
-        return hash
-
-
-
-
-
-
-
-
-
-class BiasCorrectedScienceFrames(PipelineComponent):
-    """
-    TODO: documentation. What is this class for?
-    """
-
-    def __init__(self, database=None, **inputScienceHashes):
-        super().__init__(database, **inputScienceHashes)
-        inputScienceHashes = self.inputHashes
-
-        if self.checkSanityOfInputTypes(**inputScienceHashes):
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/BiasCorrectedScience/"
-            self.type = "Bias Corrected Science Image"
-            self.masterBiasHash = inputScienceHashes["BiasImages"]
-            self.rawScienceHash = inputScienceHashes["ScienceImages"]
-        else:
-            raise Exception("Error: The input hashes do not match the correct type: Aborting")
-            exit(1)
-
-        if not os.path.isdir(self.outputPath):
-            os.mkdir(self.outputPath)
-
-
-
-
-
-
-
-    def checkSanityOfInputTypes(self, **inputScienceHashes):
-        """
-        This function is ran after we run checkSanityOfInputHashes. This function checks the the
-        input types that are given is able to generate a bias corrected science output file.
-        """
-        types  = list(inputScienceHashes.keys())
-        values = list(inputScienceHashes.values())
-
-        # Check that the keys are of the right format. For a bias corrected science image, these should be science
-        # images, dark images and bias images.
-
-        correctKeysFormat = ["ScienceImages", "BiasImages"]
-        keysAreCorrect = (len(types) == 2) and np.all([key in types for key in correctKeysFormat])
-
-        if keysAreCorrect:
-            valuesAreCorrectType = np.all([ isinstance(value, str) for value in values])
-        else:
-            return False
-
-        if valuesAreCorrectType:
-
-            isMasterBiasImage = self.db["BiasImages"].find_one({"_id": inputScienceHashes["BiasImages"]})["type"] == "Master Bias Image"
-            isRawScienceImage = self.db["ScienceImages"].find_one({"_id": inputScienceHashes["ScienceImages"]})["type"] == "Raw Science Image"
-        else:
-            return False
-
-        return isMasterBiasImage and isRawScienceImage
-
-
-
-
-
-
-
-
-    def run(self, outputFileName=None):
-        """
-        We run through the algorithm to create the bias corrected science images.
-
-        Input:
-            outputFileName: If None, nothing is saved. Otherwise, a string with the name of the outputfile,
-                            incl. the extension ".fits".
-
-        Output:
-            calibratedScience:     bias corrected science image [ADU]
-        """
-
-        # Get all the paths of the files corresponding to these hashes
-        biasPath    = self.db["BiasImages"].find_one({"_id": self.masterBiasHash })["path"]
-        sciencePath = self.db["ScienceImages"].find_one({"_id": self.rawScienceHash})["path"]
-
-        # Get all the fits files corresponding to these hashes
-        bias    = tools.getImage(biasPath)
-        science = tools.getImage(sciencePath)
-
-        biasCorrectedScience = science - bias
-
-        # Add offset so that all the values in the MasterFlat are positive
-        if np.min(biasCorrectedScience) < 0:
-            biasCorrectedScience = biasCorrectedScience - np.min(biasCorrectedScience)
-
-
-        if outputFileName is not None:
-            self.saveImageAndAddToDatabase(biasCorrectedScience, outputFileName)
-            print("Bias Corrected science image saved to fits file")
-
-        # That's it!
-
-        print("Block generated!")
-        return biasCorrectedScience
-
-
-
-
-
-
-    def getHashOfOutputfile(self):
-        """
-        The function returns the hash id for the output file.
-        This hash is made from the hash files that are used as input.
-
-        Ouput:
-           hash. string containing the output hash
-        """
-        combinedHashes =  self.masterBiasHash + self.rawScienceHash
-        hash = hashlib.sha256(bytes(combinedHashes, 'utf-8')).hexdigest()
-        return hash
 
 
 
@@ -808,65 +377,15 @@ Whenever we want to execute a component from the pipeline.
 
 if __name__ == "__main__":
 
+
+
     databaseName = "pipelineDatabase.txt"
     print("Creating a local database file with the name: ", databaseName)
 
     db = DatabaseFromLocalFile(databaseName)
-    print("")
-
-    # Master Bias Image
-    raw_bias_hashes = ["a951099fa7b4a048435d1f1f8795818323aa5b8c43c5718f1c792fe993779bd5",
-                       "c35040b75325d955b760084f3bccf68b73de5ce73e8f800a165e6bc73d383c09",
-                       "7a182ffe9fb529426c1b0b5f9798aa435771f667ece13d5ae4a0d0cb657136a4",
-                       "b71810d5c9069cb315c4ab888b92ca08d554583a52129d642f1987849e2c2346"]
-
-    masterB1 = MasterBias(db, BiasImages=raw_bias_hashes)
-    masterB2 = MasterBias(BiasImages=raw_bias_hashes)
-    masterB1.run("testsFBias.fits")
-    masterB2.run("testsDBias.fits")
-    print("")
-
-
-    # # Master Dark Image
-    # raw_dark_hashes =  ['6128a1e361aca3d5b17e366511efc75b0aeffbada070cbc4a3aebdd1cb1d66db',
-    #                     '649d0b67d7be70ef286d86c9629bd017716cd3667fde46beeab35dcd27a98f0c',
-    #                     'f53e4b7837347cdcddf0bf41a1cd5ac40f7594c4561ac8b71b08fb4da541f1f5']
-    # masterD1 = MasterDark(db, DarkImages=raw_dark_hashes)
-    # masterD2 = MasterDark(DarkImages=raw_dark_hashes)
-    # masterD1.run("testFDark.fits")
-    # masterD2.run("testDDark.fits")
-    # print("")
 
 
 
-    # Flat
-    raw_flat_hashes = ["4c529b1f1a4bfc13088a549c7b9832a9033702faa94b7dc22f4c50080fe25dcd",
-                       "da608b2c0f18373042b667caed3ef0dc28f8be5eb705a42cf451570e7ee9bd49",
-                       "d4245a76f143aa617e319e275aa31f994f034c43bf037b3324bd037ce2a4cdb3",
-                       "e08c3988e7f022fdece62d96988e6c5321ff113e46c6e59d25a285bb0820cbc4"]
-
-    master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
-    master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
-    masterF1 = MasterFlat(db, FlatImages=raw_flat_hashes, BiasImages=master_bias_pathF)
-    masterF2 = MasterFlat(FlatImages=raw_flat_hashes, BiasImages=master_bias_pathD)
-
-    masterF1.run("testsFFlat.fits")
-    masterF2.run("testsDFlat.fits")
-
-
-    # bias corrected Science Image
-    rawScienceHash = "d2ad34be4443931a5128f3e035ce12c869fb801c017f856cb3c68c1e180d1267"
-
-    master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
-    master_bias_pathD = "Data/ProcessedData/MasterBias/testsDBias.fits"
-
-
-    print(" ")
-    calibration1 = CalibratedScienceFrames(db, ScienceImages=rawScienceHash, BiasImages=master_bias_pathF)
-    calibration2 = CalibratedScienceFrames(ScienceImages=rawScienceHash, BiasImages=master_bias_pathD)
-
-    calibration1.run("testFScience.fits")
-    calibration2.run("testDScience.fits")
 
 
     # # Calibrated Etalon Image
