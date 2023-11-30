@@ -1,0 +1,7 @@
+stages:
+  master bias:
+    cmd: python masterBias.py
+    deps:
+    - Data/RawData/CalibrationImages/Bias/20221028T164120_BBBBB_H_0000.fits
+    outs:
+    - Data/ProcessedData/MasterBias/masterBias.fits
