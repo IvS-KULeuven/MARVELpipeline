@@ -1,5 +1,7 @@
 from pipeline   import PipelineComponent
 from database   import DatabaseFromLocalFile
+
+import yaml
 import os
 import tools
 import numpy as np
@@ -23,7 +25,7 @@ class MasterBias(PipelineComponent):
 
         if self.checkSanityOfinputTypes(**input):
 
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/MasterBias/"
+            self.outputPath = os.getcwd()
             self.type = "Master Bias Image"
             self.rawBiasHashes = input["BiasImages"]
         else:
@@ -43,7 +45,6 @@ class MasterBias(PipelineComponent):
         This function is ran after we run checkSanityOfInputHashes. This function checks the the
         input types that are given is able to generate a master bias output file.
         """
-
         types  = list(input.keys())
         values = list(input.values())
 
@@ -88,6 +89,7 @@ class MasterBias(PipelineComponent):
         # Use the image in the fits files, and use mean_combining to obtain the the master image
         masterBias = np.median(biases, axis=0)
 
+
         if outputFileName is not None:
             self.saveImageAndAddToDatabase(masterBias, outputFileName)
             print("Master bias image saved to fits file")
@@ -95,6 +97,7 @@ class MasterBias(PipelineComponent):
         # That's it!
 
         print("Block generated!")
+
         return masterBias
 
 
@@ -115,21 +118,24 @@ class MasterBias(PipelineComponent):
 
 
 if __name__ == "__main__":
+
+    params = yaml.safe_load(open("params.yaml"))["rawBiasImage"]
+
     databaseName = "pipelineDatabase.txt"
     print("Creating a local database file with the name: ", databaseName)
 
     db = DatabaseFromLocalFile(databaseName)
-    print("")
+    print(" ")
 
     # Master Bias Image
-    raw_bias_hashes = ["a951099fa7b4a048435d1f1f8795818323aa5b8c43c5718f1c792fe993779bd5",
-                       "c35040b75325d955b760084f3bccf68b73de5ce73e8f800a165e6bc73d383c09",
-                       "7a182ffe9fb529426c1b0b5f9798aa435771f667ece13d5ae4a0d0cb657136a4",
-                       "b71810d5c9069cb315c4ab888b92ca08d554583a52129d642f1987849e2c2346"]
+    raw_bias_path = params["path"]
 
-    masterB1 = MasterBias(db, BiasImages=raw_bias_hashes)
-    #masterB2 = MasterBias(BiasImages=raw_bias_hashes)
-    masterB1.run("testsFBias.fits")
-    #masterB2.run("testsDBias.fits")
+    masterB = MasterBias(db, BiasImages=raw_bias_path)
+
+
+    masterB.run(params["outpath"])
 
     db.save()
+
+
+

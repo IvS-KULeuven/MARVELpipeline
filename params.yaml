@@ -1,0 +1,14 @@
+rawBiasImage:
+  path: [Data/RawData/CalibrationImages/Bias/20221028T164120_BBBBB_H_0000.fits, Data/RawData/CalibrationImages/Bias/20221028T164326_BBBBB_H_0000.fits, Data/RawData/CalibrationImages/Bias/20221028T164524_BBBBB_H_0000.fits,  Data/RawData/CalibrationImages/Bias/20221028T164710_BBBBB_H_0000.fits]
+  outpath: Data/ProcessedData/MasterBias/testsXXXBias.fits
+rawFlatImage:
+  path: [Data/RawData/CalibrationImages/Flat/20221207T144412_FFFFF_H_0001.fits, Data/RawData/CalibrationImages/Flat/20221207T145720_FFFFF_H_0001.fits, Data/RawData/CalibrationImages/Flat/20221207T150223_FFFFF_H_0001.fits, Data/RawData/CalibrationImages/Flat/20221207T150714_FFFFF_H_0001.fits]
+  outpath: Data/ProcessedData/MasterFlat/testsXXXFlat.fits
+rawScienceImage:
+  path: Data/RawData/ScienceFrames/20221027T175106_TSSSS_H_0900.fits
+  outpath: Data/ProcessedData/BiasCorrectedScience/testsXXXScience.fits
+orderMaskImage:
+  outpath: Data/ProcessedData/ExtractedOrders/Mask/testsXXXorder.fits
+orderScienceExtraction:
+  outpath: Data/ProcessedData/ExtractedOrders/Science/testsXXXscienceXXXorders.fits
+  

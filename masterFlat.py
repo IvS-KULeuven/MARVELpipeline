@@ -1,9 +1,13 @@
 from pipeline   import PipelineComponent
 from database   import DatabaseFromLocalFile
+
+import yaml
 import os
 import tools
 import numpy as np
 import hashlib
+
+
 
 
 
@@ -18,7 +22,7 @@ class MasterFlat(PipelineComponent):
         flatAndBiasHashes = self.inputHashes
 
         if self.checkSanityOfInputTypes(**flatAndBiasHashes):
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/MasterFlat/"
+            self.outputPath = os.getcwd() 
             self.type = "Master Flat Image"
             self.masterBiasHash = flatAndBiasHashes["BiasImages"]
             self.rawFlatHashes  = flatAndBiasHashes["FlatImages"]
@@ -126,19 +130,20 @@ class MasterFlat(PipelineComponent):
 
 
 if __name__ == "__main__":
+
+    f_params = yaml.safe_load(open("params.yaml"))["rawFlatImage"]
+    b_params = yaml.safe_load(open("params.yaml"))["rawBiasImage"]
+
     databaseName = "pipelineDatabase.txt"
     print("Creating a local database file with the name: ", databaseName)
 
     db = DatabaseFromLocalFile(databaseName)
     print("")
 
-        # Mater Flat Image
-    raw_flat_hashes = ["e003c1a1f66829c11bef1cfa35d4391a87b89cb0e35dcbdbde0c9acfff19f64b",
-                       "844a3574b341fec134c3c6bd7464d4dfa1a19da94c477f42e65484be90676d08",
-                       "9b2902d98bf14d627bf60182b6974eb86d6b313652a65188724c4a9c521ab0c8",
-                       "e25e03dacdfcaa1da19a5f95261def79c1cc806588bca507446264b8fb0fe24a"]
+    # Mater Flat Image
+    raw_flat_path = f_params["path"]
+    master_bias_path = b_params["outpath"]
 
-    master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
-    masterF1 = MasterFlat(db, FlatImages=raw_flat_hashes, BiasImages=master_bias_pathF)
-    masterF1.run("testsFFlat.fits")
+    masterF = MasterFlat(db, FlatImages=raw_flat_path, BiasImages=master_bias_path)
+    masterF.run(f_params["outpath"])
     db.save()

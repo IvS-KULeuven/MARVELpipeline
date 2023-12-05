@@ -1,20 +1,22 @@
+from astropy.io import fits
+from datetime   import datetime
+from database   import DatabaseFromLocalFile
+from numba      import njit
+from scipy      import ndimage
+from tqdm       import tqdm
+from pipeline   import PipelineComponent
+from debug      import plotOrdersWithSlider
+
+import yaml
 import time
 import os
 import hashlib
 import tools
-
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-from astropy.io import fits
-from datetime   import datetime
-from database   import DatabaseFromLocalFile
-from numba      import njit, jit, vectorize
-from scipy      import ndimage
-from tqdm       import tqdm
-from pipeline   import PipelineComponent
-from debug      import plotOrdersWithSlider, plotGIF
+
 
 
 
@@ -50,7 +52,7 @@ class OrderMaskExtraction(PipelineComponent):
 
         if self.checkSanityOfInputTypes(**masterFlatHash):
 
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/"
+            self.outputPath = os.getcwd()
             self.type = "Extracted Flat Orders"
             self.masterFlatHash = masterFlatHash["FlatImages"]
             self.debug = debug
@@ -98,7 +100,7 @@ class OrderMaskExtraction(PipelineComponent):
 
 
 
-    def run(self, outputFileName=None):
+    def run(self, outputFileName=None, fibers=None, orders=None):
         """
         Runs the algorithm described after the class definition.
 
@@ -131,7 +133,7 @@ class OrderMaskExtraction(PipelineComponent):
         if (self.debug > 1):
             print("\nExtract the Stripes")
 
-        xCoordinates, yCoordinates, fluxValues, orders =  self.extractFlatStripes(image, id_p)
+        xCoordinates, yCoordinates, fluxValues, orders =  self.extractFlatStripes(image, id_p, fibers, orders)
 
         # If required, save to FITS
         if outputFileName is not None:
@@ -180,7 +182,6 @@ class OrderMaskExtraction(PipelineComponent):
                 - polynomials:polynomial fit of degree deg_polynomials of the lines
         """
 
-        start = time.time()
         nx, ny = image.shape
 
         # Apply median filter and gaussian filter to the image  to reduce noise and improve algorithm stability.
@@ -196,7 +197,8 @@ class OrderMaskExtraction(PipelineComponent):
         peak_idx = np.arange(ny)[np.logical_and(peaks, centRow > min_peak * np.max(centRow))]
 
         # Exclude peaks too close to the border
-        farFromBorder = lambda x : np.logical_and(x > 5, x < ny - 5)
+        def farFromBorder(x):
+            return np.logical_and(x > 5, x < ny - 5)
         peak_idx = peak_idx[farFromBorder(peak_idx)]
 
         orders = [0]*len(peak_idx)
@@ -232,10 +234,8 @@ class OrderMaskExtraction(PipelineComponent):
 
 
         polynomials = [np.poly1d(np.polyfit(np.arange(nx)[order != 0], order[order != 0], deg_polynomial)) for order in orders]
-        end = time.time()
 
         if self.debug > 2:
-            xx = np.arange(nx)
             for x, p in zip(x_values, polynomials):
                 plt.plot(p(x), x)
             plt.imshow(image, alpha=1, origin='lower')
@@ -263,7 +263,7 @@ class OrderMaskExtraction(PipelineComponent):
 
         """
         hash = hashlib.sha256(bytes("".join(self.masterFlatHash), 'utf-8')).hexdigest()
-        path = self.outputPath + outputFileName
+        path = self.outputPath + "/" + outputFileName
         orders, fibers = zip(*orders)
 
         # Save Extracted Flat Orders as FITS file for primary HDU
@@ -383,10 +383,10 @@ class OrderMaskExtraction(PipelineComponent):
 
 
 
-    def extractFlatStripes(self, flat, p_id):
+    def extractFlatStripes(self, flat, p_id, values=None, orders=None):
         """
-        Extract the relevant values of the image for every order and fiber. We select relevant
-        pixels around the polynomial fit for every fiber/order.
+        Extract the relevant values of the image for the order and fiber specified. In not specified which fibers/orders all
+        are selected by default. We select the relevant pixels around the polynomial fit for every fiber/order.
 
         INPUT:
             - flat: master flat field [ADU]
@@ -406,7 +406,6 @@ class OrderMaskExtraction(PipelineComponent):
         index_fiber = np.zeros_like(flat, dtype=np.int8)
         index_order = np.zeros_like(flat, dtype=np.int8)
 
-        previous_idx = 0
         for f in p_id.keys():
             for o, (xx, p) in p_id[f].items():
                 xSize = np.size(xx)
@@ -423,7 +422,6 @@ class OrderMaskExtraction(PipelineComponent):
                 valid_indices = np.logical_and(indices < ny, indices > 0)
                 index_fiber[slit_indices_x[valid_indices], indices[valid_indices]] = f
                 index_order[slit_indices_x[valid_indices], indices[valid_indices]] = o
-                previous_idx = int(np.poly1d(p)([int(nx)/2]))
 
 
         # image with only values within stripes, 0 elsewhere
@@ -582,7 +580,13 @@ def followOrders(max_row_0, dark_column, image):
     column = int(nx/2)
 
     # define function that will return the possible neighouring pixels
-    getNeighbourIndices = lambda x : np.array([x-1, x, x+1]) if (x>1 and x<ny-2) else (np.array([x-1, x]) if x>1 else np.array([x, x+1]) )
+    def getNeighbourIndices(x):
+         if (x>1 and x<ny-2):
+             return np.array([x-1, x, x+1])
+         elif (x>1):
+             return np.array([x-1, x])
+         else:
+             np.array([x, x+1])
 
 
     # Add peak value to order/value
@@ -659,13 +663,13 @@ def getShift(positions, observed, useAllFibers=True):
 
 
     shifts = np.linspace(-200, 200, 20000)
-    distanceForShift = lambda shift : np.array([np.min( np.abs(positions + shift - y))
+    
+    def distanceForShift(shift):
+        return np.array([np.min( np.abs(positions + shift - y))
                                                 for y in observed])
+
     distanceForAllShifts = np.array( [ distanceForShift(shift).sum()
                                        for shift in shifts])
-
-    # Keeps track of the orders that have been identified
-    used = np.zeros_like(positions)
 
     # This is important to correctly label the fiber IDs
     # when not all fibers are used. We weigh
@@ -742,18 +746,21 @@ def identify(positions, observed, polynomials, xValues, fibers, orders, shift):
 
 if __name__ == "__main__":
 
-    db = DatabaseFromLocalFile("pipelineDatabase.txt")
+    f_params = yaml.safe_load(open("params.yaml"))["rawFlatImage"]
+    o_params = yaml.safe_load(open("params.yaml"))["orderMaskImage"]
+
+    databaseName = "pipelineDatabase.txt"
+    print("Creating a local database file with the name: ", databaseName)
+
+    db = DatabaseFromLocalFile(databaseName)
     print("")
 
-    masterflat_hash = "02d2d4c941a24d78fe20c2dab8b068c8fb155081b34783cf3b35dab5d4ea4339"
-    masterflat_path = "Data/ProcessedData/MasterFlat/testsFFlat.fits"
+    # order mask extraction
+    masterflat_path = f_params["outpath"]
 
-    maskExtractor1 = OrderMaskExtraction(db, debug=3, FlatImages=masterflat_path)
-    maskExtractor2 = OrderMaskExtraction(debug=1, FlatImages=masterflat_hash)
-    maskExtractor1.run("testFMask.fits")
-    print("==================")
-    maskExtractor2.run("testDMask.fits")
+    maskExtractor = OrderMaskExtraction(db, debug=1, FlatImages=masterflat_path)
 
+    maskExtractor.run(o_params["outpath"])
     db.save()
 
 

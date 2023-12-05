@@ -6,14 +6,13 @@
 from astropy.io import fits
 import numpy as np
 from numba import njit
-from pymongo import MongoClient
-import matplotlib.pyplot as plt
+#from pymongo import MongoClient
 import os
 import pandas as pd
 import h5py
 
-client = MongoClient()
-db = client["databaseMARVEL"]
+#client = MongoClient()
+#db = client["databaseMARVEL"]
 
 
 
@@ -723,7 +722,7 @@ def convertPathToHash(path, db):
                      "ScienceImages", "CalibratedEtalon": "EtalonImages", "ExtractedOrders": "ExtractedOrders",
                      "MasterBias": "BiasImages", "MasterDark": "DarkImages",
                      "MasterFlat": "FlatImages",
-                     "OptimalExtraction": "OptimalExtracted", "BiasCorrectedScience": "ScienceImages", "BiasCorrectedEtalon": "EtalonImages"}
+                     "Mask": "ExtractedOrders", "Science": "OptimalExtracted", "BiasCorrectedScience": "ScienceImages", "BiasCorrectedEtalon": "EtalonImages"}
 
     # 1. Make sure we have a path for which the file exist and that path refers
     # to the absolute path
@@ -736,12 +735,12 @@ def convertPathToHash(path, db):
     # 2. Check that we can figure out what kind of file we have from the path
     # of the file
     parentDir = path.split("/")[-2]
-    if not parentDir in dirToDataBase.keys():
+
+    if parentDir not in dirToDataBase.keys():
         raise Exception('Not able to derive the type of file from ' +
                         f'the {parentDir} directory')
 
     # 3. Check in the database if we can find the relavant file
-
     image = db[dirToDataBase[parentDir]].find_one({"path": path})
 
     if image is None:

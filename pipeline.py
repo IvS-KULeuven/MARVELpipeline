@@ -63,7 +63,7 @@ class PipelineComponent():
 
         if not (self.checkSanityOfInput(**inputHashes)):
             keysInDatabase = np.array([key in self.db.list_collection_names() for key in inputHashes.keys()])
-            print(inputHashes.values())
+
             if not np.all(keysInDatabase):
                 unrecognizedKeys = np.array(list(inputHashes.keys()))[~keysInDatabase]
                 unrecognizedKeys = list(unrecognizedKeys)
@@ -100,7 +100,7 @@ class PipelineComponent():
                 return False
             else:
                 # If there are multiple hashes corresponding to one imagetype
-                if type(inputHash[imageType]) == list:
+                if isinstance(inputHash[imageType], list):
                     for hash in inputHash[imageType]:
                         image = self.db[imageType].find_one({"_id": hash})
 
@@ -136,8 +136,7 @@ class PipelineComponent():
         """
 
         for key, value in inputHashes.items():
-
-            if type(value) == list:
+            if isinstance(value, list):
                 inputHashes[key] = [tools.convertPathToHash(item, self.db)
                                     if os.path.isfile(item) else item for item in value]
             else:
@@ -157,17 +156,17 @@ class PipelineComponent():
         Save the image and add it to the database
         """
         hash = self.getHashOfOutputfile()
-        path = self.outputPath + fileName
+        path = self.outputPath + "/" + fileName
 
         # Save Master Image as FITS file
         hdr = fits.Header()
         hdr["hash"] = hash
         hdr["path"] = path
         hdr["type"] = self.type
-
+        
         hdu = fits.PrimaryHDU(image, header=hdr)
         hdu.writeto(path, overwrite=True)
-
+        
         # Add Image to database
         currentTime = datetime.now()
         dict = {"_id" : hash, "path" : path, "type" : self.type, "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
@@ -231,7 +230,7 @@ class BiasCorrectedEtalonImage(PipelineComponent):
         inputEtalonHashes = self.inputHashes
 
         if self.checkSanityOfInputTypes(**inputEtalonHashes):
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/BiasCorrectedEtalon/"
+            self.outputPath = os.getcwd()
             self.type       = "Bias Corrected Etalon Image"
             self.rawEtalonHash  = inputEtalonHashes["EtalonImages"]
             self.masterBiasHash = inputEtalonHashes["BiasImages"]

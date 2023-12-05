@@ -5,7 +5,6 @@ import tools
 import matplotlib.pyplot as plt
 import numpy as np
 
-from numba      import njit, jit, vectorize
 from astropy.io import fits
 from datetime   import datetime
 from pipeline   import PipelineComponent
@@ -15,9 +14,9 @@ from database   import DatabaseFromLocalFile
 
 
 
-
-
 class OrderExtraction(PipelineComponent):
+
+
     """
     Class that performs the extraction of the orders given an image and an order mask.
     """
@@ -44,7 +43,7 @@ class OrderExtraction(PipelineComponent):
         imageAndMaskHash = self.inputHashes
 
         if self.checkSanityOfInputTypes(**imageAndMaskHash):
-            self.outputPath      = os.getcwd() + "/Data/ProcessedData/ExtractedOrders/"
+            self.outputPath      = os.getcwd()
             self.outputType      = "Extracted " + self.extractedType + " Orders"
             self.orderMaskHash   = imageAndMaskHash["ExtractedOrders"]
             self.imageHash       = imageAndMaskHash[self.extractedType + "Images"]
@@ -55,9 +54,6 @@ class OrderExtraction(PipelineComponent):
             raise Exception("Error: The input hashes do not match the correct type: Aborting")
             exit(1)
 
-
-        if not os.path.isdir(self.outputPath):
-            os.mkdir(self.outputPath)
 
 
 
@@ -237,11 +233,14 @@ class OrderExtraction(PipelineComponent):
             None
 
         """
+        pathDirectory = self.outputPath + "/" + "/".join(outputFileName.split("/")[:-1])
+        if not os.path.isdir(pathDirectory):
+            os.mkdir(pathDirectory)
 
         combinedHash = self.orderMaskHash + self.imageHash
         hash = hashlib.sha256(bytes(combinedHash, 'utf-8')).hexdigest()
 
-        path = self.outputPath + outputFileName
+        path = self.outputPath + "/" + outputFileName
         orders, fibers = zip(*orders)
 
         # Save Extracted Flat Orders as FITS file for primary HDU

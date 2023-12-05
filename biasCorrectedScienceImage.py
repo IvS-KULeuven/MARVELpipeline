@@ -1,6 +1,7 @@
 from pipeline   import PipelineComponent
 from database import DatabaseFromLocalFile
 
+import yaml
 import os
 import tools
 import hashlib
@@ -19,7 +20,7 @@ class BiasCorrectedScienceFrames(PipelineComponent):
         inputScienceHashes = self.inputHashes
 
         if self.checkSanityOfInputTypes(**inputScienceHashes):
-            self.outputPath = os.getcwd() + "/Data/ProcessedData/BiasCorrectedScience/"
+            self.outputPath = os.getcwd() 
             self.type = "Bias Corrected Science Image"
             self.masterBiasHash = inputScienceHashes["BiasImages"]
             self.rawScienceHash = inputScienceHashes["ScienceImages"]
@@ -127,19 +128,22 @@ class BiasCorrectedScienceFrames(PipelineComponent):
 
 
 if __name__ == "__main__":
+
+    s_params = yaml.safe_load(open("params.yaml"))["rawScienceImage"]
+    b_params = yaml.safe_load(open("params.yaml"))["rawBiasImage"]
+
     databaseName = "pipelineDatabase.txt"
     print("Creating a local database file with the name: ", databaseName)
 
     db = DatabaseFromLocalFile(databaseName)
+    print(" ")
 
-    # bias corrected Science Image
-    rawScienceHash = "d2ad34be4443931a5128f3e035ce12c869fb801c017f856cb3c68c1e180d1267"
-
-    master_bias_pathF = "Data/ProcessedData/MasterBias/testsFBias.fits"
-
+    # Bias corrected Science Image
+    rawSciencePath = s_params["path"]
+    master_bias_path = b_params["outpath"]
 
     print(" ")
-    calibration1 = BiasCorrectedScienceFrames(db, ScienceImages=rawScienceHash, BiasImages=master_bias_pathF)
+    calibration = BiasCorrectedScienceFrames(db, ScienceImages=rawSciencePath, BiasImages=master_bias_path)
 
-    calibration1.run("testFScience.fits")
+    calibration.run(s_params["outpath"])
     db.save()
