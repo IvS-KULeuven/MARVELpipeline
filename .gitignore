@@ -6,6 +6,7 @@ Bazaar/
 Docs/*/*.toc
 Docs/*/*.aux
 Docs/*/*.log
+*~
 __pycache__/
 
 .DS_Store
