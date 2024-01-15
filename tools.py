@@ -5,7 +5,6 @@
 
 from astropy.io import fits
 import numpy as np
-from numba import njit
 #from pymongo import MongoClient
 import os
 import pandas as pd
@@ -52,7 +51,7 @@ def getImage(path):
     return hdul[0].data
 
 
-@njit()
+
 def getGain(path):
     """
     Returns the gain in a FITS file.
@@ -72,7 +71,7 @@ def getGain(path):
     return 9.4
 
 
-@njit()
+
 def getExposureTime(path):
     """
     Returns the exposure time of an image
@@ -91,9 +90,25 @@ def getExposureTime(path):
     return 5
 
 
+def getStdBias(path):
+    """
+    Returns the std_bias of an image
+
+    INPUT:
+        path: strong containing the path of the FITSfile
+
+    OUTPUT:
+        standard deviation of the bias images used to construct thie input image
+
+    NOTE:
+        This value is only saved in masterBias and masterFlat images
+    """
+    hdul = fits.open(path)
+    return hdul[0].header["std_bias"]
 
 
-@njit()
+
+
 def getDarkRate(path):
     """
     Returns the Dark Rate of an image
@@ -722,7 +737,7 @@ def convertPathToHash(path, db):
                      "ScienceImages", "CalibratedEtalon": "EtalonImages", "ExtractedOrders": "ExtractedOrders",
                      "MasterBias": "BiasImages", "MasterDark": "DarkImages",
                      "MasterFlat": "FlatImages",
-                     "Mask": "ExtractedOrders", "Science": "OptimalExtracted", "BiasCorrectedScience": "ScienceImages", "BiasCorrectedEtalon": "EtalonImages"}
+                     "Mask": "ExtractedOrders", "Science": "ExtractedOrders", "BiasCorrectedScience": "ScienceImages", "BiasCorrectedEtalon": "EtalonImages"}
 
     # 1. Make sure we have a path for which the file exist and that path refers
     # to the absolute path
@@ -744,7 +759,7 @@ def convertPathToHash(path, db):
     image = db[dirToDataBase[parentDir]].find_one({"path": path})
 
     if image is None:
-        raise Exception(f'File {path} is not found in the database')
+        raise Exception(f'{path} is not found in the database')
 
     # 4. Return the hash from the database
 

@@ -151,18 +151,31 @@ class PipelineComponent():
 
 
 
-    def saveImageAndAddToDatabase(self, image, fileName):
+    def saveImageAndAddToDatabase(self, image, fileName, **keywords):
         """
-        Save the image and add it to the database
+        Save the image and add it to the database.
+
+        input:
+            image: np.array of the image that we want to save in fits files
+            filname: path of the fits file
+            keywords: dictionary with optional parameters we want to add to the fits header
         """
+
         hash = self.getHashOfOutputfile()
         path = self.outputPath + "/" + fileName
+        num_row, num_col = image.shape
 
         # Save Master Image as FITS file
         hdr = fits.Header()
         hdr["hash"] = hash
         hdr["path"] = path
         hdr["type"] = self.type
+        hdr["rows"] = num_row
+        hdr["cols"] = num_col
+
+        for key, value in keywords.items():
+            hdr[key] = value
+
         
         hdu = fits.PrimaryHDU(image, header=hdr)
         hdu.writeto(path, overwrite=True)

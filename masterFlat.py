@@ -6,7 +6,7 @@ import os
 import tools
 import numpy as np
 import hashlib
-
+import time
 
 
 
@@ -16,11 +16,11 @@ import hashlib
 
 class MasterFlat(PipelineComponent):
 
-    def __init__(self, database=None, **flatAndBiasHashes):
-
+    def __init__(self, database=None, debug=0, **flatAndBiasHashes):
+        
         super().__init__(database, **flatAndBiasHashes)
         flatAndBiasHashes = self.inputHashes
-
+        self.debug = debug
         if self.checkSanityOfInputTypes(**flatAndBiasHashes):
             self.outputPath = os.getcwd() 
             self.type = "Master Flat Image"
@@ -94,6 +94,7 @@ class MasterFlat(PipelineComponent):
         # Get all the fits files corresponding to these hashes
         flats = tools.getImages(flatPaths)
         bias  = tools.getImage(biasPath)
+        stdBias = tools.getStdBias(biasPath)
 
         # Use the image in the fits files, and use mean_combining to obtain the the master image
         masterFlat = np.median(flats, axis=0) - bias
@@ -103,8 +104,9 @@ class MasterFlat(PipelineComponent):
                   masterFlat = masterFlat -np.min(masterFlat)
 
         if outputFileName is not None:
-            self.saveImageAndAddToDatabase(masterFlat, outputFileName)
-            print("Master flat image saved to fits file")
+            self.saveImageAndAddToDatabase(masterFlat, outputFileName, std_bias=stdBias)
+            if (self.debug > 1):
+                print("Master flat image saved to fits file")
 
         # That's it!
 
@@ -130,15 +132,12 @@ class MasterFlat(PipelineComponent):
 
 
 if __name__ == "__main__":
-
+    t1 = time.time()
     f_params = yaml.safe_load(open("params.yaml"))["rawFlatImage"]
     b_params = yaml.safe_load(open("params.yaml"))["rawBiasImage"]
 
     databaseName = "pipelineDatabase.txt"
-    print("Creating a local database file with the name: ", databaseName)
-
     db = DatabaseFromLocalFile(databaseName)
-    print("")
 
     # Mater Flat Image
     raw_flat_path = f_params["path"]
@@ -147,3 +146,7 @@ if __name__ == "__main__":
     masterF = MasterFlat(db, FlatImages=raw_flat_path, BiasImages=master_bias_path)
     masterF.run(f_params["outpath"])
     db.save()
+
+    t2 = time.time()
+
+    print(f"This took: {t2-t1}")

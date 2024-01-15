@@ -7,7 +7,7 @@ import tools
 import numpy as np
 import hashlib
 
-
+import time
 
 
 
@@ -19,10 +19,10 @@ class MasterBias(PipelineComponent):
     raw bias images.
     """
 
-    def __init__(self, database=None, **input):
+    def __init__(self, database=None, debug=0, **input):
         super().__init__(database, **input)
         input = self.inputHashes
-
+        self.debug = debug
         if self.checkSanityOfinputTypes(**input):
 
             self.outputPath = os.getcwd()
@@ -82,17 +82,18 @@ class MasterBias(PipelineComponent):
 
         # Get all the paths of the files corresponding to these hashes
         paths = [ (self.db["BiasImages"].find_one({"_id": hash}))["path"] for hash in self.rawBiasHashes]
-
+        
         # Get all the fits files corresponding to these hashes
         biases = tools.getImages(paths)
 
         # Use the image in the fits files, and use mean_combining to obtain the the master image
         masterBias = np.median(biases, axis=0)
-
+        stdBias = np.mean([np.std(b) for b in biases])
 
         if outputFileName is not None:
-            self.saveImageAndAddToDatabase(masterBias, outputFileName)
-            print("Master bias image saved to fits file")
+            self.saveImageAndAddToDatabase(masterBias, outputFileName, std_bias=stdBias)
+            if (self.debug >= 1):
+                print("Master bias image saved to fits file")
 
         # That's it!
 
@@ -119,13 +120,11 @@ class MasterBias(PipelineComponent):
 
 if __name__ == "__main__":
 
+    t1 = time.time()
     params = yaml.safe_load(open("params.yaml"))["rawBiasImage"]
 
     databaseName = "pipelineDatabase.txt"
-    print("Creating a local database file with the name: ", databaseName)
-
     db = DatabaseFromLocalFile(databaseName)
-    print(" ")
 
     # Master Bias Image
     raw_bias_path = params["path"]
@@ -136,6 +135,6 @@ if __name__ == "__main__":
     masterB.run(params["outpath"])
 
     db.save()
-
-
+    t2 = time.time()
+    print(f"This took: {t2-t1}")
 
