@@ -34,7 +34,7 @@ stages:
     outs:
     - ${rawScienceImage.outpath}
   order mask extraction:
-    cmd: python orderMaskExtraction.py
+    cmd: ./pipeline/target/release/pipeline
     deps:
     - pipeline.py
     - Data/ProcessedData/MasterFlat
@@ -49,9 +49,20 @@ stages:
     - pipeline.py
     - Data/ProcessedData/ExtractedOrders/Mask
     - Data/ProcessedData/BiasCorrectedScience
+    - orderScienceExtraction.py
     params:
     - orderMaskImage.outpath
     - rawScienceImage.outpath
     outs:
     - ${orderScienceExtraction.outpath}
-    
+  optimal extraction:
+    cmd: python optimalExtraction.py
+    deps:
+    - pipeline.py
+    - Data/ProcessedData/ExtractedOrders/Science
+    - Data/ProcessedData/ExtractedOrders/Mask
+    params:
+    - orderMaskImage.outpath
+    - orderScienceExtraction.outpath
+    outs:
+    - ${optimalOrderExtraction.outpath}

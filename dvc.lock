@@ -5,71 +5,73 @@ stages:
     deps:
     - path: masterBias.py
       hash: md5
-      md5: aaab6a0cab1fb4e667df8185e698d2df
-      size: 3671
+      md5: 7ea7f72d2b9e03aafa854f1ded4bbd9b
+      size: 3823
     - path: pipeline.py
       hash: md5
-      md5: 22e571c3fcc0255d2d168d0e6766f513
-      size: 11301
+      md5: 8aac1118d7ddd373511870c3408abd30
+      size: 11716
     params:
       params.yaml:
         rawBiasImage.outpath: Data/ProcessedData/MasterBias/testsXXXBias.fits
         rawBiasImage.path:
-        - Data/RawData/CalibrationImages/Bias/20221028T164120_BBBBB_H_0000.fits
-        - Data/RawData/CalibrationImages/Bias/20221028T164326_BBBBB_H_0000.fits
-        - Data/RawData/CalibrationImages/Bias/20221028T164524_BBBBB_H_0000.fits
-        - Data/RawData/CalibrationImages/Bias/20221028T164710_BBBBB_H_0000.fits
+        - Data/RawData/CalibrationImages/Bias/20230504T135640_BBBBB_H_0000.fits
+        - Data/RawData/CalibrationImages/Bias/20230504T135642_BBBBB_H_0000.fits
+        - Data/RawData/CalibrationImages/Bias/20230504T135644_BBBBB_H_0000.fits
+        - Data/RawData/CalibrationImages/Bias/20230504T135648_BBBBB_H_0000.fits
+        - Data/RawData/CalibrationImages/Bias/20230504T135652_BBBBB_H_0000.fits
     outs:
     - path: Data/ProcessedData/MasterBias/testsXXXBias.fits
       hash: md5
-      md5: 34c7e7fa9f5dbf97059ec85314312ccb
+      md5: 48b3e2280648c027c06583ff996693b6
       size: 892111680
   master flat:
     cmd: python masterFlat.py
     deps:
     - path: Data/ProcessedData/MasterBias
       hash: md5
-      md5: 036210a59e6ab78da87e46acea83055e.dir
-      size: 892111680
-      nfiles: 1
+      md5: ef4bc96e54d9b9871d335c8c366aa73a.dir
+      size: 1115141760
+      nfiles: 2
     - path: masterFlat.py
       hash: md5
-      md5: 5814824382f0109908cc0eeb0652f7ba
-      size: 4571
+      md5: c9e0b8d102ca0f1c959def9b33775b26
+      size: 4712
     - path: pipeline.py
       hash: md5
-      md5: 22e571c3fcc0255d2d168d0e6766f513
-      size: 11301
+      md5: 8aac1118d7ddd373511870c3408abd30
+      size: 11716
     params:
       params.yaml:
         rawBiasImage.outpath: Data/ProcessedData/MasterBias/testsXXXBias.fits
         rawFlatImage.outpath: Data/ProcessedData/MasterFlat/testsXXXFlat.fits
         rawFlatImage.path:
-        - Data/RawData/CalibrationImages/Flat/20221207T144412_FFFFF_H_0001.fits
-        - Data/RawData/CalibrationImages/Flat/20221207T145720_FFFFF_H_0001.fits
-        - Data/RawData/CalibrationImages/Flat/20221207T150223_FFFFF_H_0001.fits
-        - Data/RawData/CalibrationImages/Flat/20221207T150714_FFFFF_H_0001.fits
+        - Data/RawData/CalibrationImages/Flat/20230504T142007_FFFFF_H_0001.fits
+        - Data/RawData/CalibrationImages/Flat/20230504T142402_FFFFF_H_0001.fits
+        - Data/RawData/CalibrationImages/Flat/20230504T142759_FFFFF_H_0001.fits
+        - Data/RawData/CalibrationImages/Flat/20230504T143157_FFFFF_H_0001.fits
+        - Data/RawData/CalibrationImages/Flat/20230504T143554_FFFFF_H_0001.fits
     outs:
     - path: Data/ProcessedData/MasterFlat/testsXXXFlat.fits
       hash: md5
-      md5: c517ea4cc80a4fc94b930e4de1944494
+      md5: 1662f591317e414d94a6be803c8e05ab
       size: 892111680
   calibrated science:
     cmd: python biasCorrectedScienceImage.py
     deps:
     - path: Data/ProcessedData/MasterBias
       hash: md5
-      md5: 036210a59e6ab78da87e46acea83055e.dir
-      size: 892111680
-      nfiles: 1
+      md5: ef4bc96e54d9b9871d335c8c366aa73a.dir
+      size: 1115141760
+      nfiles: 2
     - path: biasCorrectedScienceImage.py
       hash: md5
-      md5: bd7dc4bf2025471c819aeb616907db42
-      size: 4667
+      md5: ad44682e981f60dd96ad63f5e1ef327f
+      size: 4650
     - path: pipeline.py
       hash: md5
-      md5: 22e571c3fcc0255d2d168d0e6766f513
-      size: 11301
+      md5: 8aac1118d7ddd373511870c3408abd30
+      size: 11716
     params:
       params.yaml:
         rawBiasImage.outpath: Data/ProcessedData/MasterBias/testsXXXBias.fits
@@ -78,20 +80,20 @@ stages:
     outs:
     - path: Data/ProcessedData/BiasCorrectedScience/testsXXXScience.fits
       hash: md5
-      md5: 0eef1e7805b55f4e85f2ad6cdbd86032
+      md5: 7de5124220c2b75eb6a87ad12b67fbad
       size: 892111680
   order mask extraction:
-    cmd: python orderMaskExtraction.py
+    cmd: ./pipeline/target/release/pipeline
     deps:
     - path: Data/ProcessedData/MasterFlat
       hash: md5
-      md5: f75d879debc81248c092fd653fa77ee1.dir
-      size: 2676335040
-      nfiles: 3
+      md5: 3d1d683d2d686aed7897478a8866b12d.dir
+      size: 3122395200
+      nfiles: 5
     - path: pipeline.py
       hash: md5
-      md5: 22e571c3fcc0255d2d168d0e6766f513
-      size: 11301
+      md5: 8aac1118d7ddd373511870c3408abd30
+      size: 11716
     params:
       params.yaml:
         orderMaskImage.outpath: Data/ProcessedData/ExtractedOrders/Mask/testsXXXorder.fits
@@ -99,21 +101,25 @@ stages:
     outs:
     - path: Data/ProcessedData/ExtractedOrders/Mask/testsXXXorder.fits
       hash: md5
-      md5: 9c49025048b5584de5f9caf6cb6ca2fd
-      size: 651136320
+      md5: 485f41702cc13d388e22087fc7437938
+      size: 20917440
   order science extraction:
     cmd: python orderScienceExtraction.py
     deps:
     - path: Data/ProcessedData/BiasCorrectedScience
       hash: md5
-      md5: 1057060c646a47dade7a96ba18cb402c.dir
+      md5: ecc1802cc1f6f0221baf206feba568a8.dir
       size: 4460558400
       nfiles: 5
     - path: Data/ProcessedData/ExtractedOrders/Mask
       hash: md5
-      md5: 57b248e187681edd6ee4aa474877cee7.dir
-      size: 651136320
+      md5: e81235ea764597c361817cd1c30b23d0.dir
+      size: 650695680
       nfiles: 1
+    - path: orderScienceExtraction.py
+      hash: md5
+      md5: b5d80c5947cffe9f7f1cec49f255fe62
+      size: 1162
     - path: pipeline.py
       hash: md5
       md5: 22e571c3fcc0255d2d168d0e6766f513
@@ -125,5 +131,31 @@ stages:
     outs:
     - path: Data/ProcessedData/ExtractedOrders/Science/testsXXXscienceXXXorders.fits
       hash: md5
-      md5: b921decfa37163854bcd9998551a94e1
-      size: 651136320
+      md5: ccf681a70c23336d097f1b9aca4f37d1
+      size: 650695680
+  optimal extraction:
+    cmd: python optimalExtraction.py
+    deps:
+    - path: Data/ProcessedData/ExtractedOrders/Mask
+      hash: md5
+      md5: e81235ea764597c361817cd1c30b23d0.dir
+      size: 650695680
+      nfiles: 1
+    - path: Data/ProcessedData/ExtractedOrders/Science
+      hash: md5
+      md5: 790b4f6b23e0ca50c27aa8a1d220fa01.dir
+      size: 650695680
+      nfiles: 1
+    - path: pipeline.py
+      hash: md5
+      md5: 22e571c3fcc0255d2d168d0e6766f513
+      size: 11301
+    params:
+      params.yaml:
+        orderMaskImage.outpath: Data/ProcessedData/ExtractedOrders/Mask/testsXXXorder.fits
+        orderScienceExtraction.outpath: Data/ProcessedData/ExtractedOrders/Science/testsXXXscienceXXXorders.fits
+    outs:
+    - path: Data/ProcessedData/OptimalExtraction/optimal_extracted_science_flux.fits
+      hash: md5
+      md5: aed8081443e9b555e1ca5d5ac9bf9fe1
+      size: 51295680

@@ -6,7 +6,7 @@ import numpy  as np
 #from pymongo  import MongoClient
 from glob     import glob
 from datetime import datetime
-from io       import StringIO
+#from io       import StringIO
 
 
 
@@ -60,13 +60,14 @@ class DatabaseFromLocalFile():
         """
         database = {}
 
-
+        # Check if path specified ends with /
+        if (path[-1] != "/"):
+             path = path + "/"
         # Search for the images at the path
         print(f"Searching for raw images in {path}")
         for imageType in ["Bias", "Dark", "Flat", "Etalon", "Science"]:
             if imageType == "Science":
                 imagePaths = glob(path + "ScienceFrames/*.fits")
-
             else:
                 imagePaths = glob(path + f"CalibrationImages/{imageType}/*.fits")
 
@@ -91,7 +92,7 @@ class DatabaseFromLocalFile():
 
 
     def __getitem__(self, item):
-        if not item in self.localDataBase.keys():
+        if item not in self.localDataBase.keys():
             dat = { "_id": [], "path": [], "type": [], "date_created": []}
             self.localDataBase[item] = Collection(pd.DataFrame.from_dict(data=dat))
         return self.localDataBase[item]
@@ -163,7 +164,6 @@ class DatabaseFromLocalFile():
 
         # Return the database property with the values from the file
 
-        print("File loaded")
         return database
 
 
@@ -218,7 +218,7 @@ class Collection:
         key = keys[0]
         value = values[0]
 
-        if not key in self.df.columns:
+        if key not in self.df.columns:
             print(f"{key} is not in the database")
             return None
 
@@ -378,7 +378,6 @@ if __name__ == "__main__":
     #initializeDataBaseWithRawImages(clearIfExist=True)
 
     db = DatabaseFromLocalFile("pipelineDatabase.txt")
-
-
+    db.makeDataBaseLocally("/home/driess/Projects/MARVELpipeline/Data/RawData")
     db.save()
 

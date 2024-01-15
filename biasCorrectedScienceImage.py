@@ -5,6 +5,7 @@ import yaml
 import os
 import tools
 import hashlib
+import time
 import numpy as np
 
 
@@ -129,21 +130,21 @@ class BiasCorrectedScienceFrames(PipelineComponent):
 
 if __name__ == "__main__":
 
+    t1 = time.time()
     s_params = yaml.safe_load(open("params.yaml"))["rawScienceImage"]
     b_params = yaml.safe_load(open("params.yaml"))["rawBiasImage"]
 
     databaseName = "pipelineDatabase.txt"
-    print("Creating a local database file with the name: ", databaseName)
-
     db = DatabaseFromLocalFile(databaseName)
-    print(" ")
 
     # Bias corrected Science Image
     rawSciencePath = s_params["path"]
     master_bias_path = b_params["outpath"]
 
-    print(" ")
     calibration = BiasCorrectedScienceFrames(db, ScienceImages=rawSciencePath, BiasImages=master_bias_path)
 
     calibration.run(s_params["outpath"])
     db.save()
+    t2 = time.time()
+
+    print(f"This took: {t2-t1}")
