@@ -3,6 +3,7 @@ name = "pipeline"
 version = "0.1.0"
 edition = "2021"
 
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -18,3 +19,24 @@ nalgebra = "0.32.3"
 varpro = "0.7.1"
 itertools = "0.11.0"
 serde_yaml = "0.9"
+
+
+[[bin]]
+name = "biassubtraction"                # e.g. cargo run --bin biassubtraction
+src = "src/bin/biassubtraction.rs"
+
+[[bin]]
+name = "2dmaskdetermination"              
+src = "src/bin/2dmaskdetermination.rs"
+
+[[bin]]
+name = "2dorderextraction"
+src = "src/bin/2dorderextraction.rs"
+
+[[bin]]
+name = "1dflatrelativeorderextraction"
+src = "src/bin/1dflatrelativeorderextraction.rs"
+
+# [[lib]]
+# name = "configuration"
+# src = "scr/bin/configuration.rs"

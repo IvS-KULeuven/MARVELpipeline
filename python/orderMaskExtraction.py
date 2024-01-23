@@ -192,9 +192,12 @@ class OrderMaskExtraction(PipelineComponent):
         centRow  = image[int(nx/2),:]
         peaks    = np.r_[True, (centRow[1:-1] >= centRow[:-2]) & (centRow[1:-1] > centRow[2:]), True]
 
+              
+
         # Identify the maxima along the central row, as these are the stripes
         # We only keep maxima that are larger then min_peak * maximum_central_row
         peak_idx = np.arange(ny)[np.logical_and(peaks, centRow > min_peak * np.max(centRow))]
+        print(len(peak_idx))
 
         # Exclude peaks too close to the border
         def farFromBorder(x):
@@ -206,7 +209,7 @@ class OrderMaskExtraction(PipelineComponent):
 
         first_fiber_idx = peak_idx[::5]
         final_fiber_idx = np.concatenate((np.zeros(1), peak_idx[4::5]))[:-1]
-
+        
         for m, row_max in tqdm(enumerate(peak_idx)):
             if (row_max in first_fiber_idx):
                 dark_idx = int((row_max + final_fiber_idx[first_fiber_idx == row_max])/2)
@@ -746,21 +749,18 @@ def identify(positions, observed, polynomials, xValues, fibers, orders, shift):
 
 if __name__ == "__main__":
 
+    t1 = time.time()
     f_params = yaml.safe_load(open("params.yaml"))["rawFlatImage"]
     o_params = yaml.safe_load(open("params.yaml"))["orderMaskImage"]
 
     databaseName = "pipelineDatabase.txt"
-    print("Creating a local database file with the name: ", databaseName)
-
     db = DatabaseFromLocalFile(databaseName)
-    print("")
 
     # order mask extraction
     masterflat_path = f_params["outpath"]
-
-    maskExtractor = OrderMaskExtraction(db, debug=1, FlatImages=masterflat_path)
+    maskExtractor = OrderMaskExtraction(db, debug=3, FlatImages=masterflat_path)
 
     maskExtractor.run(o_params["outpath"])
     db.save()
-
-
+    t2 = time.time()
+    print(f"This took: {t2-t1}")

@@ -1,68 +1,62 @@
 stages:
   master bias:
-    cmd: python masterBias.py
+    cmd: python python/masterBias.py
     deps:
-    - masterBias.py
-    - pipeline.py
+    - python/masterBias.py
+    - python/pipeline.py
     params:
     - rawBiasImage.path
     - rawBiasImage.outpath
     outs:
     - ${rawBiasImage.outpath}
   master flat:
-    cmd: python masterFlat.py
+    cmd: python python/masterFlat.py
     deps:
     - Data/ProcessedData/MasterBias
-    - masterFlat.py
-    - pipeline.py
+    - python/masterFlat.py
+    - python/pipeline.py
     params:
     - rawFlatImage.path
     - rawFlatImage.outpath
     - rawBiasImage.outpath
     outs:
     - ${rawFlatImage.outpath}
-  calibrated science:
-    cmd: python biasCorrectedScienceImage.py
+  bias subtraction:
+    cmd: ./pipeline/target/release/biassubtraction
     deps:
     - Data/ProcessedData/MasterBias
-    - biasCorrectedScienceImage.py
-    - pipeline.py
     params:
     - rawScienceImage.path
     - rawScienceImage.outpath
     - rawBiasImage.outpath
     outs:
-    - ${rawScienceImage.outpath}
-  order mask extraction:
-    cmd: ./pipeline/target/release/pipeline
+    - Data/ProcessedData/BiasCorrectedScience/20230614
+  2D mask determination:
+    cmd: ./pipeline/target/release/2dmaskdetermination
     deps:
-    - pipeline.py
     - Data/ProcessedData/MasterFlat
     params:
     - rawFlatImage.outpath
-    - orderMaskImage.outpath
+    - orderImage.maskOutpath
     outs:
-    - ${orderMaskImage.outpath}
-  order science extraction:
-    cmd: python orderScienceExtraction.py
+    - ${orderImage.maskOutpath}
+  2D order extraction:
+    cmd: ./pipeline/target/release/2dorderextraction
     deps:
-    - pipeline.py
     - Data/ProcessedData/ExtractedOrders/Mask
     - Data/ProcessedData/BiasCorrectedScience
-    - orderScienceExtraction.py
     params:
-    - orderMaskImage.outpath
+    - orderImage.maskOutpath
     - rawScienceImage.outpath
     outs:
-    - ${orderScienceExtraction.outpath}
-  optimal extraction:
-    cmd: python optimalExtraction.py
+    - Data/ProcessedData/ExtractedOrders/Science/20230614
+  1D flat-relative order extraction:
+    cmd: ./pipeline/target/release/1dflatrelativeorderextraction
     deps:
-    - pipeline.py
     - Data/ProcessedData/ExtractedOrders/Science
     - Data/ProcessedData/ExtractedOrders/Mask
     params:
-    - orderMaskImage.outpath
-    - orderScienceExtraction.outpath
+    - orderImage.maskOutpath
+    - orderImage.scienceOutpath
     outs:
     - ${optimalOrderExtraction.outpath}

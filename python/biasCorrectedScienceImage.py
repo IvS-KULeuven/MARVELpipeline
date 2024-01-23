@@ -24,7 +24,7 @@ class BiasCorrectedScienceFrames(PipelineComponent):
             self.outputPath = os.getcwd() 
             self.type = "Bias Corrected Science Image"
             self.masterBiasHash = inputScienceHashes["BiasImages"]
-            self.rawScienceHash = inputScienceHashes["ScienceImages"]
+            self.rawScienceHashes = inputScienceHashes["ScienceImages"]
         else:
             raise Exception("Error: The input hashes do not match the correct type: Aborting")
             exit(1)
@@ -44,7 +44,6 @@ class BiasCorrectedScienceFrames(PipelineComponent):
         input types that are given is able to generate a bias corrected science output file.
         """
         types  = list(inputScienceHashes.keys())
-        values = list(inputScienceHashes.values())
 
         # Check that the keys are of the right format. For a bias corrected science image, these should be science
         # images, dark images and bias images.
@@ -53,14 +52,15 @@ class BiasCorrectedScienceFrames(PipelineComponent):
         keysAreCorrect = (len(types) == 2) and np.all([key in types for key in correctKeysFormat])
 
         if keysAreCorrect:
-            valuesAreCorrectType = np.all([ isinstance(value, str) for value in values])
+            valuesAreCorrectType = isinstance(inputScienceHashes["BiasImages"], str) and isinstance(inputScienceHashes["ScienceImages"], list)
         else:
             return False
 
         if valuesAreCorrectType:
 
             isMasterBiasImage = self.db["BiasImages"].find_one({"_id": inputScienceHashes["BiasImages"]})["type"] == "Master Bias Image"
-            isRawScienceImage = self.db["ScienceImages"].find_one({"_id": inputScienceHashes["ScienceImages"]})["type"] == "Raw Science Image"
+
+            isRawScienceImage = np.all([ self.db["ScienceImages"].find_one({"_id": hash})["type"] == "Raw Science Image" for hash in inputScienceHashes["ScienceImages"]])
         else:
             return False
 
@@ -86,22 +86,27 @@ class BiasCorrectedScienceFrames(PipelineComponent):
         """
 
         # Get all the paths of the files corresponding to these hashes
-        biasPath    = self.db["BiasImages"].find_one({"_id": self.masterBiasHash })["path"]
-        sciencePath = self.db["ScienceImages"].find_one({"_id": self.rawScienceHash})["path"]
+        biasPath     = self.db["BiasImages"].find_one({"_id": self.masterBiasHash })["path"]
+        sciencePaths = [self.db["ScienceImages"].find_one({"_id": s_path})["path"]
+                        for s_path in self.rawScienceHashes]
+
 
         # Get all the fits files corresponding to these hashes
         bias    = tools.getImage(biasPath)
-        science = tools.getImage(sciencePath)
+        sciences = [tools.getImage(path) for path in sciencePaths]
+        meanBias = np.mean(bias)
 
-        biasCorrectedScience = science - bias
+        biasCorrectedScience = [ s - bias for s in sciences]
 
         # Add offset so that all the values in the MasterFlat are positive
-        if np.min(biasCorrectedScience) < 0:
-            biasCorrectedScience = biasCorrectedScience - np.min(biasCorrectedScience)
+        biasCorrectedScience = [ s - np.min(s) for s in biasCorrectedScience if np.min(s) < 0]
 
 
         if outputFileName is not None:
-            self.saveImageAndAddToDatabase(biasCorrectedScience, outputFileName)
+            self.saveMultipleImagesAndAddToDatabase(biasCorrectedScience,
+                                                    outputFileName,
+                                                    imageHashes=self.rawScienceHashes,
+                                                    m_bias=meanBias)
             print("Bias Corrected science image saved to fits file")
 
         # That's it!
@@ -114,7 +119,7 @@ class BiasCorrectedScienceFrames(PipelineComponent):
 
 
 
-    def getHashOfOutputfile(self):
+    def getHashOfOutputfile(self, rawScienceHash):
         """
         The function returns the hash id for the output file.
         This hash is made from the hash files that are used as input.
@@ -122,7 +127,8 @@ class BiasCorrectedScienceFrames(PipelineComponent):
         Ouput:
            hash. string containing the output hash
         """
-        combinedHashes =  self.masterBiasHash + self.rawScienceHash
+        print(rawScienceHash)
+        combinedHashes =  self.masterBiasHash + rawScienceHash
         hash = hashlib.sha256(bytes(combinedHashes, 'utf-8')).hexdigest()
         return hash
 

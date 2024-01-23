@@ -100,16 +100,16 @@ class PipelineComponent():
                 return False
             else:
                 # If there are multiple hashes corresponding to one imagetype
+
                 if isinstance(inputHash[imageType], list):
                     for hash in inputHash[imageType]:
                         image = self.db[imageType].find_one({"_id": hash})
-
                         if image is None:
                             return False
 
                 # If there is one hash corresponding to one imageType
-                else:
 
+                else:
                     image = self.db[imageType].find_one({"_id":  inputHash[imageType]})
                     if image is None:
                         return False
@@ -139,6 +139,7 @@ class PipelineComponent():
             if isinstance(value, list):
                 inputHashes[key] = [tools.convertPathToHash(item, self.db)
                                     if os.path.isfile(item) else item for item in value]
+
             else:
                 if os.path.isfile(value):
                     inputHashes[key] = tools.convertPathToHash(value, self.db)
@@ -151,7 +152,22 @@ class PipelineComponent():
 
 
 
-    def saveImageAndAddToDatabase(self, image, fileName, **keywords):
+    def saveMultipleImagesAndAddToDatabase(self, images, fileNames, imageHashes, **keywords):
+        """
+        Save multiple images and add them all to the database.
+
+        input:
+            image: list of np.arrays of the images we want to save to fits files
+            fileNames: paths of the fits files
+            keyswords: dictionary with option parameters we want to add to the fits header
+        """
+        for file, (path, hash) in zip(images, zip(fileNames, imageHashes)):
+            self.saveImageAndAddToDatabase(file, path, imageHash=hash, **keywords)
+        
+
+
+
+    def saveImageAndAddToDatabase(self, image, fileName, imageHash=None, **keywords):
         """
         Save the image and add it to the database.
 
@@ -160,8 +176,7 @@ class PipelineComponent():
             filname: path of the fits file
             keywords: dictionary with optional parameters we want to add to the fits header
         """
-
-        hash = self.getHashOfOutputfile()
+        hash = self.getHashOfOutputfile(imageHash)
         path = self.outputPath + "/" + fileName
         num_row, num_col = image.shape
 

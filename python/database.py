@@ -223,7 +223,6 @@ class Collection:
             return None
 
         # Find the data in the database
-
         matchedData = self.df.loc[self.df[key] == value]
 
         if matchedData.empty:

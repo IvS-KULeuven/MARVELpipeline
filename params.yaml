@@ -1,18 +1,35 @@
 configuration:
         rootFolder: /home/driess/Projects/MARVELpipeline/
+        starName: 20230614
 rawBiasImage:
-        path: [Data/RawData/CalibrationImages/Bias/20230504T135640_BBBBB_H_0000.fits,  Data/RawData/CalibrationImages/Bias/20230504T135642_BBBBB_H_0000.fits,  Data/RawData/CalibrationImages/Bias/20230504T135644_BBBBB_H_0000.fits,  Data/RawData/CalibrationImages/Bias/20230504T135648_BBBBB_H_0000.fits,  Data/RawData/CalibrationImages/Bias/20230504T135652_BBBBB_H_0000.fits]
-        outpath: Data/ProcessedData/MasterBias/testsXXXBias.fits
+        path:
+                - Data/RawData/CalibrationImages/Bias/20230504T135640_BBBBB_H_0000.fits
+                - Data/RawData/CalibrationImages/Bias/20230504T135642_BBBBB_H_0000.fits
+                - Data/RawData/CalibrationImages/Bias/20230504T135644_BBBBB_H_0000.fits
+                - Data/RawData/CalibrationImages/Bias/20230504T135648_BBBBB_H_0000.fits
+                - Data/RawData/CalibrationImages/Bias/20230504T135652_BBBBB_H_0000.fits
+        outpath:
+                Data/ProcessedData/MasterBias/20230504_master_bias.fits
 rawFlatImage:
-        path: [Data/RawData/CalibrationImages/Flat/20230504T142007_FFFFF_H_0001.fits,Data/RawData/CalibrationImages/Flat/20230504T142402_FFFFF_H_0001.fits,Data/RawData/CalibrationImages/Flat/20230504T142759_FFFFF_H_0001.fits,Data/RawData/CalibrationImages/Flat/20230504T143157_FFFFF_H_0001.fits,Data/RawData/CalibrationImages/Flat/20230504T143554_FFFFF_H_0001.fits]
-        outpath: Data/ProcessedData/MasterFlat/testsXXXFlat.fits
+        path: 
+              - Data/RawData/CalibrationImages/Flat/20230504T142007_FFFFF_H_0001.fits
+              - Data/RawData/CalibrationImages/Flat/20230504T142402_FFFFF_H_0001.fits
+              - Data/RawData/CalibrationImages/Flat/20230504T142759_FFFFF_H_0001.fits
+              - Data/RawData/CalibrationImages/Flat/20230504T143157_FFFFF_H_0001.fits
+              - Data/RawData/CalibrationImages/Flat/20230504T143554_FFFFF_H_0001.fits
+        outpath: Data/ProcessedData/MasterFlat/20230504_master_flat.fits
 rawScienceImage:
-        path: Data/RawData/ScienceFrames/20221027T175106_TSSSS_H_0900.fits
-        outpath: Data/ProcessedData/BiasCorrectedScience/testsXXXScience.fits
-orderMaskImage:
+        path: 
+              - Data/RawData/ScienceFrames/20230614T185728_ESSSS_H_0600.fits
+        outpath: 
+              - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T185728_ESSSS_C_H_0600.fits
+orderImage:
         smoothMasterFlat: Data/ProcessedData/MasterFlat/smoothed_masterflat.fits
-        outpath: Data/ProcessedData/ExtractedOrders/Mask/testsXXXorder.fits
-orderScienceExtraction:
-        outpath: Data/ProcessedData/ExtractedOrders/Science/testsXXXscienceXXXorders.fits
+        maskOutpath: Data/ProcessedData/ExtractedOrders/Mask/2d_mask.fits
+        scienceOutpath:
+              - Data/ProcessedData/ExtractedOrders/Science/20230614/20230614T185728_ESSSS_O_H_0600.fits
 optimalOrderExtraction:
-        outpath: Data/ProcessedData/OptimalExtraction/optimal_extracted_science_flux.fits
+        outpath: Data/ProcessedData/OptimalExtraction/20230614
+
+
+

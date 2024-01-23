@@ -3,12 +3,13 @@ import os
 import tools
 import debug
 import time
+import yaml
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 from pipeline   import PipelineComponent
-from pymongo    import MongoClient
+# from pymongo    import MongoClient
 from numba      import njit, jit, vectorize, prange
 from database   import DatabaseFromLocalFile
 from tqdm       import tqdm
@@ -46,9 +47,9 @@ class OptimalExtraction(PipelineComponent):
         optimalExtractionHash = self.inputHashes
         self.extractedFlatHash  = None
         self.extractedImageHash = None
-
+        
         if self.checkSanityOfInputTypes(**optimalExtractionHash):
-            self.outputPath         = os.getcwd() + "/Data/ProcessedData/OptimalExtraction/"
+            self.outputPath         = os.getcwd()
             self.outputType         = f"Optimal Extracted {self.extractedType}"
             self.imageCollection    = self.db["ExtractedOrders"]
             self.debug              = debug
@@ -101,7 +102,6 @@ class OptimalExtraction(PipelineComponent):
             if len(values[0]) == 2:
                 typesOfFiles = [(self.db["ExtractedOrders"].find_one({"_id": iHash})["type"], iHash)
                                 for iHash in values[0]]
-
                 for iType, iHash in typesOfFiles:
                     # if hash is extracted flat order
                     if iType == "Extracted Flat Orders":
@@ -205,16 +205,10 @@ class OptimalExtraction(PipelineComponent):
         xValues, yValues, fValuesF, fValuesI, ordrArray, fbrArray = self.convertToArray(imageSpectrum,
                                                                                 flatSpectrum, fibers, orders)
 
-        print("start opimal extraction")
-        start = time.time()
-
         # Apply the optimal extraction alghoritm
 
         optimalSpectra, imageSpectra, flatSpectra, yPixels, xPixels = getOptimalSpectrum(xValues, yValues,
                                                                                          fValuesF, fValuesI)
-
-        end   = time.time()
-        print("\tTime: ", end-start, "s")
 
         fibersAndOrders = zip(ordrArray, fbrArray)
         imageSpectra, optimalSpectra, flatSpectra, yPixels, xPixels = self.stripUnphysicalValues(imageSpectra,
@@ -243,8 +237,11 @@ class OptimalExtraction(PipelineComponent):
         are np.nan and for yPixels and xPixels these are -1.
         """
 
-        stripFloats = lambda x : [ row[~np.isnan(row)] for row in x ]
-        stripInt    = lambda x : [ row[row != -1] for row in x ]
+        def stripFloats(x):
+            return [ row[~np.isnan(row)] for row in x ]
+
+        def stripInt(x):
+            return [ row[row != -1] for row in x ]
 
         return stripFloats(image), stripFloats(optimal), stripFloats(flat), stripInt(yPixels), stripInt(xPixels)
 
@@ -259,9 +256,6 @@ class OptimalExtraction(PipelineComponent):
         This methods converts the lists that are given as input into a numpy array.
         This is done so that numba can be used to optimize the optimal extraction.
         """
-
-        start = time.time()
-        print("start convert to array")
 
         max_row_length = 0
 
@@ -308,8 +302,6 @@ class OptimalExtraction(PipelineComponent):
 
                 line+=1
 
-        end = time.time()
-        print("\tTime: ", end-start, "s")
         return x_values, y_values, f_values, o_values, ordersArray, fibersArray
 
 
@@ -333,11 +325,12 @@ class OptimalExtraction(PipelineComponent):
         """
 
         # output hash gets generated and set path for output file
-
+        
         combinedHash = self.extractedImageHash + self.extractedFlatHash
         hash = hashlib.sha256(bytes(combinedHash, 'utf-8' )).hexdigest()
 
-        path = self.outputPath + outputFileName
+        path = self.outputPath + "/" + outputFileName
+
         # Save the included fiber/orders
         orders, fibers = zip(*orders)
 
@@ -527,40 +520,22 @@ def getOptimalSpectrum(xValues, yValues, flatFlux, imageFlux, readout=2000):
 
 
 if __name__ == "__main__":
+    
+    t1 = time.time()
+    o_params = yaml.safe_load(open("params.yaml"))["orderMaskImage"]
+    s_params = yaml.safe_load(open("params.yaml"))["orderScienceExtraction"]
+    oe_params = yaml.safe_load(open("params.yaml"))["optimalOrderExtraction"]
 
+    databaseName = "pipelineDatabase.txt"
     db = DatabaseFromLocalFile("pipelineDatabase.txt")
-    print("")
 
-    # Optimal extract the orders of an extracted science image
+    # Extractacted Science and mask path
+    extracted_science = o_params["outpath"]
+    extracted_flat = s_params["outpath"]
 
-    extractedScienceHash = "c465daf3e5060b5fd22be8089a5e9499c85c574c8df8c1c8535d434d7143394f"
-    extractedSciencePath = "Data/ProcessedData/ExtractedOrders/extractedScienceTestF.fits"
-
-    extractedFlatHash = "f4d3a1d746aedf7add4583db75351d853cb792488dbe6adf5103199298837825"
-    extractedFlatPath = "Data/ProcessedData/ExtractedOrders/testFMask.fits"
-
-    optimalScience1 = OptimalExtraction(db, debug=3, ExtractedOrders=[extractedSciencePath, extractedFlatPath])
-    optimalScience2 = OptimalExtraction(debug=1, ExtractedOrders=[extractedScienceHash, extractedFlatHash])
-
-    optimalScience1.run("optimal_extracted_science_flux1.fits")
-    print("+============================+")
-    optimalScience2.run("optimal_extracted_science_flux.fits")
-    print("+============================+")
-
-
-    # Optimal extract the orders of an extracted etalon image
-    extractedEtalonHash = "92fe37cba12963e4ec23a44bd4fb312cb59b2d1c50933dac479fa2181bc333b2"
-    extractedEtalonPath = "Data/ProcessedData/ExtractedOrders/extractedEtalonTestF.fits"
-
-    optimalEtalon1 = OptimalExtraction(db, debug=1, ExtractedOrders=[extractedEtalonPath, extractedFlatPath])
-    optimalEtalon2 = OptimalExtraction(debug=1, ExtractedOrders=[extractedEtalonHash, extractedFlatHash])
-    optimalEtalon1.run("optimal_extracted_etalon_flux1.fits")
-    print("+============================+")
-    optimalEtalon2.run("optimal_extracted_etalon_flux.fits")
+    optimal_extracted_science = OptimalExtraction(db, debug=0, ExtractedOrders=[extracted_science, extracted_flat])
+    optimal_extracted_science.run(oe_params["outpath"])
 
     db.save()
-
-
-
-
-
+    t2 = time.time()
+    print(f"This took: {t2-t1}")

@@ -45,7 +45,6 @@ class MasterFlat(PipelineComponent):
         """
 
         types  = list(flatAndBiasHashes.keys())
-        #values = list(flatAndBiasHashes.values())
 
         # Check that the keys are of the right format. For a master dark these should only be DarkImages
 
@@ -95,6 +94,7 @@ class MasterFlat(PipelineComponent):
         flats = tools.getImages(flatPaths)
         bias  = tools.getImage(biasPath)
         stdBias = tools.getStdBias(biasPath)
+        meanBias = np.mean(bias)
 
         # Use the image in the fits files, and use mean_combining to obtain the the master image
         masterFlat = np.median(flats, axis=0) - bias
@@ -104,13 +104,12 @@ class MasterFlat(PipelineComponent):
                   masterFlat = masterFlat -np.min(masterFlat)
 
         if outputFileName is not None:
-            self.saveImageAndAddToDatabase(masterFlat, outputFileName, std_bias=stdBias)
+            self.saveImageAndAddToDatabase(masterFlat, outputFileName, std_bias=stdBias, m_bias=meanBias)
             if (self.debug > 1):
                 print("Master flat image saved to fits file")
 
         # That's it!
 
-        print("Block generated!")
         return masterFlat
 
 
@@ -119,7 +118,7 @@ class MasterFlat(PipelineComponent):
 
 
 
-    def getHashOfOutputfile(self):
+    def getHashOfOutputfile(self, imageHash=None):
         """
         The function returns the hash id for the output file.
         This hash is made from the hash files that are used as input.
@@ -149,4 +148,4 @@ if __name__ == "__main__":
 
     t2 = time.time()
 
-    print(f"This took: {t2-t1}")
+    print(f"[{t2-t1}]")

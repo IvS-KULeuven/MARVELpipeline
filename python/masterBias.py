@@ -97,13 +97,11 @@ class MasterBias(PipelineComponent):
 
         # That's it!
 
-        print("Block generated!")
-
         return masterBias
 
 
 
-    def getHashOfOutputfile(self):
+    def getHashOfOutputfile(self, imageHash):
         """
         This function returns the hash id for the output file.
         This hash is made from the hash files that are used as input.
@@ -136,5 +134,5 @@ if __name__ == "__main__":
 
     db.save()
     t2 = time.time()
-    print(f"This took: {t2-t1}")
+    print(f"[{t2-t1}]")
 
