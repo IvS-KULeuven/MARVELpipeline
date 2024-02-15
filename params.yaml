@@ -1,6 +1,5 @@
 configuration:
         rootFolder: /home/driess/Projects/MARVELpipeline/
-        starName: 20230614
 rawBiasImage:
         path:
                 - Data/RawData/CalibrationImages/Bias/20230504T135640_BBBBB_H_0000.fits
@@ -19,7 +18,7 @@ rawFlatImage:
               - Data/RawData/CalibrationImages/Flat/20230504T143554_FFFFF_H_0001.fits
         outpath: Data/ProcessedData/MasterFlat/20230504_master_flat.fits
 rawScienceImage:
-        path: 
+        path:
               - Data/RawData/ScienceFrames/20230614T185728_ESSSS_H_0600.fits
         outpath: 
               - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T185728_ESSSS_C_H_0600.fits
