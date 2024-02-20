@@ -2,7 +2,7 @@ import errno
 import yaml
 import hashlib
 import os
-
+import sys
 
 
 
@@ -347,8 +347,18 @@ def createOptimalOrder(flat, mask, sciences):
 
 
 if __name__ == "__main__":
-    filename = "inputfile.yaml"
-    output = "param_test.yaml"
 
-    input = readInInputFile(filename)
-    create_dvc_file(input, output )
+    if len(sys.argv) == 1:
+        raise TypeError("Expected 1 arguments, got 0.\nPlease provide input file argument as:\n\tpython marvel.py inputfile.yaml\nor\n\tpython marvel.py inputfile.yaml outputfile.yaml")
+    else:
+        input = readInInputFile(sys.argv[1])
+
+    if len(sys.argv) == 2:
+        create_dvc_file(input)
+    else:
+        create_dvc_file(input, sys.argv[2])
+        
+
+
+
+
