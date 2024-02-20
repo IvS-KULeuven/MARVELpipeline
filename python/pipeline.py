@@ -362,7 +362,7 @@ class BiasCorrectedEtalonImage(PipelineComponent):
            hash. string containing the output hash
         """
         combinedHashes = self.masterBiasHash + self.rawEtalonHash
-        hash = hashlib.sha256(bytes(combinedHashes, 'utf-8')).hexdigest()
+        hash = hashlibcom.sha256(bytes(combinedHashes, 'utf-8')).hexdigest()
         return hash
 
 

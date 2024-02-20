@@ -15,6 +15,7 @@ type CCDImageType = ArrayD<u32>;
 fn main() {
 
     let now = Instant::now();
+
     // Load and parse the param.yaml file to get the paths from which we
     // will load the files and to which we will save the output files.
 
@@ -29,7 +30,6 @@ fn main() {
 
     let project_root = configuration.get("rootFolder").unwrap().as_str().unwrap();
     let master_bias_path = project_root.to_owned() + bias_image_paths.get("outpath").unwrap().as_str().unwrap();
-   
     let raw_science_paths = science_image_paths.get("path").unwrap().as_sequence().unwrap();
     let cal_science_paths = science_image_paths.get("outpath").unwrap().as_sequence().unwrap();
     
@@ -41,7 +41,7 @@ fn main() {
     let master_bias: ArrayD<i32> = hdu.read_image(&mut fitsfile).unwrap();
 
 
-    // Substract the master_bias from every science file
+    // Substract the master bias from every science file
 
     for (tail_r_path, tail_c_path)  in izip!(raw_science_paths, cal_science_paths) {
         let science_path = project_root.to_owned() + tail_r_path.as_str().unwrap();
@@ -58,7 +58,7 @@ fn main() {
 
         let bias_substracted_science: ArrayD<i32>  = science_image - master_bias.clone();
 
-        // // if image has a negative value, then we add an offset
+        // if image has a negative value, then we add an offset
 
         let bias_substracted_science: CCDImageType = bias_substracted_science.mapv(
             |elem| { if elem < 0 {0_32} else {elem as u32}});
