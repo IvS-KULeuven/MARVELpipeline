@@ -52,6 +52,25 @@ def getImage(path):
 
 
 
+
+def getHash(path):
+    """
+    Returns the hash of an image from the FITS file.
+
+    INPUT:
+        path: string containing the path to the FITS file.
+
+    OUTPUT:
+        string containing the hash value of the image.
+    """
+
+    hdul = fits.open(path)
+    return hdul[0].header['hash']
+
+
+
+
+
 def getGain(path):
     """
     Returns the gain in a FITS file.

@@ -1,34 +1,31 @@
 configuration:
-        rootFolder: /home/driess/Projects/MARVELpipeline/
-rawBiasImage:
-        path:
-                - Data/RawData/CalibrationImages/Bias/20230504T135640_BBBBB_H_0000.fits
-                - Data/RawData/CalibrationImages/Bias/20230504T135642_BBBBB_H_0000.fits
-                - Data/RawData/CalibrationImages/Bias/20230504T135644_BBBBB_H_0000.fits
-                - Data/RawData/CalibrationImages/Bias/20230504T135648_BBBBB_H_0000.fits
-                - Data/RawData/CalibrationImages/Bias/20230504T135652_BBBBB_H_0000.fits
-        outpath:
-                Data/ProcessedData/MasterBias/20230504_master_bias.fits
-rawFlatImage:
-        path: 
-              - Data/RawData/CalibrationImages/Flat/20230504T142007_FFFFF_H_0001.fits
-              - Data/RawData/CalibrationImages/Flat/20230504T142402_FFFFF_H_0001.fits
-              - Data/RawData/CalibrationImages/Flat/20230504T142759_FFFFF_H_0001.fits
-              - Data/RawData/CalibrationImages/Flat/20230504T143157_FFFFF_H_0001.fits
-              - Data/RawData/CalibrationImages/Flat/20230504T143554_FFFFF_H_0001.fits
-        outpath: Data/ProcessedData/MasterFlat/20230504_master_flat.fits
-rawScienceImage:
-        path:
-              - Data/RawData/ScienceFrames/20230614T185728_ESSSS_H_0600.fits
-        outpath: 
-              - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T185728_ESSSS_C_H_0600.fits
-orderImage:
-        smoothMasterFlat: Data/ProcessedData/MasterFlat/smoothed_masterflat.fits
-        maskOutpath: Data/ProcessedData/ExtractedOrders/Mask/2d_mask.fits
-        scienceOutpath:
-              - Data/ProcessedData/ExtractedOrders/Science/20230614/20230614T185728_ESSSS_O_H_0600.fits
+  rootFolder: /home/driess/Projects/MARVELpipeline/
 optimalOrderExtraction:
-        outpath: Data/ProcessedData/OptimalExtraction/20230614
-
-
-
+  outputpath:
+  - Data/ProcessedData/OptimalExtraction/20230614T185728/20230614T185728_52f376008e89b23447e5_ESSSS_1d_orders.fits
+orderImage:
+  maskOutputpath: Data/ProcessedData/ExtractedOrders/Mask/20230504_76780edb12aae396101a_2d_mask.fits
+  scienceOutputpath:
+  - Data/ProcessedData/ExtractedOrders/Science/20230614T185728/20230614T185728_9b3d401a7d8076c9f68c_ESSSS_2d_science_orders.fits
+  smoothMasterFlat: Data/ProcessedData/ExtractedOrders/Mask/20230504_76780edb12aae396101a_smooth_master_flat.fits
+rawBiasImage:
+  outputpath: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
+  path:
+  - Data/RawData/CalibrationImages/Bias/20230504T135640_BBBBB_H_0000.fits
+  - Data/RawData/CalibrationImages/Bias/20230504T135642_BBBBB_H_0000.fits
+  - Data/RawData/CalibrationImages/Bias/20230504T135644_BBBBB_H_0000.fits
+  - Data/RawData/CalibrationImages/Bias/20230504T135648_BBBBB_H_0000.fits
+  - Data/RawData/CalibrationImages/Bias/20230504T135652_BBBBB_H_0000.fits
+rawFlatImage:
+  outputpath: Data/ProcessedData/MasterFlat/20230504_379062eeaa8df249a07b_MasterFlat.fits
+  path:
+  - Data/RawData/CalibrationImages/Flat/20230504T142007_FFFFF_H_0001.fits
+  - Data/RawData/CalibrationImages/Flat/20230504T142402_FFFFF_H_0001.fits
+  - Data/RawData/CalibrationImages/Flat/20230504T142759_FFFFF_H_0001.fits
+  - Data/RawData/CalibrationImages/Flat/20230504T143157_FFFFF_H_0001.fits
+  - Data/RawData/CalibrationImages/Flat/20230504T143554_FFFFF_H_0001.fits
+rawScienceImage:
+  outputpath:
+  - Data/ProcessedData/BiasSubtractedScience/20230614T185728/20230614T185728_4b28df6be44a312af545_ESSSS_bias_subtracted_science.fits
+  path:
+  - Data/RawData/ScienceFrames/20230614T185728_ESSSS_H_0600.fits

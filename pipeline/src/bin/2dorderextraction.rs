@@ -29,9 +29,9 @@ fn main() {
     let configurations = &config["configuration"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
-    let order_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutpath").unwrap().as_str().unwrap();
-    let c_science_paths = science_image_paths.get("outpath").unwrap().as_sequence().unwrap();
-    let extracted_orders_paths = mask_image_paths.get("scienceOutpath").unwrap().as_sequence().unwrap();
+    let order_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutputpath").unwrap().as_str().unwrap();
+    let c_science_paths = science_image_paths.get("outputpath").unwrap().as_sequence().unwrap();
+    let extracted_orders_paths = mask_image_paths.get("scienceOutputpath").unwrap().as_sequence().unwrap();
 
 
     // Open the order mask file. This file contains three images, one with the index of the maximum position,

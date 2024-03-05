@@ -1,9 +1,10 @@
 use std::path::Path;
+use std::fs;
 use std::time::Instant;
 use fitsio::FitsFile;
 use fitsio::tables::{ColumnDescription, ColumnDataType};
 use ndarray::{ArrayD, Array1, Axis, s};
-use std::fs;
+use itertools::izip;
 mod configuration;
 
 type CCDImageType = ArrayD<u32>;
@@ -33,10 +34,10 @@ fn main() {
     let optimal_image_paths = &config["optimalOrderExtraction"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
-    let order_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutpath").unwrap().as_str().unwrap();
-    let master_flat_path= project_root.to_owned() + flat_images_path.get("outpath").unwrap().as_str().unwrap();
-    let c_science_paths = science_image_paths.get("outpath").unwrap().as_sequence().unwrap();
-    let output_directory = project_root.to_owned() +optimal_image_paths.get("outpath").unwrap().as_str().unwrap();
+    let order_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutputpath").unwrap().as_str().unwrap();
+    let master_flat_path= project_root.to_owned() + flat_images_path.get("outputpath").unwrap().as_str().unwrap();
+    let c_science_paths = science_image_paths.get("outputpath").unwrap().as_sequence().unwrap();    
+    let output_directories = optimal_image_paths.get("outputpath").unwrap().as_sequence().unwrap();
 
     // Open the order mask file. This file contains three images, one with the index of the maximum position,
     //one with the lower bound index and one with the upper bound index.
@@ -61,21 +62,11 @@ fn main() {
     let stdev_bias = hdu.read_key::<f32>(&mut fitsfile, "STD_BIAS").unwrap() as u32;
 
 
-    for s_path in c_science_paths {
-
+    for (s_path, o_path) in izip!(c_science_paths, output_directories) {
+        
         let science_path = project_root.to_owned() + s_path.as_str().unwrap();
 
         let science = Path::new(&science_path);
-        let file_stem = science.file_stem().unwrap().to_str().unwrap();
-        let exposure_id = &file_stem[0..15];
-
-        // Set up the output directory
-
-        let output_directory = format!("{output_directory}/{exposure_id}");
-        let path = Path::new(&output_directory);
-
-        if !path.is_dir(){
-            fs::create_dir_all(path).unwrap();}
 
         // Open the calibrated science file.
 
@@ -89,14 +80,34 @@ fn main() {
         let mut num_fibers = Array1::<u8>::zeros(num_rows_ccd);        // Given an order, for each pixel, how many fibers contributed to the mean spectrum?
 
 
-        let output_path = format!("{output_directory}/{exposure_id}_1dFlatRelativeOrders.fits");
+
+
+
+
+        // Set up the output directory
+
+        let output_path = project_root.to_owned() + o_path.as_str().unwrap();
+        let path = Path::new(&output_path);
+
+        if !path.parent().unwrap().is_dir(){                // Create directory if needed.
+            fs::create_dir_all(path.parent().unwrap()).unwrap();}
 
         if path.exists() {                                  // Remove previous file form an older run
-            fs::remove_file(&output_path).unwrap();}
+            fs::remove_file(path).unwrap();}
 
         let mut fitsfile  = FitsFile::create(output_path)
             .open()
             .unwrap();
+
+
+
+
+
+
+
+
+
+
 
         // We set up the description of the table that will store all the data for one order
 

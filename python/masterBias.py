@@ -1,6 +1,4 @@
 from pipeline   import PipelineComponent
-from database   import DatabaseFromLocalFile
-
 import yaml
 import os
 import tools
@@ -19,49 +17,17 @@ class MasterBias(PipelineComponent):
     raw bias images.
     """
 
-    def __init__(self, database=None, debug=0, **input):
-        super().__init__(database, **input)
-        input = self.inputHashes
+    def __init__(self, debug=0, **input):
         self.debug = debug
-        if self.checkSanityOfinputTypes(**input):
-
-            self.outputPath = os.getcwd()
-            self.type = "Master Bias Image"
-            self.rawBiasHashes = input["BiasImages"]
-        else:
-            raise Exception("Error: The input hashes do not match the correct type: Aborting")
-            exit(1)
-
-
-        if not os.path.isdir(self.outputPath):
-            os.mkdir(self.outputPath)
+        self.imageTypes = ["BiasImages"]
+        super().__init__(**input)
+        input = self.inputPaths
+        self.rawBiasPaths = input["BiasImages"]
 
 
 
 
 
-    def checkSanityOfinputTypes(self, **input):
-        """
-        This function is ran after we run checkSanityOfInputHashes. This function checks the the
-        input types that are given is able to generate a master bias output file.
-        """
-        types  = list(input.keys())
-        values = list(input.values())
-
-        # Check that the keys are of the right format. For a master bias these should only be BiasImages
-
-        keysAreCorrect = (len(types) == 1) and types[0] == "BiasImages"
-
-        valuesAreCorrect = (len(values) == 1) and (len(values[0]) > 1)
-
-        if keysAreCorrect and valuesAreCorrect:
-            areRawImages = np.all([ self.db[types[0]].find_one({"_id": hash})["type"] == "Raw Bias Image" for hash in values[0]])
-        else:
-            return False
-
-        # If we get here, the input is sane if the hashes correspond to raw Images
-
-        return areRawImages
 
 
 
@@ -79,12 +45,9 @@ class MasterBias(PipelineComponent):
         Output:
             masterBias:     master bias image [ADU]
         """
-
-        # Get all the paths of the files corresponding to these hashes
-        paths = [ (self.db["BiasImages"].find_one({"_id": hash}))["path"] for hash in self.rawBiasHashes]
         
-        # Get all the fits files corresponding to these hashes
-        biases = tools.getImages(paths)
+        # Get all the fits files corresponding to the input 
+        biases = tools.getImages(self.rawBiasPaths)
 
         # Use the image in the fits files, and use mean_combining to obtain the the master image
         masterBias = np.median(biases, axis=0)
@@ -109,7 +72,7 @@ class MasterBias(PipelineComponent):
         Ouput:
             hash. string containing the output hash
         """
-        hash = hashlib.sha256(bytes("".join(self.rawBiasHashes), 'utf-8')).hexdigest()
+        hash = hashlib.sha256(bytes("".join(self.rawBiasPaths), 'utf-8')).hexdigest()
         return hash
 
 
@@ -119,20 +82,20 @@ class MasterBias(PipelineComponent):
 if __name__ == "__main__":
 
     t1 = time.time()
-    params = yaml.safe_load(open("params.yaml"))["rawBiasImage"]
+    
+    params = yaml.safe_load(open("params.yaml"))
 
-    databaseName = "pipelineDatabase.txt"
-    db = DatabaseFromLocalFile(databaseName)
+    root  = (params["configuration"])["rootFolder"]
+    paths = (params["rawBiasImage"])["path"]
+    
+    paths = [ root+path for path in paths]
+    output = root + (params["rawBiasImage"])["outputpath"]
 
     # Master Bias Image
-    raw_bias_path = params["path"]
 
-    masterB = MasterBias(db, BiasImages=raw_bias_path)
+    masterB = MasterBias(BiasImages=paths)
+    masterB.run(output)
 
-
-    masterB.run(params["outpath"])
-
-    db.save()
     t2 = time.time()
     print(f"[{t2-t1}]")
 

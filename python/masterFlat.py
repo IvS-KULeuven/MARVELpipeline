@@ -1,6 +1,4 @@
 from pipeline   import PipelineComponent
-from database   import DatabaseFromLocalFile
-
 import yaml
 import os
 import tools
@@ -15,56 +13,29 @@ import time
 
 
 class MasterFlat(PipelineComponent):
+    """
+    Class that creates the master flat image. This image is
+    obtained by taking the median of multiple flat images.
+    """
 
-    def __init__(self, database=None, debug=0, **flatAndBiasHashes):
-        
-        super().__init__(database, **flatAndBiasHashes)
-        flatAndBiasHashes = self.inputHashes
+    def __init__(self, debug=0, **flatAndBiasPaths):
+
+        self.imageTypes = ["FlatImages", "BiasImages"]
+        super().__init__(**flatAndBiasPaths)
+        flatAndBiasPaths = self.inputPaths
         self.debug = debug
-        if self.checkSanityOfInputTypes(**flatAndBiasHashes):
-            self.outputPath = os.getcwd() 
-            self.type = "Master Flat Image"
-            self.masterBiasHash = flatAndBiasHashes["BiasImages"]
-            self.rawFlatHashes  = flatAndBiasHashes["FlatImages"]
-        else:
-            raise Exception("Error: The input hashes do not match the correct type: Aborting")
-            exit(1)
 
-        if not os.path.isdir(self.outputPath):
-            os.mkdir(self.outputPath)
+        self.masterBiasPath = flatAndBiasPaths["BiasImages"]
+        self.rawFlatPath  = flatAndBiasPaths["FlatImages"]
 
 
 
 
 
 
-    def checkSanityOfInputTypes(self, **flatAndBiasHashes):
-        """
-        This function is ran after we run checkSanityOfInputHashes. This function checks the the
-        input types that are given is able to generate a master flat output file.
-        """
 
-        types  = list(flatAndBiasHashes.keys())
 
-        # Check that the keys are of the right format. For a master dark these should only be DarkImages
 
-        keysAreCorrect = (len(types)) == 2 and ("BiasImages" in types) and ("FlatImages" in types)
-
-        if keysAreCorrect:
-            valuesAreCorrect = (len(flatAndBiasHashes["FlatImages"]) > 1) and isinstance(flatAndBiasHashes["BiasImages"], str)
-        else:
-            return False
-
-        if valuesAreCorrect:
-            areRawFlatImages  = np.all([ self.db["FlatImages"].find_one({"_id": hash})["type"] == "Raw Flat Image"
-                                        for hash in flatAndBiasHashes["FlatImages"] ])
-            isMasterBiasImage = self.db["BiasImages"].find_one({"_id": flatAndBiasHashes["BiasImages"]})["type"] == "Master Bias Image"
-        else:
-            return False
-
-        # If we get here, the input is sane if the hashes correspond to raw flat images or one master bias image
-
-        return areRawFlatImages and isMasterBiasImage
 
 
 
@@ -86,20 +57,19 @@ class MasterFlat(PipelineComponent):
             masterFlat:     master flat image [ADU]
         """
 
-        # Get all the paths of the files corresponding to these hashes
-        flatPaths = [ (self.db["FlatImages"].find_one({"_id": hash}))["path"] for hash in self.rawFlatHashes ]
-        biasPath  = self.db["BiasImages"].find_one({"_id": self.masterBiasHash})["path"]
-
         # Get all the fits files corresponding to these hashes
-        flats = tools.getImages(flatPaths)
-        bias  = tools.getImage(biasPath)
-        stdBias = tools.getStdBias(biasPath)
+
+        flats = tools.getImages(self.rawFlatPath)
+        bias  = tools.getImage(self.masterBiasPath)
+        stdBias = tools.getStdBias(self.masterBiasPath)
         meanBias = np.mean(bias)
 
         # Use the image in the fits files, and use mean_combining to obtain the the master image
+
         masterFlat = np.median(flats, axis=0) - bias
 
         # Add offset so that all the values in the MasterFlat are positive
+
         if np.min(masterFlat) < 0:
                   masterFlat = masterFlat -np.min(masterFlat)
 
@@ -126,25 +96,26 @@ class MasterFlat(PipelineComponent):
         Ouput:
            hash. string containing the output hash
         """
-        hash = hashlib.sha256(bytes("".join(self.rawFlatHashes) + self.masterBiasHash, 'utf-8')).hexdigest()
+        hash = hashlib.sha256(bytes("".join(self.rawFlatPath) + self.masterBiasPath, 'utf-8')).hexdigest()
         return hash
 
 
 if __name__ == "__main__":
-    t1 = time.time()
-    f_params = yaml.safe_load(open("params.yaml"))["rawFlatImage"]
-    b_params = yaml.safe_load(open("params.yaml"))["rawBiasImage"]
 
-    databaseName = "pipelineDatabase.txt"
-    db = DatabaseFromLocalFile(databaseName)
+    t1 = time.time()
+
+    params   = yaml.safe_load(open("params.yaml"))
+
+    root     = (params["configuration"])["rootFolder"]
+    f_params = params["rawFlatImage"]
+    b_params = params["rawBiasImage"]
 
     # Mater Flat Image
-    raw_flat_path = f_params["path"]
-    master_bias_path = b_params["outpath"]
+    raw_flat_path = [ root+path for path in f_params["path"] ]
+    master_bias_path = root + b_params["outputpath"]
 
-    masterF = MasterFlat(db, FlatImages=raw_flat_path, BiasImages=master_bias_path)
-    masterF.run(f_params["outpath"])
-    db.save()
+    masterF = MasterFlat(FlatImages=raw_flat_path, BiasImages=master_bias_path)
+    masterF.run(root+f_params["outputpath"])
 
     t2 = time.time()
 

@@ -31,8 +31,8 @@ fn main() {
     let configurations = &config["configuration"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
-    let master_flat_path = project_root.to_owned() + flat_image_paths.get("outpath").unwrap().as_str().unwrap();
-    let orders_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutpath").unwrap().as_str().unwrap();
+    let master_flat_path = project_root.to_owned() + flat_image_paths.get("outputpath").unwrap().as_str().unwrap();
+    let orders_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutputpath").unwrap().as_str().unwrap();
     let smoothed_master_flat_path = project_root.to_owned() + mask_image_paths.get("smoothMasterFlat").unwrap().as_str().unwrap();
 
 

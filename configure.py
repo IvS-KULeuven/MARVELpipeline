@@ -120,7 +120,7 @@ def create_dvc_file(yaml_input, dvc_param="params.yaml"):
 
     param_yaml = {"rawBiasImage" :
                   { "path" : yaml_input["rawBiasImage"],
-                    "outpath" : masterBias
+                    "outputpath" : masterBias
                    },
                   "rawFlatImage" :
                   { "path" : yaml_input["rawFlatImage"],
@@ -130,11 +130,11 @@ def create_dvc_file(yaml_input, dvc_param="params.yaml"):
                     "outputpath" : calibratedScience},
                   "orderImage" :
                   { "smoothMasterFlat" : smoothMaster,
-                    "maskOutpath" : maskPath,
-                    "scienceOutpath" : scienceMask
+                    "maskOutputpath" : maskPath,
+                    "scienceOutputpath" : scienceMask
                    },
                   "optimalOrderExtraction" :
-                  {"outpath" : oneDOrder},
+                  {"outputpath" : oneDOrder},
                   "configuration" :
                   { "rootFolder" : home}}
 
@@ -322,7 +322,7 @@ def createOptimalOrder(flat, mask, sciences):
 
     output_paths = [] 
     flat_mask = flat + mask
-    root = "Data/ProcessedData/Data/ProcessedData/OptimalExtraction/"
+    root = "Data/ProcessedData/OptimalExtraction/"
     for science in sciences:
 
         # Get hash of image

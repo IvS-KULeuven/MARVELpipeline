@@ -5,15 +5,15 @@ stages:
     deps:
     - path: python/masterBias.py
       hash: md5
-      md5: 1db64c72d22ced339e707bb6e59843c1
-      size: 3790
+      md5: c776f387be6330ccd310190d5c8fb192
+      size: 2361
     - path: python/pipeline.py
       hash: md5
-      md5: 8a2749eacf3623fbe4f503de75a114c0
-      size: 12328
+      md5: 49021e8b1acd5b725e9384a85061434c
+      size: 5692
     params:
       params.yaml:
-        rawBiasImage.outpath: Data/ProcessedData/MasterBias/20230504_master_bias.fits
+        rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
         rawBiasImage.path:
         - Data/RawData/CalibrationImages/Bias/20230504T135640_BBBBB_H_0000.fits
         - Data/RawData/CalibrationImages/Bias/20230504T135642_BBBBB_H_0000.fits
@@ -21,30 +21,30 @@ stages:
         - Data/RawData/CalibrationImages/Bias/20230504T135648_BBBBB_H_0000.fits
         - Data/RawData/CalibrationImages/Bias/20230504T135652_BBBBB_H_0000.fits
     outs:
-    - path: Data/ProcessedData/MasterBias/20230504_master_bias.fits
+    - path: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
       hash: md5
-      md5: b72f8ea6d99824114a0e21daa5119b57
+      md5: abb531823622f0f6f6bbd25865bc9808
       size: 892111680
   master flat:
     cmd: python python/masterFlat.py
     deps:
     - path: Data/ProcessedData/MasterBias
       hash: md5
-      md5: 7b2be3f5453ba49025e035a95630111e.dir
-      size: 2007253440
-      nfiles: 3
+      md5: 92632a9462f7af3bf9a34a64e1e29e92.dir
+      size: 2899365120
+      nfiles: 4
     - path: python/masterFlat.py
       hash: md5
-      md5: 041287477cdb5605fa522b23212fc6c5
-      size: 4684
+      md5: 66ff0b1931eea9697ff32861b433e1f9
+      size: 2878
     - path: python/pipeline.py
       hash: md5
-      md5: 8a2749eacf3623fbe4f503de75a114c0
-      size: 12328
+      md5: 49021e8b1acd5b725e9384a85061434c
+      size: 5692
     params:
       params.yaml:
-        rawBiasImage.outpath: Data/ProcessedData/MasterBias/20230504_master_bias.fits
-        rawFlatImage.outpath: Data/ProcessedData/MasterFlat/20230504_master_flat.fits
+        rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
+        rawFlatImage.outputpath: Data/ProcessedData/MasterFlat/20230504_379062eeaa8df249a07b_MasterFlat.fits
         rawFlatImage.path:
         - Data/RawData/CalibrationImages/Flat/20230504T142007_FFFFF_H_0001.fits
         - Data/RawData/CalibrationImages/Flat/20230504T142402_FFFFF_H_0001.fits
@@ -52,344 +52,79 @@ stages:
         - Data/RawData/CalibrationImages/Flat/20230504T143157_FFFFF_H_0001.fits
         - Data/RawData/CalibrationImages/Flat/20230504T143554_FFFFF_H_0001.fits
     outs:
-    - path: Data/ProcessedData/MasterFlat/20230504_master_flat.fits
+    - path: Data/ProcessedData/MasterFlat/20230504_379062eeaa8df249a07b_MasterFlat.fits
       hash: md5
-      md5: 2f6a9daf88a5f8c0453837e410395e7c
+      md5: 6c1da658ab0512c1cac7d97b208e2ed2
       size: 892111680
-  calibrated science:
-    cmd: ./pipeline/target/release/calibratedscience
-    deps:
-    - path: Data/ProcessedData/MasterBias
-      hash: md5
-      md5: ef4bc96e54d9b9871d335c8c366aa73a.dir
-      size: 1115141760
-      nfiles: 2
-    - path: biasCorrectedScienceImage.py
-      hash: md5
-      md5: 9ee936de9a5d952626c9e85665435750
-      size: 5026
-    - path: pipeline.py
-      hash: md5
-      md5: 8a2749eacf3623fbe4f503de75a114c0
-      size: 12328
-    params:
-      params.yaml:
-        rawBiasImage.outpath: Data/ProcessedData/MasterBias/testsXXXBias.fits
-        rawScienceImage.outpath:
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T185728_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T190313_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T190848_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T191411_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T191951_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T192522_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T193047_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T193615_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T194204_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T194736_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T195302_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T195848_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T200417_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T200951_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T201520_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T202051_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T202609_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T203148_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T203703_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T204242_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T204801_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T205330_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T205905_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T210440_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T211019_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T211610_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T212135_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T212706_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T213227_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T213752_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T214320_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T214849_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T215426_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T215953_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T220524_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T221051_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T221621_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T222147_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T222723_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T223251_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T223822_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T224359_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T224918_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T225508_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T230022_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T230553_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T231114_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T231646_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T232213_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T232742_ESSSS_C_H_0600.fits
-        rawScienceImage.path:
-        - Data/RawData/ScienceFrames/20230614T185728_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T190313_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T190848_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T191411_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T191951_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T192522_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T193047_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T193615_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T194204_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T194736_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T195302_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T195848_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T200417_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T200951_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T201520_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T202051_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T202609_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T203148_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T203703_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T204242_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T204801_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T205330_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T205905_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T210440_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T211019_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T211610_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T212135_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T212706_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T213227_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T213752_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T214320_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T214849_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T215426_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T215953_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T220524_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T221051_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T221621_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T222147_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T222723_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T223251_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T223822_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T224359_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T224918_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T225508_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T230022_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T230553_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T231114_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T231646_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T232213_ESSSS_H_0600.fits
-        - Data/RawData/ScienceFrames/20230614T232742_ESSSS_H_0600.fits
-    outs:
-    - path: Data/ProcessedData/BiasCorrectedScience/20230614
-      hash: md5
-      md5: b4b26d18cd2ffa1af9897fb72828565c.dir
-      size: 11151504000
-      nfiles: 50
-  order mask extraction:
-    cmd: ./pipeline/target/release/ordermask
-    deps:
-    - path: Data/ProcessedData/MasterFlat
-      hash: md5
-      md5: da668abd051183b72085c9233ba39e4f.dir
-      size: 3122395200
-      nfiles: 5
-    - path: pipeline.py
-      hash: md5
-      md5: 8a2749eacf3623fbe4f503de75a114c0
-      size: 12328
-    params:
-      params.yaml:
-        orderImage.maskOutpath: Data/ProcessedData/ExtractedOrders/Mask/testsXXXorder.fits
-        rawFlatImage.outpath: Data/ProcessedData/MasterFlat/testsXXXFlat.fits
-    outs:
-    - path: Data/ProcessedData/ExtractedOrders/Mask/testsXXXorder.fits
-      hash: md5
-      md5: 485f41702cc13d388e22087fc7437938
-      size: 20917440
-  order science extraction:
-    cmd: ./pipeline/target/release/orderscience
-    deps:
-    - path: Data/ProcessedData/BiasCorrectedScience
-      hash: md5
-      md5: 0deaae2e56dd4a5e9716136412ab8a32.dir
-      size: 11151504000
-      nfiles: 50
-    - path: Data/ProcessedData/ExtractedOrders/Mask
-      hash: md5
-      md5: 1bf5bc7629de65cacd0682104930d6b5.dir
-      size: 20917440
-      nfiles: 1
-    - path: pipeline.py
-      hash: md5
-      md5: 8a2749eacf3623fbe4f503de75a114c0
-      size: 12328
-    params:
-      params.yaml:
-        orderImage.maskOutpath: Data/ProcessedData/ExtractedOrders/Mask/testsXXXorder.fits
-        rawScienceImage.outpath:
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T185728_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T190313_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T190848_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T191411_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T191951_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T192522_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T193047_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T193615_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T194204_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T194736_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T195302_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T195848_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T200417_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T200951_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T201520_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T202051_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T202609_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T203148_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T203703_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T204242_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T204801_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T205330_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T205905_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T210440_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T211019_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T211610_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T212135_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T212706_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T213227_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T213752_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T214320_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T214849_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T215426_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T215953_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T220524_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T221051_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T221621_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T222147_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T222723_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T223251_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T223822_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T224359_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T224918_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T225508_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T230022_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T230553_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T231114_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T231646_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T232213_ESSSS_C_H_0600.fits
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T232742_ESSSS_C_H_0600.fits
-    outs:
-    - path: Data/ProcessedData/ExtractedOrders/Science/20230614
-      hash: md5
-      md5: 127f4b5d4c0b4b468df4ba660fdf4d0a.dir
-      size: 11151504000
-      nfiles: 50
-  optimal extraction:
-    cmd: python optimalExtraction.py
-    deps:
-    - path: Data/ProcessedData/ExtractedOrders/Mask
-      hash: md5
-      md5: e81235ea764597c361817cd1c30b23d0.dir
-      size: 650695680
-      nfiles: 1
-    - path: Data/ProcessedData/ExtractedOrders/Science
-      hash: md5
-      md5: 790b4f6b23e0ca50c27aa8a1d220fa01.dir
-      size: 650695680
-      nfiles: 1
-    - path: pipeline.py
-      hash: md5
-      md5: 22e571c3fcc0255d2d168d0e6766f513
-      size: 11301
-    params:
-      params.yaml:
-        orderMaskImage.outpath: Data/ProcessedData/ExtractedOrders/Mask/testsXXXorder.fits
-        orderScienceExtraction.outpath: Data/ProcessedData/ExtractedOrders/Science/testsXXXscienceXXXorders.fits
-    outs:
-    - path: Data/ProcessedData/OptimalExtraction/optimal_extracted_science_flux.fits
-      hash: md5
-      md5: aed8081443e9b555e1ca5d5ac9bf9fe1
-      size: 51295680
   bias subtraction:
-    cmd: ./pipeline/target/release/biassubtraction
+    cmd: python python/biasCorrectedScienceImage.py
     deps:
     - path: Data/ProcessedData/MasterBias
       hash: md5
-      md5: 7b2be3f5453ba49025e035a95630111e.dir
-      size: 2007253440
-      nfiles: 3
+      md5: 92632a9462f7af3bf9a34a64e1e29e92.dir
+      size: 2899365120
+      nfiles: 4
     params:
       params.yaml:
-        rawBiasImage.outpath: Data/ProcessedData/MasterBias/20230504_master_bias.fits
-        rawScienceImage.outpath:
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T185728_ESSSS_C_H_0600.fits
+        rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
+        rawScienceImage.outputpath:
+        - Data/ProcessedData/BiasSubtractedScience/20230614T185728/20230614T185728_4b28df6be44a312af545_ESSSS_bias_subtracted_science.fits
         rawScienceImage.path:
         - Data/RawData/ScienceFrames/20230614T185728_ESSSS_H_0600.fits
-    outs:
-    - path: Data/ProcessedData/BiasCorrectedScience/20230614
-      hash: md5
-      md5: ae6f6950f62a0f3925901c31084a5c37.dir
-      size: 223030080
-      nfiles: 1
   2D mask determination:
     cmd: ./pipeline/target/release/2dmaskdetermination
     deps:
     - path: Data/ProcessedData/MasterFlat
       hash: md5
-      md5: 83327eb60ad3ff80d61bc28fba866269.dir
-      size: 4014506880
-      nfiles: 6
+      md5: 8204e32cdbd895dbea299a2b3ff71845.dir
+      size: 4906618560
+      nfiles: 7
     params:
       params.yaml:
-        orderImage.maskOutpath: Data/ProcessedData/ExtractedOrders/Mask/2d_mask.fits
-        rawFlatImage.outpath: Data/ProcessedData/MasterFlat/20230504_master_flat.fits
+        orderImage.maskOutputpath: 
+          Data/ProcessedData/ExtractedOrders/Mask/20230504_76780edb12aae396101a_2d_mask.fits
+        rawFlatImage.outputpath: Data/ProcessedData/MasterFlat/20230504_379062eeaa8df249a07b_MasterFlat.fits
     outs:
-    - path: Data/ProcessedData/ExtractedOrders/Mask/2d_mask.fits
+    - path: 
+        Data/ProcessedData/ExtractedOrders/Mask/20230504_76780edb12aae396101a_2d_mask.fits
       hash: md5
       md5: 485f41702cc13d388e22087fc7437938
       size: 20917440
   2D order extraction:
     cmd: ./pipeline/target/release/2dorderextraction
     deps:
-    - path: Data/ProcessedData/BiasCorrectedScience
+    - path: Data/ProcessedData/BiasSubtractedScience
       hash: md5
-      md5: 01afb34cdc609c415714ca3f63e8a663.dir
-      size: 223030080
+      md5: a91ae6e4c05be8af8d86a0f8173f1b96.dir
+      size: 892111680
       nfiles: 1
     - path: Data/ProcessedData/ExtractedOrders/Mask
       hash: md5
-      md5: f1665d2697f3024fda5a7576c90e814a.dir
-      size: 41834880
-      nfiles: 2
+      md5: 56f38b5644d15971bd2f8c58174dde28.dir
+      size: 285782400
+      nfiles: 4
     params:
       params.yaml:
-        orderImage.maskOutpath: Data/ProcessedData/ExtractedOrders/Mask/2d_mask.fits
-        rawScienceImage.outpath:
-        - Data/ProcessedData/BiasCorrectedScience/20230614/20230614T185728_ESSSS_C_H_0600.fits
-    outs:
-    - path: Data/ProcessedData/ExtractedOrders/Science/20230614
-      hash: md5
-      md5: e2ad8225c45ec4705838751fa3ff3713.dir
-      size: 223030080
-      nfiles: 1
+        orderImage.maskOutputpath: 
+          Data/ProcessedData/ExtractedOrders/Mask/20230504_76780edb12aae396101a_2d_mask.fits
+        rawScienceImage.outputpath:
+        - Data/ProcessedData/BiasSubtractedScience/20230614T185728/20230614T185728_4b28df6be44a312af545_ESSSS_bias_subtracted_science.fits
   1D flat-relative order extraction:
     cmd: ./pipeline/target/release/1dflatrelativeorderextraction
     deps:
     - path: Data/ProcessedData/ExtractedOrders/Mask
       hash: md5
-      md5: f1665d2697f3024fda5a7576c90e814a.dir
-      size: 41834880
-      nfiles: 2
+      md5: 56f38b5644d15971bd2f8c58174dde28.dir
+      size: 285782400
+      nfiles: 4
     - path: Data/ProcessedData/ExtractedOrders/Science
       hash: md5
-      md5: df68fa857ff0a46e54bfec1ecc3f9c7a.dir
+      md5: e42075d42d11371db56b9d8046c8864e.dir
       size: 223030080
       nfiles: 1
     params:
       params.yaml:
-        orderImage.maskOutpath: Data/ProcessedData/ExtractedOrders/Mask/2d_mask.fits
-        orderImage.scienceOutpath:
-        - Data/ProcessedData/ExtractedOrders/Science/20230614/20230614T185728_ESSSS_O_H_0600.fits
-    outs:
-    - path: Data/ProcessedData/OptimalExtraction/20230614
-      hash: md5
-      md5: 51878d5a0149f201fc45210fe9db5a05.dir
-      size: 95836845
-      nfiles: 396
+        orderImage.maskOutputpath: 
+          Data/ProcessedData/ExtractedOrders/Mask/20230504_76780edb12aae396101a_2d_mask.fits
+        orderImage.scienceOutputpath:
+        - Data/ProcessedData/ExtractedOrders/Science/20230614T185728/20230614T185728_9b3d401a7d8076c9f68c_ESSSS_2d_science_orders.fits
