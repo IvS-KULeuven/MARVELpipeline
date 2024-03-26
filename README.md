@@ -45,7 +45,7 @@ This command will look for the `pyproject.toml` file in the directory, and insta
 
 ## Compiling the pipeline
 
-As the computationally heavy parts of the pipeline are written in Rust, you need to build this code before it can be run. This process a made easy by simply running the following bash shell script:
+As the computationally heavy parts of the pipeline are written in Rust, you need to build the rust code before it can be run. This process a made easy by simply running the following bash shell script:
 
 ```
 ./compile
@@ -77,7 +77,7 @@ In the file `dvc.yaml` the you can specify what parts of the pipeline should be 
 
 ## Running the entire pipeline
 
-Finally, the pipeline can be run using DVC by running
+Finally, the pipeline can be run on the command line using DVC:
 
 ```
 dvc repro
