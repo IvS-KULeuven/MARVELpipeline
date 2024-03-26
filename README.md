@@ -52,30 +52,34 @@ As the computationally heavy parts of the pipeline are written in Rust, you need
 ```
 
 
-## Configuration
+## Configuration files
 
-### The input data files
+### The `inputfile.yaml` file
 
 In `inputfile.yaml` you can specify which data FITS files (raw bias images, raw flat images, and raw science images) should be processed. 
 
 
-### The output directory and file names.
+### The `params.yaml` file
 
-In the file `params.yaml` you can specify the directories and the names of all the outputfile files that the pipeline produces. If you are happy with the default values chosen, you can auto-generate this file using the `configure.py` script:
+`params.yaml` is the inputfile that the DVC pipeline will use to process the MARVEL images. It contains both the input FITS files as
+well as the output directory names and the output file names. `params.yaml` can be auto-generated from `inputfile.yaml` using the
+`configure.py` script:
 
 ```
 python configure.py inputfile.yaml
 ```
 
-which generates a `params.yaml` file given the `inputfile.yaml`. Separating the `params.yaml` and the `inputfile.yaml` makes the latter less bloated.
+If you are happy with the default output file names and locations, you're now ready to run the pipeline. If not, you can edit the
+`params.yaml` file and change the output locations.
 
 
-### The pipeline algorithms
+### The `dvc.yaml` file
 
-In the file `dvc.yaml` the you can specify what parts of the pipeline should be run. As a user you most likely do not want to touch this file, unless you want to experiment with different algorithms.
+In the file `dvc.yaml` the you can specify what parts of the pipeline should be run. As a user you most likely do not want to touch this 
+file, unless you want to experiment with different algorithms.
 
 
-## Running the entire pipeline
+## Running the pipeline
 
 Finally, the pipeline can be run on the command line using DVC:
 
@@ -83,6 +87,13 @@ Finally, the pipeline can be run on the command line using DVC:
 dvc repro
 ```
 
-Note that dvc is intelligent enough to detect whether a pipeline step needs to be rerun or not. For example, if the bias and flat field frames did not change from a previous run, and only the input science frames changed, it will not rerun the computation of the master bias or the master flat field images if it can still find them in their output directories.
+DVC will search for the `params.yaml` inputfile and use it to process the MARVEL images. 
+Note that dvc is intelligent enough to detect whether a pipeline step needs to be rerun or not. For example, if the bias and flat field 
+frames did not change from a previous run, and only the input science frames changed, it will not rerun the computation of the master bias 
+or the master flat field images if it can still find them in their output directories.
 
+
+## The pipeline output
+
+TBC
 
