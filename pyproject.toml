@@ -6,12 +6,13 @@ authors = ["Dries Seynaeve <dries.seynaeve@kuleuven.be>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 h5py = "^3.6"
 numpy = "^1.22.3"
 pandas = "^1.4.1"
 PyYAML = "^6.0.1"
 astropy = "^5.0.0"
+lacosmic = "^1.1.0"
 
 
 [build-system]

@@ -136,9 +136,9 @@ class PipelineComponent():
 
 
 
-    def saveMultipleImagesAndAddToDatabase(self, images, fileNames, imageHashes, **keywords):
+    def saveMultipleImages(self, images, fileNames, imageHashes, **keywords):
         """
-        Save multiple images and add them all to the database.
+        Save multiple images
 
         input:
             image: list of np.arrays of the images we want to save to fits files
@@ -146,14 +146,14 @@ class PipelineComponent():
             keyswords: dictionary with option parameters we want to add to the fits header
         """
         for file, (path, hash) in zip(images, zip(fileNames, imageHashes)):
-            self.saveImageAndAddToDatabase(file, path, imageHash=hash, **keywords)
+            self.saveImage(file, path, imageHash=hash, **keywords)
         
 
 
 
-    def saveImageAndAddToDatabase(self, image, fileName, imageHash=None, **keywords):
+    def saveImage(self, image, fileName, imageHash=None, **keywords):
         """
-        Save the image and add it to the database.
+        Save the image
 
         input:
             image: np.array of the image that we want to save in fits files
@@ -182,10 +182,6 @@ class PipelineComponent():
 
         hdu = fits.PrimaryHDU(image, header=hdr)
         hdu.writeto(path, overwrite=True)
-
-        # Add Image to database
-        currentTime = datetime.now()
-        dict = {"_id" : hash, "path" : path, "date_created" : currentTime.strftime("%d/%m/%Y %H:%M:%S")}
 
 
 

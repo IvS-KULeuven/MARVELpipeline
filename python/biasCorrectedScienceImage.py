@@ -57,9 +57,13 @@ class BiasCorrectedScienceFrames(PipelineComponent):
         # Add offset so that all the values in the MasterFlat are positive
         biasCorrectedScience = [ s - np.min(s) for s in biasCorrectedScience if np.min(s) < 0]
 
+        # convert float64 science images to int16 to reduce size of image.
+        print(biasCorrectedScience[0].dtype)
+        biasCorrectedScience = [s.astype(np.int16) for s in biasCorrectedScience]
+        print(biasCorrectedScience[0].dtype)
 
         if outputFileName is not None:
-            self.saveMultipleImagesAndAddToDatabase(biasCorrectedScience,
+            self.saveMultipleImages(biasCorrectedScience,
                                                     outputFileName,
                                                     imageHashes=self.rawSciencePaths,
                                                     m_bias=meanBias)
