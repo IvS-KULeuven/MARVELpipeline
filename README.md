@@ -56,7 +56,7 @@ As the computationally heavy parts of the pipeline are written in Rust, you need
 
 ### The `inputfile.yaml` file
 
-In `inputfile.yaml` you can specify which data FITS files (raw bias images, raw flat images, and raw science images) should be processed. 
+In `inputfile.yaml` you can specify which CCD image FITS files (raw bias images, raw flat images, and raw science images) should be processed. 
 
 
 ### The `params.yaml` file
@@ -87,7 +87,7 @@ Finally, the pipeline can be run on the command line using DVC:
 dvc repro
 ```
 
-DVC will search for the `params.yaml` inputfile and use it to process the MARVEL images. 
+DVC will search for the `params.yaml` inputfile and use it to process the MARVEL CCD images. 
 Note that dvc is intelligent enough to detect whether a pipeline step needs to be rerun or not. For example, if the bias and flat field 
 frames did not change from a previous run, and only the input science frames changed, it will not rerun the computation of the master bias 
 or the master flat field images if it can still find them in their output directories.
