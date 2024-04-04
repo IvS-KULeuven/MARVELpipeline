@@ -1,18 +1,20 @@
 [tool.poetry]
 name = "marvelpipeline"
 version = "0.1.0"
-description = "The pipline used for the MARVEl telescope"
-authors = ["Dries Seynaeve <dries.seynaeve@kuleuven.be>"]
+description = "The MARVEl spectrograph data processing pipeline"
+authors = ["Dries Seynaeve <dries.seynaeve@kuleuven.be>", "Joris De Ridder <joris.deridder@kuleuven.be>"]
 readme = "README.md"
+repository = "https://github.com/IvS-KULeuven/MARVELpipeline"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 h5py = "^3.6"
 numpy = "^1.22.3"
 pandas = "^1.4.1"
 PyYAML = "^6.0.1"
 astropy = "^5.0.0"
 lacosmic = "^1.1.0"
+ipython = "^8.22.2"
 
 
 [build-system]
