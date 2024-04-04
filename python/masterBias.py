@@ -54,7 +54,7 @@ class MasterBias(PipelineComponent):
         stdBias = np.mean([np.std(b) for b in biases])
 
         if outputFileName is not None:
-            self.saveImageAndAddToDatabase(masterBias, outputFileName, std_bias=stdBias)
+            self.saveImage(masterBias, outputFileName, std_bias=stdBias)
             if (self.debug >= 1):
                 print("Master bias image saved to fits file")
 

@@ -58,9 +58,8 @@ class BiasCorrectedScienceFrames(PipelineComponent):
         biasCorrectedScience = [ s - np.min(s) for s in biasCorrectedScience if np.min(s) < 0]
 
         # convert float64 science images to int16 to reduce size of image.
-        print(biasCorrectedScience[0].dtype)
-        biasCorrectedScience = [s.astype(np.int16) for s in biasCorrectedScience]
-        print(biasCorrectedScience[0].dtype)
+
+        biasCorrectedScience = [s.astype(np.int32) for s in biasCorrectedScience]
 
         if outputFileName is not None:
             self.saveMultipleImages(biasCorrectedScience,

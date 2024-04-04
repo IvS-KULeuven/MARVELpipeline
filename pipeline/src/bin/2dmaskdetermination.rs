@@ -65,6 +65,14 @@ fn main() {
         data_type: ImageType::UnsignedShort,
         dimensions: &[num_rows_ccd, num_cols_ccd],
     };
+
+    let smoothed_master_flat_path = Path::new(&smoothed_master_flat_path);
+    if smoothed_master_flat_path.exists() {
+        fs::remove_file(&smoothed_master_flat_path).unwrap();
+    } else if !smoothed_master_flat_path.parent().unwrap().is_dir() {
+        fs::create_dir_all(smoothed_master_flat_path.parent().unwrap()).unwrap();
+    }
+
     let mut fitsfile = FitsFile::create(smoothed_master_flat_path)
         .with_custom_primary(&description)
         .open()
@@ -238,11 +246,18 @@ fn main() {
     }
 
 
-    // Save the order mask info to a FITS file
+    // Set up the output directory
 
-    if Path::new(&orders_mask_path).exists() {                              // Remove previous file from an older run
-        fs::remove_file(&orders_mask_path).unwrap();
+    let orders_path = Path::new(&orders_mask_path);
+
+    if orders_path.exists() {                                         // Remove previous file from an older run
+        fs::remove_file(orders_path).unwrap();
+    } else if !orders_path.parent().unwrap().is_dir() {                       // Create directory if needed.
+        println!("HEHE");
+        let _ = fs::create_dir_all(orders_path.parent().unwrap());
     }
+
+    // Save the order mask info to a FITS file
 
     let description = ImageDescription {
         data_type: ImageType::UnsignedShort,
