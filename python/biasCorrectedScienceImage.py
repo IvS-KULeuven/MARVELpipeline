@@ -63,10 +63,7 @@ class BiasCorrectedScienceFrames(PipelineComponent):
         print(biasCorrectedScience[0].dtype)
 
         if outputFileName is not None:
-            self.saveMultipleImages(biasCorrectedScience,
-                                                    outputFileName,
-                                                    imageHashes=self.rawSciencePaths,
-                                                    m_bias=meanBias)
+            self.saveMultipleImages(biasCorrectedScience, outputFileName, imageHashes=self.rawSciencePaths, m_bias=meanBias)
 
 
         # That's it!

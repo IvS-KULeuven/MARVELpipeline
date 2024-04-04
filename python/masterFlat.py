@@ -74,7 +74,7 @@ class MasterFlat(PipelineComponent):
                   masterFlat = masterFlat -np.min(masterFlat)
 
         if outputFileName is not None:
-            self.saveImageAndAddToDatabase(masterFlat, outputFileName, std_bias=stdBias, m_bias=meanBias)
+            self.saveImage(masterFlat, outputFileName, std_bias=stdBias, m_bias=meanBias)
             if (self.debug > 1):
                 print("Master flat image saved to fits file")
 
