@@ -6,7 +6,7 @@ use fitsio::images::{ImageType, ImageDescription};
 use ndarray::{Array2, ArrayD, Axis, s};
 use itertools::izip;
 
-mod configuration;
+use configuration::parse_file;
 
 
 type CCDImageType = ArrayD<u32>;
@@ -20,7 +20,7 @@ fn main() {
     // Load and parse the param.yaml file to get the paths from which we
     // will load the files and to which we will save the output files.
 
-    let config: serde_yaml::Value = configuration::configuration::parse_file();
+    let config: serde_yaml::Value = parse_file();
 
     // Get all the paths from which we will read/write
 
