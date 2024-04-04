@@ -13,7 +13,11 @@ The pipeline is made out of different components that can run one after the othe
 
 ### Rust and DVC
 
-The pipeline components are written in [Python](https://www.python.org/) or [rust](https://foundation.rust-lang.org/). To manage the pipeline we use a command line tool called [DVC](https://dvc.org/). In the following section, we explain how to install the Python packages using poetry. To [install rust](https://www.rust-lang.org/tools/install) and [DVC](https://dvc.org/#get-started-dvc) we recommend following the official installation guide given on their respective websites. 
+The pipeline components are written in [Python](https://www.python.org/) or [rust](https://foundation.rust-lang.org/). 
+To manage the pipeline we use a command line tool called [DVC](https://dvc.org/). 
+In the following section, we explain how to install the Python packages using poetry. 
+To [install rust](https://www.rust-lang.org/tools/install) and [DVC](https://dvc.org/#get-started-dvc) we recommend 
+following the official installation guide given on their respective websites. 
 
 ### Python dependencies
 
@@ -45,7 +49,7 @@ This command will look for the `pyproject.toml` file in the directory, and insta
 
 ## Compiling the pipeline
 
-As the computationally heavy parts of the pipeline are written in Rust, you need to build the rust code before it can be run. This process a made easy by simply running the following bash shell script:
+As the computationally heavy parts of the pipeline are written in Rust, you need to build the rust code before it can be run. This process a made easy by simply running the following bash shell script (to be executed in the home folder of the Marvel pipeline repository):
 
 ```
 ./compile
