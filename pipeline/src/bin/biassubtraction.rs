@@ -6,7 +6,7 @@ use fitsio::images::{ImageType, ImageDescription};
 use ndarray::{ArrayD, Axis};
 use itertools::izip;
 
-mod configuration;
+use configuration::parse_file;
 
 type CCDImageType = ArrayD<u32>;
 
@@ -19,16 +19,15 @@ fn main() {
     // Load and parse the param.yaml file to get the paths from which we
     // will load the files and to which we will save the output files.
 
-    let config: serde_yaml::Value = configuration::configuration::parse_file();
+    let config: serde_yaml::Value = parse_file();
 
     // Get all the paths rom which we will read/write
 
     let science_image_paths = &config["rawScienceImage"];
     let bias_image_paths = &config["rawBiasImage"];
-    let configuration = &config["configuration"];
+    let configurations = &config["configuration"];
 
-
-    let project_root = configuration.get("rootFolder").unwrap().as_str().unwrap();
+    let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
     let master_bias_path = project_root.to_owned() + bias_image_paths.get("outpath").unwrap().as_str().unwrap();
     let raw_science_paths = science_image_paths.get("path").unwrap().as_sequence().unwrap();
     let cal_science_paths = science_image_paths.get("outpath").unwrap().as_sequence().unwrap();
@@ -69,7 +68,8 @@ fn main() {
         if path.exists() {                                  // Remove previous file form an older run
             fs::remove_file(path).unwrap();
         } else if !path.parent().unwrap().is_dir() {        // Make sure parent directory exists
-            fs::create_dir(path.parent().unwrap()).unwrap();}        
+            fs::create_dir(path.parent().unwrap()).unwrap();
+        }        
 
 
         let num_cols_ccd = bias_substracted_science.len_of(Axis(0));
