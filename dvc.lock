@@ -5,12 +5,12 @@ stages:
     deps:
     - path: python/masterBias.py
       hash: md5
-      md5: c776f387be6330ccd310190d5c8fb192
-      size: 2361
+      md5: 58802c36148df582df74d7174ebb39e5
+      size: 2345
     - path: python/pipeline.py
       hash: md5
-      md5: 49021e8b1acd5b725e9384a85061434c
-      size: 5692
+      md5: dd317b6ef271d0ebf5d64ee680406723
+      size: 5350
     params:
       params.yaml:
         rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
@@ -23,24 +23,24 @@ stages:
     outs:
     - path: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
       hash: md5
-      md5: abb531823622f0f6f6bbd25865bc9808
+      md5: 39cad7e106a6eea8be30a20a3e6ec36d
       size: 892111680
   master flat:
     cmd: python python/masterFlat.py
     deps:
     - path: Data/ProcessedData/MasterBias
       hash: md5
-      md5: 92632a9462f7af3bf9a34a64e1e29e92.dir
-      size: 2899365120
-      nfiles: 4
+      md5: f5a8d86924c7ddd4adf15887f962f0fe.dir
+      size: 892117828
+      nfiles: 2
     - path: python/masterFlat.py
       hash: md5
-      md5: 66ff0b1931eea9697ff32861b433e1f9
-      size: 2878
+      md5: 91bf70b361b0efc6bbf4a7981365bea7
+      size: 2862
     - path: python/pipeline.py
       hash: md5
-      md5: 49021e8b1acd5b725e9384a85061434c
-      size: 5692
+      md5: dd317b6ef271d0ebf5d64ee680406723
+      size: 5350
     params:
       params.yaml:
         rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
@@ -54,16 +54,16 @@ stages:
     outs:
     - path: Data/ProcessedData/MasterFlat/20230504_379062eeaa8df249a07b_MasterFlat.fits
       hash: md5
-      md5: 6c1da658ab0512c1cac7d97b208e2ed2
+      md5: 95156e40f4fb1951497cf75408d831ba
       size: 892111680
   bias subtraction:
     cmd: python python/biasCorrectedScienceImage.py
     deps:
     - path: Data/ProcessedData/MasterBias
       hash: md5
-      md5: 92632a9462f7af3bf9a34a64e1e29e92.dir
-      size: 2899365120
-      nfiles: 4
+      md5: f5a8d86924c7ddd4adf15887f962f0fe.dir
+      size: 892117828
+      nfiles: 2
     params:
       params.yaml:
         rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
@@ -76,9 +76,9 @@ stages:
     deps:
     - path: Data/ProcessedData/MasterFlat
       hash: md5
-      md5: 8204e32cdbd895dbea299a2b3ff71845.dir
-      size: 4906618560
-      nfiles: 7
+      md5: c745dbcffe8f429b1ea2afd06d3cfe17.dir
+      size: 892117828
+      nfiles: 2
     params:
       params.yaml:
         orderImage.maskOutputpath: 
@@ -95,14 +95,14 @@ stages:
     deps:
     - path: Data/ProcessedData/BiasSubtractedScience
       hash: md5
-      md5: a91ae6e4c05be8af8d86a0f8173f1b96.dir
-      size: 892111680
+      md5: c57d7194ca252df4475370f2983dba7d.dir
+      size: 446057280
       nfiles: 1
     - path: Data/ProcessedData/ExtractedOrders/Mask
       hash: md5
-      md5: 56f38b5644d15971bd2f8c58174dde28.dir
-      size: 285782400
-      nfiles: 4
+      md5: 52da576f7bb5b095f9f2150c3ede197a.dir
+      size: 243947520
+      nfiles: 2
     params:
       params.yaml:
         orderImage.maskOutputpath: 
@@ -114,9 +114,9 @@ stages:
     deps:
     - path: Data/ProcessedData/ExtractedOrders/Mask
       hash: md5
-      md5: 56f38b5644d15971bd2f8c58174dde28.dir
-      size: 285782400
-      nfiles: 4
+      md5: 52da576f7bb5b095f9f2150c3ede197a.dir
+      size: 243947520
+      nfiles: 2
     - path: Data/ProcessedData/ExtractedOrders/Science
       hash: md5
       md5: e42075d42d11371db56b9d8046c8864e.dir
