@@ -1,5 +1,4 @@
 
-dvc.lock
 params.yaml
 pipelineDatabase.txt
 pipeline/target/
