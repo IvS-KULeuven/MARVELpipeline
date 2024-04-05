@@ -50,9 +50,7 @@ class BiasCorrectedScienceFrames(PipelineComponent):
 
         # convert float64 science images to int32 
 
-        print(biasCorrectedScience[0].dtype)
         biasCorrectedScience = [s.astype(np.int32) for s in biasCorrectedScience]
-        print(biasCorrectedScience[0].dtype)
 
         if outputFileName is not None:
             self.saveMultipleImages(biasCorrectedScience, outputFileName, imageHashes=self.rawSciencePaths, m_bias=meanBias)
