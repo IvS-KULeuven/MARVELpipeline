@@ -107,8 +107,8 @@ The results of the pipeline are stored in the `Data/ProcessedData/` directory. I
 - `ExtractedOrders/`:  this contains 2 subdirectories
 	- `Mask/`:
 		- `*_2d_mask.fits`: contains for each row of the CCD image the column where the order begins, the column where the order ends, and the column where the order has the maximum flux. This file is used to extract the 1d orders of each science frame.
-		- `*_smooth_master_flat.fits`: a smoothed version of the master flatfield image. This is the image that is used to determine the position of the orders.
-	- `Science/`: for each bias subtracted science frame, the `*_2d_science_orders.fits` file contains a CCD image where all pixels outside the orders are set to zero. This file is only used for debugging and visualization purposes, and is not further used by the pipeline.
+		- `*_smoothed_master_flat.fits`: a smoothed version of the master flatfield image. This is the image that is used to determine the position of the orders.
+	- `Science/`: for each bias subtracted science frame, the `*_2d_orders.fits` file contains a CCD image where all pixels outside the orders are set to zero. This file is only used for debugging and visualization purposes, and is not further used by the pipeline.
 - `OptimalExtraction/`: for each bias subtracted science frame, the `*_1d_orders.fits` file contains the 1D flat-relative extracted orders. These 1D orders are the ratio of the stellar spectrum divided by the flatfield lamp spectrum. As both the stellar spectrum and the flatfield spectrum experience the same blaze function, the ratio should be free of the blaze function. For each order a flat-normalized flux as a function of pixel coordinate is stored. The orders are not merged.
 - `WaveCalibration/`: TBD
  

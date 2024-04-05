@@ -273,7 +273,7 @@ def createScienceMaskOutputPath(scienceImagePaths):
     root = "Data/ProcessedData/ExtractedOrders/Science/"
     for path in scienceImagePaths:
         fileStem = Path(path).stem.replace("_bias_subtracted", "")
-        output_paths.append(root + fileStem + "_2d_science_orders.fits")
+        output_paths.append(root + fileStem + "_2d_orders.fits")
 
     return output_paths
     
