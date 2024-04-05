@@ -22,7 +22,7 @@ stages:
     outs:
         - ${rawFlatImage.outputpath}
   bias subtraction:
-    cmd: ./pipeline/target/release/biassubtraction
+    cmd: python python/biasCorrectedScienceImage.py
     deps:
         - Data/ProcessedData/MasterBias
     params:
