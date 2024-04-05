@@ -1,6 +1,5 @@
 from pipeline   import PipelineComponent
 import yaml
-import os
 import tools
 import hashlib
 import time
@@ -20,14 +19,6 @@ class BiasCorrectedScienceFrames(PipelineComponent):
         super().__init__(**inputSciencePaths)
         self.masterBiasPath   = inputSciencePaths["BiasImages"]
         self.rawSciencePaths = inputSciencePaths["ScienceImages"]
-
-
-
-
-
-
-
-
 
 
 
@@ -57,9 +48,10 @@ class BiasCorrectedScienceFrames(PipelineComponent):
         # Add offset so that all the values in the MasterFlat are positive
         biasCorrectedScience = [ s - np.min(s) for s in biasCorrectedScience if np.min(s) < 0]
 
-        # convert float64 science images to int16 to reduce size of image.
+        # convert float64 science images to int32 
+
         print(biasCorrectedScience[0].dtype)
-        biasCorrectedScience = [s.astype(np.int16) for s in biasCorrectedScience]
+        biasCorrectedScience = [s.astype(np.int32) for s in biasCorrectedScience]
         print(biasCorrectedScience[0].dtype)
 
         if outputFileName is not None:
