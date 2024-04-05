@@ -3,6 +3,7 @@ import yaml
 import hashlib
 import os
 import sys
+from pathlib import Path
 
 
 
@@ -112,31 +113,36 @@ def create_dvc_file(yaml_input, dvc_param="params.yaml"):
     masterFlat        = createCalibrationOutputPath(yaml_input["rawFlatImage"])
     calibratedScience = createScienceOutputPath(yaml_input["rawScienceImage"])
 
-    smoothMaster = createMaskOutput(masterFlat) + "smooth_master_flat.fits"
-    maskPath     = createMaskOutput(masterFlat) + "2d_mask.fits"
-    scienceMask  = createScienceMask(calibratedScience, maskPath)
-    oneDOrder    = createOptimalOrder(masterFlat, maskPath, calibratedScience)
+    smoothMaster = createMaskOutputPathPrefix(masterFlat) + "_smoothed_master_flat.fits"
+    maskPath     = createMaskOutputPathPrefix(masterFlat) + "_2d_mask.fits"
+    scienceMask  = createScienceMaskOutputPath(calibratedScience)
+    oneDOrder    = createOptimalOrderExtractionOutputPath(calibratedScience)
     
 
     param_yaml = {"rawBiasImage" :
-                  { "path" : yaml_input["rawBiasImage"],
-                    "outputpath" : masterBias
-                   },
+                    { "path" : yaml_input["rawBiasImage"],
+                      "outputpath" : masterBias
+                    },
                   "rawFlatImage" :
-                  { "path" : yaml_input["rawFlatImage"],
-                    "outputpath" : masterFlat},
+                    { "path" : yaml_input["rawFlatImage"],
+                      "outputpath" : masterFlat
+                    },
                   "rawScienceImage" :
-                  { "path" : yaml_input["rawScienceImage"],
-                    "outputpath" : calibratedScience},
+                    { "path" : yaml_input["rawScienceImage"],
+                      "outputpath" : calibratedScience
+                    },
                   "orderImage" :
-                  { "smoothMasterFlat" : smoothMaster,
-                    "maskOutputpath" : maskPath,
-                    "scienceOutputpath" : scienceMask
-                   },
+                    { "smoothMasterFlat" : smoothMaster,
+                      "maskOutputpath" : maskPath,
+                      "scienceOutputpath" : scienceMask
+                    },
                   "optimalOrderExtraction" :
-                  {"outputpath" : oneDOrder},
+                    { "outputpath" : oneDOrder
+                    },
                   "configuration" :
-                  { "rootFolder" : home}}
+                    { "rootFolder" : home
+                    }
+                 }
 
 
     file=open(dvc_param,"w")
@@ -157,8 +163,7 @@ def create_dvc_file(yaml_input, dvc_param="params.yaml"):
 
 def createCalibrationOutputPath(inputPaths):
     """
-    Function that generates one output path given a list of calibration files.
-    (either bias or flat images).
+    Function that generates one output path given a list of calibration (either bias or flat) files.
 
     Parameters:
         inputPaths: List of paths that correspond to raw bias/flat images
@@ -171,7 +176,6 @@ def createCalibrationOutputPath(inputPaths):
     # Combine the sorted list in one string to generate a unique hash
     
     inputPaths.sort()
-    hash = hashlib.sha256(bytes("".join(inputPaths) , 'utf-8')).hexdigest()
 
     # We use the date of the earliest file
 
@@ -179,25 +183,21 @@ def createCalibrationOutputPath(inputPaths):
     dateTime = fileName.split("_")[0]
     date = dateTime.split("T")[0]
     
-    # We specify the type of file
-    typeOutput = {"Bias" : "MasterBias", "Flat" : "MasterFlat", "Science" : "BiasSubstractedScience"}
-    type = typeOutput[inputPaths[0].split("/")[-2]]
+    # Specify the type of file
+
+    imageType = fileName.split("_")[1]
+    if imageType == "BBBBB":
+        outputType = "MasterBias"
+    elif imageType == "FFFFF":
+        outputType = "MasterFlat"
+    elif imageType == "DDDDD":
+        outputType = "MasterDark"
 
     # Get the root directory
 
-    root = "Data/ProcessedData/Master" + inputPaths[0].split("/")[-2] + "/"
+    outputPath = "Data/ProcessedData/" + outputType + "/" + date + "_" + outputType + ".fits"
 
-
-    # Combine the date and hash into one string
-
-    return root + date + "_" + hash[:20] + "_" + type + ".fits"    
-
-
-
-
-
-
-
+    return outputPath
 
 
 
@@ -213,26 +213,17 @@ def createScienceOutputPath(inputPaths):
         inputPaths: List of paths that correspond to raw science images.
 
     Output:
-        list of paths for a bias subtracted science image. Every unique path corresponds
-        to a unique output file. 
+        list of paths to be used to save bias subtracted science images
     """
 
     root = "Data/ProcessedData/BiasSubtractedScience/"
     output_paths = []
 
     for path in inputPaths:
+        fileStem = Path(path).stem
+        output_paths.append(root + fileStem + "_bias_subtracted.fits")
 
-        # Get a unique hash for every unique path
-
-        hash = hashlib.sha256(bytes(path , 'utf-8')).hexdigest()[:20]
-
-    
-        fileName = path.split("/")[-1]
-        dateTime = fileName.split("_")[0]
-
-        output_paths.append(root + dateTime + "/" + dateTime + "_" + hash[:20] + "_" + fileName.split("_")[1] +  "_bias_subtracted_science.fits")
     return output_paths
-    
 
 
 
@@ -241,15 +232,7 @@ def createScienceOutputPath(inputPaths):
 
 
 
-
-
-
-
-
-
-
-
-def createMaskOutput(masterFlatPath):
+def createMaskOutputPathPrefix(masterFlatPath):
     """
     Create the first part of the path for the mask and the smooth master flat images
 
@@ -262,16 +245,13 @@ def createMaskOutput(masterFlatPath):
 
     root = "Data/ProcessedData/ExtractedOrders/Mask/"
 
-    # Get the hash
-    
-    hash = hashlib.sha256(bytes(masterFlatPath , 'utf-8')).hexdigest()[:20]
-
     # Get date of the files
 
-    fileName = masterFlatPath.split("/")[-1]
-    dateTime = fileName.split("_")[0]
+    fileStem = Path(masterFlatPath).stem
+    dateTime = fileStem.split("_")[0]
+    output_path = root + dateTime
 
-    return root + dateTime + "_" + hash[:20] + "_"
+    return output_path
 
     
 
@@ -282,27 +262,19 @@ def createMaskOutput(masterFlatPath):
 
 
 
-def createScienceMask(scienceImages, masterFlatImage):
+def createScienceMaskOutputPath(scienceImagePaths):
     """
     Create a list with the paths to the science mask.
 
     Parameters:
-        scienceImages:   List with paths to bias subtracted science images.
-        masterFlatImage: Path to the master flat image.
+        scienceImagePaths: List with (absolute or relative) paths to bias subtracted science images.
     """
     output_paths = []
     root = "Data/ProcessedData/ExtractedOrders/Science/"
-    for science in scienceImages:
+    for path in scienceImagePaths:
+        fileStem = Path(path).stem.replace("_bias_subtracted", "")
+        output_paths.append(root + fileStem + "_2d_science_orders.fits")
 
-        # Get hash of the images
-
-        hash = hashlib.sha256(bytes(science + masterFlatImage , 'utf-8')).hexdigest()[:20]
-
-        # Get the datetime of image
-        fileName = science.split("/")[-1]
-        dateTime = fileName.split("_")[0]
-
-        output_paths.append(root + dateTime + "/" + dateTime + "_" + hash + "_" + fileName.split("_")[2] + "_2d_science_orders.fits")
     return output_paths
     
 
@@ -310,35 +282,46 @@ def createScienceMask(scienceImages, masterFlatImage):
 
 
 
-def createOptimalOrder(flat, mask, sciences):
+def createOptimalOrderExtractionOutputPath(scienceImagePaths):
     """
-    Create the optimal order path.
+    Create the path for optimal order extraction output.
 
     Parameters:
-        flat:     Path to the master flat image
-        mask:     Path to the 2d mask image
-        sciences: List of paths to the bias subtracted science images. 
+        scienceImagePaths: List of paths to the bias subtracted science images. 
     """
 
     output_paths = [] 
-    flat_mask = flat + mask
     root = "Data/ProcessedData/OptimalExtraction/"
-    for science in sciences:
-
-        # Get hash of image
-
-        hash = hashlib.sha256(bytes(science + flat_mask, 'utf-8')).hexdigest()[:20]
-
-        # Get the datetime of image
-        fileName = science.split("/")[-1]
-        datetime = fileName.split("_")[0]
-
-        output_paths.append(root + datetime + "/" + datetime + "_" + hash + "_" + fileName.split("_")[2] + "_1d_orders.fits")
+    for path in scienceImagePaths:
+        fileStem = Path(path).stem.replace("_bias_subtracted", "")
+        output_paths.append(root + fileStem + "_1d_orders.fits")
 
     return output_paths
     
     
     
+
+
+
+
+def createEtalonPeakFittingOutputPath(optimalExtracted1DspectrumPaths):
+    """
+    Create the path of the FITS files containing the etalon peak fitting results.
+
+    Input:
+        - optimalExtracted1DspectrumPaths: List of paths to the FITS files containing the optimally extracted 1D spectra 
+    """
+
+    output_paths = []
+    root = "Data/ProcessedData/WaveCalibration/"
+
+    for path in optimalExtracted1DspectrumPaths:
+        fileStem = Path(path).stem
+        output_paths.append(root + fileStem + "etalon_peak_fitparameters.fits")
+
+    return output_paths
+
+
 
 
 
