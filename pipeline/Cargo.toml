@@ -5,18 +5,19 @@ edition = "2021"
 
 
 [dependencies]
-ndarray = "0.15.6"
-ndarray-stats = "0.5.1"
+ndarray         = "0.15.6"
+ndarray-stats   = "0.5.1"
 ndarray-ndimage = "0.3.0"
-fitsio  = {version = "0.21.2", features = ["fitsio-src", "array"]}
-noisy_float = "0.2.0"
-chrono = "0.4.26"
-glob = "0.3.1"
-csv = "1.0"
-nalgebra = "0.32.3"
-varpro = "0.7.1"
-itertools = "0.11.0"
-serde_yaml = "0.9"
+fitsio          = {version = "0.21.2", features = ["fitsio-src", "array"]}
+noisy_float     = "0.2.0"
+chrono          = "0.4.26"
+glob            = "0.3.1"
+csv             = "1.0"
+nalgebra        = "0.32.3"
+varpro          = "0.7.1"
+itertools       = "0.11.0"
+serde_yaml      = "0.9"
+
 
 [lib]
 name = "configuration"
@@ -38,7 +39,7 @@ src = "src/bin/2dorderextraction.rs"
 name = "1dflatrelativeorderextraction"
 src = "src/bin/1dflatrelativeorderextraction.rs"
 
-[[bin]]
-name = "etalon"
-src = "src/bin/etalon.rs"
+# [[bin]]
+# name = "etalon"
+# src = "src/bin/etalon.rs"
 
