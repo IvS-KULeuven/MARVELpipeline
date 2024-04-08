@@ -117,7 +117,7 @@ def create_dvc_file(yaml_input, dvc_param="params.yaml"):
     maskPath     = createMaskOutputPathPrefix(masterFlat) + "_2d_mask.fits"
     scienceMask  = createScienceMaskOutputPath(calibratedScience)
     oneDOrder    = createOptimalOrderExtractionOutputPath(calibratedScience)
-    
+    etalonPeakFitParametersOutputPath = createEtalonPeakFittingOutputPath(oneDOrder)
 
     param_yaml = {"rawBiasImage" :
                     { "path" : yaml_input["rawBiasImage"],
@@ -138,6 +138,9 @@ def create_dvc_file(yaml_input, dvc_param="params.yaml"):
                     },
                   "optimalOrderExtraction" :
                     { "outputpath" : oneDOrder
+                    },
+                  "etalonPeakFitting":
+                    { "outputpath": etalonPeakFitParametersOutputPath
                     },
                   "configuration" :
                     { "rootFolder" : home
@@ -272,8 +275,8 @@ def createScienceMaskOutputPath(scienceImagePaths):
     output_paths = []
     root = "Data/ProcessedData/ExtractedOrders/Science/"
     for path in scienceImagePaths:
-        fileStem = Path(path).stem.replace("_bias_subtracted", "")
-        output_paths.append(root + fileStem + "_2d_orders.fits")
+        fileStem = Path(path).stem.replace("_bias_subtracted", "_2d_orders")
+        output_paths.append(root + fileStem + ".fits")
 
     return output_paths
     
@@ -293,8 +296,8 @@ def createOptimalOrderExtractionOutputPath(scienceImagePaths):
     output_paths = [] 
     root = "Data/ProcessedData/OptimalExtraction/"
     for path in scienceImagePaths:
-        fileStem = Path(path).stem.replace("_bias_subtracted", "")
-        output_paths.append(root + fileStem + "_1d_orders.fits")
+        fileStem = Path(path).stem.replace("_bias_subtracted", "_1d_orders")
+        output_paths.append(root + fileStem + ".fits")
 
     return output_paths
     
@@ -316,8 +319,8 @@ def createEtalonPeakFittingOutputPath(optimalExtracted1DspectrumPaths):
     root = "Data/ProcessedData/WaveCalibration/"
 
     for path in optimalExtracted1DspectrumPaths:
-        fileStem = Path(path).stem
-        output_paths.append(root + fileStem + "etalon_peak_fitparameters.fits")
+        fileStem = Path(path).stem.replace("_1d_orders", "_etalon_peak_fitparameters")
+        output_paths.append(root + fileStem + ".fits")
 
     return output_paths
 

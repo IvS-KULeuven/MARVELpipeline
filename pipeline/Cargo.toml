@@ -39,7 +39,7 @@ src = "src/bin/2dorderextraction.rs"
 name = "1dflatrelativeorderextraction"
 src = "src/bin/1dflatrelativeorderextraction.rs"
 
-# [[bin]]
-# name = "etalon"
-# src = "src/bin/etalon.rs"
+[[bin]]
+name = "fitetalonpeaks"
+src = "src/bin/fitetalonpeaks.rs"
 

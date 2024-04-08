@@ -114,13 +114,20 @@ stages:
       md5: 7bf36120e89ec4bdd1cfcbb90bf9d369.dir
       size: 243947520
       nfiles: 2
-    - path: Data/ProcessedData/ExtractedOrders/Science
-      hash: md5
-      md5: 982ab54b6b6a9a7a7df97df85749b0e9.dir
-      size: 223036228
-      nfiles: 2
     params:
       params.yaml:
         orderImage.maskOutputpath: Data/ProcessedData/ExtractedOrders/Mask/20230504_2d_mask.fits
         orderImage.scienceOutputpath:
-        - Data/ProcessedData/ExtractedOrders/Science/20230614T185728_ESSSS_H_0600_2d_science_orders.fits
+        - Data/ProcessedData/ExtractedOrders/Science/20230614T185728_ESSSS_H_0600_2d_orders.fits
+  Etalon peaks fitting:
+    cmd: ./pipeline/target/release/fitetalonpeaks
+    deps:
+    - path: Data/ProcessedData/OptimalExtraction/
+      hash: md5
+      md5: 0924af8766da461ab5b9e8aca78f32a0.dir
+      size: 32218948
+      nfiles: 2
+    params:
+      params.yaml:
+        etalonPeakFitting.outputpath:
+        - Data/ProcessedData/WaveCalibration/20230614T185728_ESSSS_H_0600_etalon_peak_fitparameters.fits

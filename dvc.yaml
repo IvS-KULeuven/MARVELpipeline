@@ -49,9 +49,14 @@ stages:
   1D flat-relative order extraction:
     cmd: ./pipeline/target/release/1dflatrelativeorderextraction
     deps:
-        - Data/ProcessedData/ExtractedOrders/Science
         - Data/ProcessedData/ExtractedOrders/Mask
     params:
         - orderImage.maskOutputpath
         - orderImage.scienceOutputpath
+  Etalon peaks fitting:
+    cmd: ./pipeline/target/release/fitetalonpeaks
+    deps:
+        - Data/ProcessedData/OptimalExtraction/ 
+    params:
+        -  etalonPeakFitting.outputpath
 
