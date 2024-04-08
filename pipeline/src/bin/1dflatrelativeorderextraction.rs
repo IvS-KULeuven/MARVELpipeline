@@ -171,46 +171,46 @@ fn main() {
             for irow in 0..num_rows_ccd {
                 if (lower_boundaries[[ispectrum, irow]] == 0) & (upper_boundaries[[ispectrum, irow]] == 0) {
                     continue;
+                } 
+
+                let begin = lower_boundaries[[ispectrum, irow]] as isize;
+                let end   = upper_boundaries[[ispectrum, irow]] as isize + 1;
+                let slice = s![irow as isize, begin..end];
+                let science_cross_order_slice = science_image.slice(slice).mapv(|x| x as f64);
+                let flat_cross_order_slice = master_flat.slice(slice);
+                
+                // The following numbers came from Nich
+                
+                let readout_noise = 5.0;                                   // [e-/pix]
+                let gain = 3.0;                                            // [e-/ADU] 
+                let readout_noise = readout_noise / gain;                  // [ADU/pix]
+
+                // Note: if a skybackground would have been subtracted, we would also need to take into account its photon noise
+                //       in the weights.
+                // Fiber 5 is the etalon emission spectrum. No 4σ thresholding there, because then we wouldn't have the close-to-zero flux 
+                // in between the etalon lines.
+
+                let weights = if fiber == 1 {
+                    science_cross_order_slice.mapv(|x| 1.0 / (readout_noise*readout_noise + x)) 
                 } else {
-                    let begin = lower_boundaries[[ispectrum, irow]] as isize;
-                    let end   = upper_boundaries[[ispectrum, irow]] as isize + 1;
-                    let slice = s![irow as isize, begin..end];
-                    let science_cross_order_slice = science_image.slice(slice).mapv(|x| x as f64);
-                    let flat_cross_order_slice = master_flat.slice(slice);
-                
-                    // The following numbers came from Nich
-                
-                    let readout_noise = 5.0;                                   // [e-/pix]
-                    let gain = 3.0;                                            // [e-/ADU] 
-                    let readout_noise = readout_noise / gain;                  // [ADU/pix]
+                    science_cross_order_slice.mapv(|x| 
+                        if x > (4*stdev_bias) as f64 { 
+                            1.0 / (readout_noise*readout_noise + x)
+                        } else { 
+                            0.0 
+                        })
+                };
 
-                    // Note: if a skybackground would have been subtracted, we would also need to take into account its photon noise
-                    //       in the weights.
-                    // Fiber 5 is the etalon emission spectrum. No 4σ thresholding there, because then we wouldn't have the close-to-zero flux 
-                    // in between the etalon lines.
+                // The following is a bit of a quirk of ndarray:
+                //        owned * view
+                // or     &view * &view
+                // seem to work but not
+                //        view * owned
+                // or     view * view
 
-                    let weights = if fiber == 1 {
-                        science_cross_order_slice.mapv(|x| 1.0 / (readout_noise*readout_noise + x)) 
-                    } else {
-                        science_cross_order_slice.mapv(|x| 
-                            if x > (4*stdev_bias) as f64 { 
-                                1.0 / (readout_noise*readout_noise + x)
-                            } else { 
-                                0.0 
-                            })
-                    };
-
-                    // The following is a bit of a quirk of ndarray:
-                    //        owned * view
-                    // or     &view * &view
-                    // seem to work but not
-                    //        view * owned
-                    // or     view * view
-
-                    spectrum.push( (science_cross_order_slice * flat_cross_order_slice * &weights).sum()
-                        / (&flat_cross_order_slice * &flat_cross_order_slice * &weights).sum() );
-                    xpixel.push(irow as u32);
-                }
+                spectrum.push( (science_cross_order_slice * flat_cross_order_slice * &weights).sum()
+                    / (&flat_cross_order_slice * &flat_cross_order_slice * &weights).sum() );
+                xpixel.push(irow as u32);
             }
                 
             hdu.write_col(&mut fitsfile, format!("x pixel fiber {}", fiber), &xpixel).unwrap();
