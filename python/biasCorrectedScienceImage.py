@@ -1,6 +1,5 @@
 from pipeline   import PipelineComponent
 import yaml
-import os
 import tools
 import hashlib
 import time
@@ -23,14 +22,6 @@ class BiasCorrectedScienceFrames(PipelineComponent):
 
 
 
-
-
-
-
-
-
-
-
     def run(self, outputFileName=None):
         """
         We run through the algorithm to create the bias corrected science images.
@@ -49,27 +40,25 @@ class BiasCorrectedScienceFrames(PipelineComponent):
         self.masterBiasHash = tools.getHash(self.masterBiasPath)
 
 
-        sciences = [tools.getImage(path) for path in self.rawSciencePaths]
+        scienceImages = [tools.getImage(path) for path in self.rawSciencePaths]
         meanBias = np.mean(bias)
 
-        biasCorrectedScience = [ s - bias for s in sciences]
+        biasSubtractedScienceImages = [ s - bias for s in scienceImages]
 
         # Add offset so that all the values in the MasterFlat are positive
-        biasCorrectedScience = [ s - np.min(s) for s in biasCorrectedScience if np.min(s) < 0]
 
-        # convert float64 science images to int16 to reduce size of image.
+        biasSubtractedScienceImages = [ s - np.min(s) for s in biasSubtractedScienceImages if np.min(s) < 0]
 
-        biasCorrectedScience = [s.astype(np.int32) for s in biasCorrectedScience]
+        # Convert float64 values in science images to int32 
+
+        biasSubtractedScienceImages = [s.astype(np.int32) for s in biasSubtractedScienceImages]
 
         if outputFileName is not None:
-            self.saveMultipleImages(biasCorrectedScience,
-                                                    outputFileName,
-                                                    imageHashes=self.rawSciencePaths,
-                                                    m_bias=meanBias)
+            self.saveMultipleImages(biasSubtractedScienceImages, outputFileName, imageHashes=self.rawSciencePaths, m_bias=meanBias)
 
 
         # That's it!
-        return biasCorrectedScience
+        return biasSubtractedScienceImages
 
 
 

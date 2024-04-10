@@ -58,4 +58,3 @@ stages:
         - orderImage.maskOutputpath
         - orderImage.scienceOutputpath
 
-

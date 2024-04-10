@@ -13,7 +13,7 @@ stages:
       size: 5350
     params:
       params.yaml:
-        rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
+        rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_MasterBias.fits
         rawBiasImage.path:
         - Data/RawData/CalibrationImages/Bias/20230504T135640_BBBBB_H_0000.fits
         - Data/RawData/CalibrationImages/Bias/20230504T135642_BBBBB_H_0000.fits
@@ -21,18 +21,18 @@ stages:
         - Data/RawData/CalibrationImages/Bias/20230504T135648_BBBBB_H_0000.fits
         - Data/RawData/CalibrationImages/Bias/20230504T135652_BBBBB_H_0000.fits
     outs:
-    - path: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
+    - path: Data/ProcessedData/MasterBias/20230504_MasterBias.fits
       hash: md5
-      md5: abb531823622f0f6f6bbd25865bc9808
+      md5: ae946a96eb7ba45305eb9150288b9a3b
       size: 892111680
   master flat:
     cmd: python python/masterFlat.py
     deps:
     - path: Data/ProcessedData/MasterBias
       hash: md5
-      md5: 92632a9462f7af3bf9a34a64e1e29e92.dir
-      size: 2899365120
-      nfiles: 4
+      md5: 119b50dd6c2c8aac65f1071ca0801d78.dir
+      size: 3791476800
+      nfiles: 5
     - path: python/masterFlat.py
       hash: md5
       md5: 91bf70b361b0efc6bbf4a7981365bea7
@@ -43,8 +43,8 @@ stages:
       size: 5350
     params:
       params.yaml:
-        rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
-        rawFlatImage.outputpath: Data/ProcessedData/MasterFlat/20230504_379062eeaa8df249a07b_MasterFlat.fits
+        rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_MasterBias.fits
+        rawFlatImage.outputpath: Data/ProcessedData/MasterFlat/20230504_MasterFlat.fits
         rawFlatImage.path:
         - Data/RawData/CalibrationImages/Flat/20230504T142007_FFFFF_H_0001.fits
         - Data/RawData/CalibrationImages/Flat/20230504T142402_FFFFF_H_0001.fits
@@ -52,23 +52,23 @@ stages:
         - Data/RawData/CalibrationImages/Flat/20230504T143157_FFFFF_H_0001.fits
         - Data/RawData/CalibrationImages/Flat/20230504T143554_FFFFF_H_0001.fits
     outs:
-    - path: Data/ProcessedData/MasterFlat/20230504_379062eeaa8df249a07b_MasterFlat.fits
+    - path: Data/ProcessedData/MasterFlat/20230504_MasterFlat.fits
       hash: md5
-      md5: 6c1da658ab0512c1cac7d97b208e2ed2
+      md5: c185f72e306d7545d5bbba647903597c
       size: 892111680
   bias subtraction:
     cmd: python python/biasCorrectedScienceImage.py
     deps:
     - path: Data/ProcessedData/MasterBias
       hash: md5
-      md5: 92632a9462f7af3bf9a34a64e1e29e92.dir
-      size: 2899365120
-      nfiles: 4
+      md5: 119b50dd6c2c8aac65f1071ca0801d78.dir
+      size: 3791476800
+      nfiles: 5
     params:
       params.yaml:
-        rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_09d946f1079f6dd4aa95_MasterBias.fits
+        rawBiasImage.outputpath: Data/ProcessedData/MasterBias/20230504_MasterBias.fits
         rawScienceImage.outputpath:
-        - Data/ProcessedData/BiasSubtractedScience/20230614T185728/20230614T185728_4b28df6be44a312af545_ESSSS_bias_subtracted_science.fits
+        - Data/ProcessedData/BiasSubtractedScience/20230614T185728_ESSSS_H_0600_bias_subtracted.fits
         rawScienceImage.path:
         - Data/RawData/ScienceFrames/20230614T185728_ESSSS_H_0600.fits
   2D mask determination:
@@ -76,21 +76,19 @@ stages:
     deps:
     - path: Data/ProcessedData/MasterFlat
       hash: md5
-      md5: 8204e32cdbd895dbea299a2b3ff71845.dir
-      size: 4906618560
-      nfiles: 7
+      md5: f142c0d374d858f88c6708123cbd38b7.dir
+      size: 5798730240
+      nfiles: 8
     - path: pipeline/src/bin/2dmaskdetermination.rs
       hash: md5
-      md5: 32c1dc17a4d25c7e1adf2450a08e729f
-      size: 11359
+      md5: 86676221b6790da371e754a415eab1ac
+      size: 11341
     params:
       params.yaml:
-        orderImage.maskOutputpath: 
-          Data/ProcessedData/ExtractedOrders/Mask/20230504_76780edb12aae396101a_2d_mask.fits
-        rawFlatImage.outputpath: Data/ProcessedData/MasterFlat/20230504_379062eeaa8df249a07b_MasterFlat.fits
+        orderImage.maskOutputpath: Data/ProcessedData/ExtractedOrders/Mask/20230504_2d_mask.fits
+        rawFlatImage.outputpath: Data/ProcessedData/MasterFlat/20230504_MasterFlat.fits
     outs:
-    - path: 
-        Data/ProcessedData/ExtractedOrders/Mask/20230504_76780edb12aae396101a_2d_mask.fits
+    - path: Data/ProcessedData/ExtractedOrders/Mask/20230504_2d_mask.fits
       hash: md5
       md5: 485f41702cc13d388e22087fc7437938
       size: 20917440
@@ -99,44 +97,42 @@ stages:
     deps:
     - path: Data/ProcessedData/BiasSubtractedScience
       hash: md5
-      md5: 77a023897d670a64c5b1abd6e9c407b4.dir
-      size: 446057280
-      nfiles: 1
+      md5: c45014931e5eb0efc29a21fa17f9cd2f.dir
+      size: 892114560
+      nfiles: 2
     - path: Data/ProcessedData/ExtractedOrders/Mask
       hash: md5
-      md5: 52da576f7bb5b095f9f2150c3ede197a.dir
-      size: 243947520
-      nfiles: 2
+      md5: 7a14a0dcca3fdcd98bd914c3e18d2692.dir
+      size: 487895040
+      nfiles: 4
     - path: pipeline/src/bin/2dorderextraction.rs
       hash: md5
-      md5: 717c69879d6c3a8e90f52fd613e06b2d
-      size: 4171
+      md5: 7f6fdf21dc712b44d86b7feb9b0b60f3
+      size: 4153
     params:
       params.yaml:
-        orderImage.maskOutputpath: 
-          Data/ProcessedData/ExtractedOrders/Mask/20230504_76780edb12aae396101a_2d_mask.fits
+        orderImage.maskOutputpath: Data/ProcessedData/ExtractedOrders/Mask/20230504_2d_mask.fits
         rawScienceImage.outputpath:
-        - Data/ProcessedData/BiasSubtractedScience/20230614T185728/20230614T185728_4b28df6be44a312af545_ESSSS_bias_subtracted_science.fits
+        - Data/ProcessedData/BiasSubtractedScience/20230614T185728_ESSSS_H_0600_bias_subtracted.fits
   1D flat-relative order extraction:
     cmd: ./pipeline/target/release/1dflatrelativeorderextraction
     deps:
     - path: Data/ProcessedData/ExtractedOrders/Mask
       hash: md5
-      md5: 52da576f7bb5b095f9f2150c3ede197a.dir
-      size: 243947520
-      nfiles: 2
+      md5: 7a14a0dcca3fdcd98bd914c3e18d2692.dir
+      size: 487895040
+      nfiles: 4
     - path: Data/ProcessedData/ExtractedOrders/Science
       hash: md5
-      md5: e42075d42d11371db56b9d8046c8864e.dir
-      size: 223030080
-      nfiles: 1
+      md5: 68e86147b8b636ed550e2993938c52bf.dir
+      size: 446060160
+      nfiles: 2
     - path: pipeline/src/bin/1dflatrelativeorderextraction.rs
       hash: md5
-      md5: 1abc2db5eb7ef2939c738473c05ce972
-      size: 10451
+      md5: c5b4340e254925e12ee9d923595482cc
+      size: 10444
     params:
       params.yaml:
-        orderImage.maskOutputpath: 
-          Data/ProcessedData/ExtractedOrders/Mask/20230504_76780edb12aae396101a_2d_mask.fits
+        orderImage.maskOutputpath: Data/ProcessedData/ExtractedOrders/Mask/20230504_2d_mask.fits
         orderImage.scienceOutputpath:
-        - Data/ProcessedData/ExtractedOrders/Science/20230614T185728/20230614T185728_9b3d401a7d8076c9f68c_ESSSS_2d_science_orders.fits
+        - Data/ProcessedData/ExtractedOrders/Science/20230614T185728_ESSSS_H_0600_2d_orders.fits

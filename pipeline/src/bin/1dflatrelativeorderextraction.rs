@@ -5,14 +5,9 @@ use fitsio::FitsFile;
 use fitsio::tables::{ColumnDescription, ColumnDataType};
 use ndarray::{ArrayD, Array1, Axis, s};
 use itertools::izip;
-mod configuration;
+use configuration::parse_file;
 
 type CCDImageType = ArrayD<u32>;
-
-
-
-
-
 
 
 
@@ -23,7 +18,7 @@ fn main() {
     // Load and parse the param.yaml file to get the paths from which we
     // will load the files and to which we will save the output files.
 
-    let config: serde_yaml::Value = configuration::configuration::parse_file();
+    let config: serde_yaml::Value = parse_file();
 
     // Get all the paths from which we will read/write
 
@@ -36,11 +31,11 @@ fn main() {
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
     let order_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutputpath").unwrap().as_str().unwrap();
     let master_flat_path= project_root.to_owned() + flat_images_path.get("outputpath").unwrap().as_str().unwrap();
-    let bias_subtracted_science_paths = science_image_paths.get("outputpath").unwrap().as_sequence().unwrap();    
+    let science_paths = science_image_paths.get("outputpath").unwrap().as_sequence().unwrap();    
     let output_directories = optimal_image_paths.get("outputpath").unwrap().as_sequence().unwrap();
 
     // Open the order mask file. This file contains three images, one with the index of the maximum position,
-    //one with the lower bound index and one with the upper bound index.
+    // one with the begin column index and one with the end column index of each order.
 
     let mut fitsfile = FitsFile::open(order_mask_path).unwrap();
     let max_hdu = fitsfile.hdu(0).unwrap();
@@ -62,36 +57,33 @@ fn main() {
     let stdev_bias = hdu.read_key::<f32>(&mut fitsfile, "STD_BIAS").unwrap() as u32;
 
 
-    for (bias_subtracted_path, output_path) in izip!(bias_subtracted_science_paths, output_directories) {
+    for (science_path, output_path) in izip!(science_paths, output_directories) {
         
-        let science_path = project_root.to_owned() + bias_subtracted_path.as_str().unwrap();
+        let science_path = project_root.to_owned() + science_path.as_str().unwrap();
+        let science_path = Path::new(&science_path);
 
-        let science = Path::new(&science_path);
+        // Open the bias subtracted science image.
 
-        // Open the calibrated science file.
-
-        let mut fitsfile = FitsFile::open(science).unwrap();
+        let mut fitsfile = FitsFile::open(science_path).unwrap();
         let mut hdu = fitsfile.primary_hdu().unwrap();
         let science_image: CCDImageType = hdu.read_image(&mut fitsfile).unwrap();
 
         // Do the flat-relative optimal extraction using the method of Zechmeister et al. (2014)
 
-        let mut mean_spectrum = Array1::<f64>::zeros(num_rows_ccd);  // For a given order, the mean spectrum averaged over all science fibers
+        let mut mean_spectrum = Array1::<f64>::zeros(num_rows_ccd);    // For a given order, the mean spectrum averaged over all science fibers
         let mut num_fibers = Array1::<u8>::zeros(num_rows_ccd);        // Given an order, for each pixel, how many fibers contributed to the mean spectrum?
-
-
 
 
         // Set up the output directory
 
         let output_path = project_root.to_owned() + output_path.as_str().unwrap();
-        let path = Path::new(&output_path);
+        let output_path = Path::new(&output_path);
 
-        if !path.parent().unwrap().is_dir(){                // Create directory if needed.
-            fs::create_dir_all(path.parent().unwrap()).unwrap();}
+        if !output_path.parent().unwrap().is_dir(){                // Create directory if needed.
+            fs::create_dir_all(output_path.parent().unwrap()).unwrap();}
 
-        if path.exists() {                                  // Remove previous file form an older run
-            fs::remove_file(path).unwrap();}
+        if output_path.exists() {                                  // Remove previous file form an older run
+            fs::remove_file(output_path).unwrap();}
 
         let mut fitsfile  = FitsFile::create(output_path)
             .open()
@@ -108,6 +100,7 @@ fn main() {
             .with_type(ColumnDataType::Float)
             .create()
             .unwrap();
+
 
         let descriptions = [fiber_x_description, fiber_science_description];
       
@@ -136,7 +129,7 @@ fn main() {
                     let science_cross_order_slice = science_image.slice(slice).mapv(|x| x as f64);
                     let flat_cross_order_slice = master_flat.slice(slice);
                 
-                    // The following numbers came from Nich.
+                    // The following numbers came from Nich
                 
                     let readout_noise = 5.0;                                   // [e-/pix]
                     let gain = 3.0;                                            // [e-/ADU] 
@@ -168,7 +161,6 @@ fn main() {
                     spectrum.push( (science_cross_order_slice * flat_cross_order_slice * &weights).sum()
                         / (&flat_cross_order_slice * &flat_cross_order_slice * &weights).sum() );
                     xpixel.push(irow as u32);
-
                 }
 
             }
