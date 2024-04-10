@@ -32,6 +32,7 @@ stages:
   2D mask determination:
     cmd: ./pipeline/target/release/2dmaskdetermination
     deps:
+        - pipeline/src/bin/2dmaskdetermination.rs
         - Data/ProcessedData/MasterFlat
     params:
         - rawFlatImage.outputpath
@@ -41,6 +42,7 @@ stages:
   2D order extraction:
     cmd: ./pipeline/target/release/2dorderextraction
     deps:
+        - pipeline/src/bin/2dorderextraction.rs
         - Data/ProcessedData/ExtractedOrders/Mask
         - Data/ProcessedData/BiasSubtractedScience
     params:
@@ -49,6 +51,7 @@ stages:
   1D flat-relative order extraction:
     cmd: ./pipeline/target/release/1dflatrelativeorderextraction
     deps:
+        - pipeline/src/bin/1dflatrelativeorderextraction.rs
         - Data/ProcessedData/ExtractedOrders/Science
         - Data/ProcessedData/ExtractedOrders/Mask
     params:

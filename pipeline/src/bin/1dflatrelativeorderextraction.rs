@@ -36,7 +36,7 @@ fn main() {
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
     let order_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutputpath").unwrap().as_str().unwrap();
     let master_flat_path= project_root.to_owned() + flat_images_path.get("outputpath").unwrap().as_str().unwrap();
-    let c_science_paths = science_image_paths.get("outputpath").unwrap().as_sequence().unwrap();    
+    let bias_subtracted_science_paths = science_image_paths.get("outputpath").unwrap().as_sequence().unwrap();    
     let output_directories = optimal_image_paths.get("outputpath").unwrap().as_sequence().unwrap();
 
     // Open the order mask file. This file contains three images, one with the index of the maximum position,
@@ -62,9 +62,9 @@ fn main() {
     let stdev_bias = hdu.read_key::<f32>(&mut fitsfile, "STD_BIAS").unwrap() as u32;
 
 
-    for (s_path, o_path) in izip!(c_science_paths, output_directories) {
+    for (bias_subtracted_path, output_path) in izip!(bias_subtracted_science_paths, output_directories) {
         
-        let science_path = project_root.to_owned() + s_path.as_str().unwrap();
+        let science_path = project_root.to_owned() + bias_subtracted_path.as_str().unwrap();
 
         let science = Path::new(&science_path);
 
@@ -82,11 +82,9 @@ fn main() {
 
 
 
-
-
         // Set up the output directory
 
-        let output_path = project_root.to_owned() + o_path.as_str().unwrap();
+        let output_path = project_root.to_owned() + output_path.as_str().unwrap();
         let path = Path::new(&output_path);
 
         if !path.parent().unwrap().is_dir(){                // Create directory if needed.
@@ -99,102 +97,41 @@ fn main() {
             .open()
             .unwrap();
 
-
-
-
-
-
-
-
-
-
-
         // We set up the description of the table that will store all the data for one order
 
-        let fiber1_x_description = ColumnDescription::new("x pixel fiber 1")
+        let fiber_x_description = ColumnDescription::new("x_pixel_fiber")
             .with_type(ColumnDataType::Int)
             .create()
             .unwrap();
 
-        let fiber1_s_description = ColumnDescription::new("spectrum fiber 1")
+        let fiber_science_description = ColumnDescription::new("spectrum_fiber")
             .with_type(ColumnDataType::Float)
             .create()
             .unwrap();
 
-        let fiber2_x_description = ColumnDescription::new("x pixel fiber 2")
-            .with_type(ColumnDataType::Int)
-            .create()
-            .unwrap();
-
-        let fiber2_s_description = ColumnDescription::new("spectrum fiber 2")
-            .with_type(ColumnDataType::Float)
-            .create()
-            .unwrap();
-
-        let fiber3_x_description = ColumnDescription::new("x pixel fiber 3")
-            .with_type(ColumnDataType::Int)
-            .create()
-            .unwrap();
-
-        let fiber3_s_description = ColumnDescription::new("spectrum fiber 3")
-            .with_type(ColumnDataType::Float)
-            .create()
-            .unwrap();
-
-        let fiber4_x_description = ColumnDescription::new("x pixel fiber 4")
-            .with_type(ColumnDataType::Int)
-            .create()
-            .unwrap();
-
-        let fiber4_s_description = ColumnDescription::new("spectrum fiber 4")
-            .with_type(ColumnDataType::Float)
-            .create()
-            .unwrap();
-
-        let fiber5_x_description = ColumnDescription::new("x pixel fiber 5")
-            .with_type(ColumnDataType::Int)
-            .create()
-            .unwrap();
-
-        let fiber5_s_description = ColumnDescription::new("spectrum fiber 5")
-            .with_type(ColumnDataType::Float)
-            .create()
-            .unwrap();
-
-        let mean_x_description = ColumnDescription::new("x pixel mean")
-            .with_type(ColumnDataType::Float)
-            .create()
-            .unwrap();
-
-        let mean_description = ColumnDescription::new("mean spectrum")
-            .with_type(ColumnDataType::Float)
-            .create()
-            .unwrap();
-
-        let descriptions = [fiber1_x_description, fiber1_s_description,
-            fiber2_x_description, fiber2_s_description, fiber3_x_description, fiber3_s_description,
-            fiber4_x_description, fiber4_s_description, fiber5_x_description, fiber5_s_description,
-            mean_x_description, mean_description];
-
+        let descriptions = [fiber_x_description, fiber_science_description];
+      
         for ispectrum in 0..num_spectra {
             let fiber = 5 - ispectrum % 5;                                 // Fiber 1 is the calibration fiber, 2,3,4,5 are the science fibers
             let order = 98 -  (ispectrum as f64 / 5.0).floor() as u32;      // Ranging from 98 (blue) down to 33 (red). Checked with Balmer lines.
 
             // When we access fiber 5 we start a new order with new table
 
-            if fiber == 5 {
-                hdu = fitsfile.create_table(format!("order: {}", order).to_string(), &descriptions).unwrap();
-            }
+            hdu = fitsfile.create_table(format!("order: {}, fiber: {}", order, fiber).to_string(), &descriptions).unwrap();
 
-            let mut spectrum: Vec::<f64> = Vec::with_capacity(num_rows_ccd);
-            let mut xpixel: Vec::<u32> = Vec::with_capacity(num_rows_ccd); // Pixel coordinates on the x-axis on the optimal extracted spectrum
 
+            let mut spectrum: Vec::<f64> = Vec::new();
+            let mut xpixel: Vec::<u32> = Vec::new(); // Pixel coordinates on the x-axis on the optimal extracted spectrum
+
+            let mut i=0;
             for irow in 0..num_rows_ccd {
                 if (lower_boundaries[[ispectrum, irow]] == 0) & (upper_boundaries[[ispectrum, irow]] == 0) {
                     continue;
                 } else {
+                    i = i+1;
                     let begin = lower_boundaries[[ispectrum, irow]] as isize;
                     let end   = upper_boundaries[[ispectrum, irow]] as isize + 1;
+                    
                     let slice = s![irow as isize, begin..end];
                     let science_cross_order_slice = science_image.slice(slice).mapv(|x| x as f64);
                     let flat_cross_order_slice = master_flat.slice(slice);
@@ -233,10 +170,11 @@ fn main() {
                     xpixel.push(irow as u32);
 
                 }
+
             }
                 
-            hdu.write_col(&mut fitsfile, format!("x pixel fiber {}", fiber), &xpixel).unwrap();
-            hdu.write_col( &mut fitsfile, format!("spectrum fiber {}", fiber), &spectrum).unwrap();
+            hdu.write_col(&mut fitsfile, format!("x_pixel_fiber"), &xpixel).unwrap();
+            hdu.write_col( &mut fitsfile, format!("spectrum_fiber"), &spectrum).unwrap();
 
             // Compute the mean spectrum per order over all 4 science fibers.
             // Note that the spectra of the same order but from different fibers may not have all the same length,
@@ -248,8 +186,23 @@ fn main() {
 
                 // Crop the mean spectrum to those pixels for which all 4 science fibers are available.
 
-                let mut cropped_mean_spectrum: Vec::<f64> = Vec::with_capacity(num_rows_ccd);
-                let mut cropped_xpixel: Vec::<f64> = Vec::with_capacity(num_rows_ccd);
+                let fiber_x_description = ColumnDescription::new("x_pixel_mean")
+                    .with_type(ColumnDataType::Int)
+                    .create()
+                    .unwrap();
+
+                let fiber_science_description = ColumnDescription::new("mean_spectrum")
+                    .with_type(ColumnDataType::Float)
+                    .create()
+                    .unwrap();
+
+                let descriptions = [fiber_x_description, fiber_science_description];
+
+                hdu = fitsfile.create_table(format!("order: {}, mean", order).to_string(), &descriptions).unwrap();
+
+                let mut cropped_mean_spectrum: Vec::<f64> = Vec::new();
+                let mut cropped_xpixel: Vec::<f64> = Vec::new();
+                
                 for irow in 0..num_rows_ccd {
                     if num_fibers[irow] == 4 {
                         cropped_mean_spectrum.push(mean_spectrum[irow] / 4.0);
@@ -259,8 +212,8 @@ fn main() {
 
                 // Add the mean spectrum to the output fits file
 
-                hdu.write_col(&mut fitsfile, "x pixel mean", &cropped_xpixel).unwrap();
-                hdu.write_col( &mut fitsfile, "mean spectrum", &cropped_mean_spectrum).unwrap();
+                hdu.write_col(&mut fitsfile, "x_pixel_mean", &cropped_xpixel).unwrap();
+                hdu.write_col( &mut fitsfile, "mean_spectrum", &cropped_mean_spectrum).unwrap();
 
                 // Reset the arrays to accommodate the current order. Fiber == 1 is the wavelength calibration order, 
                 // so we can skip this one.

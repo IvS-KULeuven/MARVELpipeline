@@ -79,6 +79,10 @@ stages:
       md5: 8204e32cdbd895dbea299a2b3ff71845.dir
       size: 4906618560
       nfiles: 7
+    - path: pipeline/src/bin/2dmaskdetermination.rs
+      hash: md5
+      md5: 32c1dc17a4d25c7e1adf2450a08e729f
+      size: 11359
     params:
       params.yaml:
         orderImage.maskOutputpath: 
@@ -103,6 +107,10 @@ stages:
       md5: 52da576f7bb5b095f9f2150c3ede197a.dir
       size: 243947520
       nfiles: 2
+    - path: pipeline/src/bin/2dorderextraction.rs
+      hash: md5
+      md5: 717c69879d6c3a8e90f52fd613e06b2d
+      size: 4171
     params:
       params.yaml:
         orderImage.maskOutputpath: 
@@ -122,6 +130,10 @@ stages:
       md5: e42075d42d11371db56b9d8046c8864e.dir
       size: 223030080
       nfiles: 1
+    - path: pipeline/src/bin/1dflatrelativeorderextraction.rs
+      hash: md5
+      md5: 1abc2db5eb7ef2939c738473c05ce972
+      size: 10451
     params:
       params.yaml:
         orderImage.maskOutputpath: 
