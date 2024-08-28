@@ -1,11 +1,10 @@
-from pipeline   import PipelineComponent
-import yaml
-import os
 import tools
 import numpy as np
 import hashlib
-
 import time
+import yaml
+
+from pipeline import PipelineComponent
 
 
 
@@ -85,11 +84,11 @@ if __name__ == "__main__":
     
     params = yaml.safe_load(open("params.yaml"))
 
-    root  = (params["configuration"])["rootFolder"]
-    paths = (params["rawBiasImage"])["path"]
+    root  = (params["Configuration"])["rootFolder"]
+    paths = (params["MasterBiasImage"])["inputpath"]
     
     paths = [ root+path for path in paths]
-    output = root + (params["rawBiasImage"])["outputpath"]
+    output = root + (params["MasterBiasImage"])["outputpath"]
 
     # Master Bias Image
 

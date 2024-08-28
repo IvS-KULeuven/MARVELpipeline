@@ -24,9 +24,9 @@ fn main() {
 
     // Get all the paths from which we will read/write
 
-    let mask_image_paths = &config["orderImage"];
-    let science_image_paths = &config["rawScienceImage"];
-    let configurations = &config["configuration"];
+    let mask_image_paths = &config["OrderImage"];
+    let science_image_paths = &config["CalibratedScienceImage"];
+    let configurations = &config["Configuration"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
     let order_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutputpath").unwrap().as_str().unwrap();
@@ -105,3 +105,4 @@ fn main() {
     println!("[{:.1?}]", now.elapsed());
 
 }
+

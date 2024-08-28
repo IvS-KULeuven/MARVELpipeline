@@ -15,18 +15,18 @@ fn main() {
     
     let now = Instant::now();
 
-    // Load and parse the param.yaml file to get the paths from which we
+    // Load and parse the 'param.yaml' file to get the paths from which we
     // will load the files and to which we will save the output files.
 
     let config: serde_yaml::Value = parse_file();
 
     // Get all the paths from which we will read/write
 
-    let mask_image_paths = &config["orderImage"];
-    let science_image_paths = &config["rawScienceImage"];
-    let configurations = &config["configuration"];
-    let flat_images_path = &config["rawFlatImage"];
-    let optimal_image_paths = &config["optimalOrderExtraction"];
+    let mask_image_paths = &config["OrderImage"];
+    let science_image_paths = &config["CalibratedScienceImage"];
+    let configurations = &config["Configuration"];
+    let flat_images_path = &config["MasterFlatImage"];
+    let optimal_image_paths = &config["OptimalOrderExtraction"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
     let order_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutputpath").unwrap().as_str().unwrap();
@@ -259,3 +259,4 @@ fn main() {
     }
     println!("[{:.1?}]", now.elapsed());
 }
+

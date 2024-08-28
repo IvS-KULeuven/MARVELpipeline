@@ -5,8 +5,6 @@ use fitsio::FitsFile;
 use fitsio::images::{ImageType, ImageDescription};
 use ndarray::{Array2, ArrayD, Axis};
 use ndarray_ndimage::{gaussian_filter, BorderMode};
-
-
 use configuration::parse_file;
 
 
@@ -26,14 +24,14 @@ fn main() {
 
     // Get all the paths from which we will read/write
 
-    let flat_image_paths = &config["rawFlatImage"];
-    let mask_image_paths = &config["orderImage"];
-    let configurations = &config["configuration"];
+    let flat_image_paths = &config["MasterFlatImage"];
+    let mask_image_paths = &config["OrderImage"];
+    let configurations = &config["Configuration"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
     let master_flat_path = project_root.to_owned() + flat_image_paths.get("outputpath").unwrap().as_str().unwrap();
     let orders_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutputpath").unwrap().as_str().unwrap();
-    let smoothed_master_flat_path = project_root.to_owned() + mask_image_paths.get("smoothMasterFlat").unwrap().as_str().unwrap();
+    let smoothed_master_flat_path = project_root.to_owned() + mask_image_paths.get("smoothedMasterFlatPath").unwrap().as_str().unwrap();
 
 
     // Open the master flat file
@@ -253,7 +251,6 @@ fn main() {
     if orders_path.exists() {                                         // Remove previous file from an older run
         fs::remove_file(orders_path).unwrap();
     } else if !orders_path.parent().unwrap().is_dir() {                       // Create directory if needed.
-        println!("HEHE");
         let _ = fs::create_dir_all(orders_path.parent().unwrap());
     }
 
@@ -280,3 +277,4 @@ fn main() {
     println!("[{:.1?}]", now.elapsed());
 
 }
+

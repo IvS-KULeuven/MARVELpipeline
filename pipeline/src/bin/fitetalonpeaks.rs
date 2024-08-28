@@ -61,13 +61,13 @@ fn main() {
 
     // Get all the paths from which we will read/write
 
-    let general_config = &config["configuration"];
+    let general_config = &config["Configuration"];
     let project_root = general_config.get("rootFolder").unwrap().as_str().unwrap();
 
-    let optimalextraction_config = &config["optimalOrderExtraction"];
+    let optimalextraction_config = &config["OptimalOrderExtraction"];
     let input_paths = optimalextraction_config.get("outputpath").unwrap().as_sequence().unwrap();
 
-    let etalon_config = &config["etalonPeakFitting"];
+    let etalon_config = &config["EtalonPeakFitting"];
     let etalon_peak_fitparameters_output_paths = etalon_config.get("outputpath").unwrap().as_sequence().unwrap();
 
     // Loop over all science frames, the output of the peak fitting will be written to a separate FITS file.
