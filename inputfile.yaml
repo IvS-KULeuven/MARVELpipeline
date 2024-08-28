@@ -12,3 +12,9 @@ rawFlatImage:
         - Data/RawData/CalibrationImages/Flat/20230504T143554_FFFFF_H_0001.fits
 rawScienceImage:
         Data/RawData/ScienceFrames/20230614T185728_ESSSS_H_0600.fits
+rawThArImages:
+  - Data/RawData/CalibrationImages/ThAr/20230504T140011_TTTTT_H_0015.fits
+  - Data/RawData/CalibrationImages/ThAr/20230504T140209_TTTTT_H_0015.fits
+  - Data/RawData/CalibrationImages/ThAr/20230504T140407_TTTTT_H_0015.fits
+  - Data/RawData/CalibrationImages/ThAr/20230504T140605_TTTTT_H_0015.fits
+  - Data/RawData/CalibrationImages/ThAr/20230504T140806_TTTTT_H_0015.fits
