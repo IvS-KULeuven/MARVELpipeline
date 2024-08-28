@@ -17,7 +17,7 @@ class BiasCorrectedScienceFrames(PipelineComponent):
     def __init__(self, debug=0, **inputSciencePaths):
         self.imageTypes = ["BiasImages", "ScienceImages"]
         super().__init__(**inputSciencePaths)
-        self.masterBiasPath   = inputSciencePaths["BiasImages"]
+        self.masterBiasPath  = inputSciencePaths["BiasImages"]
         self.rawSciencePaths = inputSciencePaths["ScienceImages"]
 
 
