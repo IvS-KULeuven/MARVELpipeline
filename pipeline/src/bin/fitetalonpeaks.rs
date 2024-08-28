@@ -38,6 +38,14 @@ pub fn min(data: &[f64]) -> f64 {
 }
 
 
+pub fn mean(y: &[f64]) -> f64 {
+    y.iter().sum::<f64>() / (y.len() as f64)                          // weights must be normalized
+}
+ 
+
+pub fn stdev(y: &[f64], mean: f64) -> f64 {
+    (y.iter().map(|x| (x-mean).powi(2)).sum::<f64>() / (y.len() as f64 - 1.0)).sqrt()
+}
 
 
 
@@ -105,7 +113,28 @@ fn main() {
             .create()
             .unwrap();
 
-        let descriptions = [offset_description, mu_description, sigma_description, height_description];
+        let offset_err_description = ColumnDescription::new("offset_err")
+            .with_type(ColumnDataType::Float)
+            .create()
+            .unwrap();
+
+        let mu_err_description = ColumnDescription::new("mu_err")
+            .with_type(ColumnDataType::Float)
+            .create()
+            .unwrap();
+
+        let sigma_err_description = ColumnDescription::new("sigma_err")
+            .with_type(ColumnDataType::Float)
+            .create()
+            .unwrap();
+
+        let height_err_description = ColumnDescription::new("height_err")
+            .with_type(ColumnDataType::Float)
+            .create()
+            .unwrap();
+
+        let descriptions = [offset_description, mu_description, sigma_description, height_description,
+                            offset_err_description, mu_err_description, sigma_err_description, height_err_description];
 
         // Open the input fits file. Each order has a separate HDU. Loop over all orders (HDUs), reading
         // only the 1st fiber which is the etalon fiber. Skip the first (# 0) HDU because this is the primary
@@ -135,25 +164,29 @@ fn main() {
             //     b) the top of the line are 2 neighboring peaks (3 points: up-down-up) 
             // In the case of a plateau we select the left most point.
             // We start from n=6 because we're not interested in half peaks at the edges of the etalon spectrum. 
-            // The thresholding with respect to the minimum in the local neighborhood is to avoid the small peaks 
-            // in the continuum in between the emission lines. We can't take a global minimum because the etalon
-            // spectrum may not be perfectly normalized and can be curved upwards at the edges.
+            // The thresholding with respect to the minimum flux in the local neighborhood is to avoid the small 
+            // peaks in the continuum in between the emission lines. We can't take a global minimum because the 
+            // etalon spectrum may not be perfectly normalized and can be curved upwards at the edges.
 
             let mut ipeaks: Vec::<usize> = Vec::new();
             for n in 6..xpixel.len()-6 {
                 let minvalue = min(&flux[n-5..=n+5]);         // the lowest value in the local neighborhood
                 if (flux[n-2] < flux[n]) && (flux[n-1] < flux[n]) && (flux[n] >= flux[n+1]) && (flux[n] >= flux[n+2])
-                   && (flux[n] > minvalue+1.0) {
+                   && (flux[n]-minvalue > 0.27) && (flux[n] > 0.0) {
                     ipeaks.push(n);
                 }
             } 
 
             // The following arrays will be written in a FITS table 
 
-            let mut offset: Vec<f64> = vec![0.0; ipeaks.len()];
-            let mut mu: Vec<f64> = vec![0.0; ipeaks.len()]; 
-            let mut sigma: Vec<f64> = vec![0.0; ipeaks.len()];
-            let mut height: Vec<f64> = vec![0.0; ipeaks.len()];
+            let mut offset:     Vec<f64> = vec![];
+            let mut mu:         Vec<f64> = vec![]; 
+            let mut sigma:      Vec<f64> = vec![];
+            let mut height:     Vec<f64> = vec![];
+            let mut offset_err: Vec<f64> = vec![];
+            let mut mu_err:     Vec<f64> = vec![]; 
+            let mut sigma_err:  Vec<f64> = vec![];
+            let mut height_err: Vec<f64> = vec![];
 
             // Fit each of the peaks with a Gaussian profile
 
@@ -185,18 +218,38 @@ fn main() {
                     .build()
                     .unwrap();
 
-                let fit_result = LevMarSolver::new()
-                    .fit(problem)
+                let (fit_result, fit_statistics) = LevMarSolver::new()
+                    .fit_with_statistics(problem)
                     .expect("Problem with fitting the etalon lines");
 
-                let nonlinearparams = fit_result.nonlinear_parameters();
-                let linearparams    = fit_result.linear_coefficients().unwrap();
+                let nonlinear_params = fit_result.nonlinear_parameters();
+                let linear_params    = fit_result.linear_coefficients().unwrap();
+                let variance_nonlinear_params = fit_statistics.nonlinear_parameters_variance();
+                let variance_linear_params = fit_statistics.linear_coefficients_variance();
 
-                offset[i] = linearparams[0];
-                mu[i]     = nonlinearparams[0];
-                sigma[i]  = nonlinearparams[1].sqrt();
-                height[i] = linearparams[1];
+                // Verify if the gaussian fit led to a sane result. If so, save the fit parameters.
 
+                let fitted_offset     = linear_params[0];
+                let fitted_mu         = nonlinear_params[0];
+                let fitted_sigma      = nonlinear_params[1].sqrt();
+                let fitted_height     = linear_params[1];
+                let fitted_offset_err = variance_linear_params[0].sqrt();
+                let fitted_mu_err     = variance_nonlinear_params[0].sqrt();
+                let fitted_sigma_err  = variance_nonlinear_params[1].sqrt();
+                let fitted_height_err = variance_linear_params[1].sqrt();
+
+                if (fitted_sigma < 3.0) && (fitted_height > 0.0) && (fitted_mu_err != 0.0) && (fitted_sigma_err != 0.0)
+                    && (fitted_mu_err < 0.2 * fitted_mu) && (fitted_sigma_err < 0.2 * fitted_sigma) {
+                    offset.push(fitted_offset);
+                    mu.push(fitted_mu);
+                    sigma.push(fitted_sigma);
+                    height.push(fitted_height);
+
+                    offset_err.push(fitted_offset_err);
+                    mu_err.push(fitted_mu_err);
+                    sigma_err.push(fitted_sigma_err);
+                    height_err.push(fitted_height_err);
+                }   
             }
 
             let fits_table = output_fits_file.create_table(order_id, &descriptions).unwrap();
@@ -204,6 +257,10 @@ fn main() {
             fits_table.write_col(&mut output_fits_file, "mu", &mu).unwrap();
             fits_table.write_col(&mut output_fits_file, "sigma", &sigma).unwrap();
             fits_table.write_col(&mut output_fits_file, "height", &height).unwrap();
+            fits_table.write_col(&mut output_fits_file, "offset_err", &offset_err).unwrap();
+            fits_table.write_col(&mut output_fits_file, "mu_err", &mu_err).unwrap();
+            fits_table.write_col(&mut output_fits_file, "sigma_err", &sigma_err).unwrap();
+            fits_table.write_col(&mut output_fits_file, "height_err", &height_err).unwrap();
 
         }
     }
