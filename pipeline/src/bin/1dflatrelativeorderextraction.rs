@@ -157,7 +157,7 @@ fn main() {
 
         for ispectrum in 0..num_spectra {
             let fiber = 5 - ispectrum % 5;                                 // Fiber 1 is the calibration fiber, 2,3,4,5 are the science fibers
-            let order = 98 -  (ispectrum as f64 / 5.0).floor() as u32;      // Ranging from 98 (blue) down to 33 (red). Checked with Balmer lines.
+            let order = 98 -  (ispectrum as f64 / 5.0).floor() as u32;     // Ranging from 98 (blue) down to 33 (red). Checked with Balmer lines.
 
             // When we access fiber 5 we start a new order with new table
 
@@ -187,8 +187,8 @@ fn main() {
 
                 // Note: if a skybackground would have been subtracted, we would also need to take into account its photon noise
                 //       in the weights.
-                // Fiber 5 is the etalon emission spectrum. No 4σ thresholding there, because then we wouldn't have the close-to-zero flux 
-                // in between the etalon lines.
+                // Fiber 1 is the etalon emission spectrum. No 4σ thresholding there, because then we wouldn't have the close-to-zero 
+                // flux in between the etalon lines.
 
                 let weights = if fiber == 1 {
                     science_cross_order_slice.mapv(|x| 1.0 / (readout_noise*readout_noise + x)) 
@@ -238,9 +238,9 @@ fn main() {
                 // Add the mean spectrum to the output fits file
 
                 hdu.write_col(&mut fitsfile, "x pixel mean", &cropped_xpixel).unwrap();
-                hdu.write_col( &mut fitsfile, "mean spectrum", &cropped_mean_spectrum).unwrap();
+                hdu.write_col(&mut fitsfile, "mean spectrum", &cropped_mean_spectrum).unwrap();
 
-                // Reset the arrays to accommodate the current order. Fiber == 1 is the wavelength calibration order, 
+                // Reset the arrays to accommodate the current order. Fiber == 1 is the wavelength calibration fiber,
                 // so we can skip this one.
 
                 mean_spectrum.iter_mut().for_each(|x| *x = 0.0);
@@ -256,9 +256,6 @@ fn main() {
                 }
             }
         }
-        
-        
-
     }
     println!("[{:.1?}]", now.elapsed());
 }
