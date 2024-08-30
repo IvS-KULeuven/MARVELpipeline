@@ -22,17 +22,16 @@ fn main() {
 
     // Get all the paths from which we will read/write
 
-    let mask_image_paths = &config["OrderImage"];
-    let science_image_paths = &config["CalibratedScienceImage"];
+    let two_dim_order_extraction_config = &config["TwoDimensionalOrderExtraction"];
+    let optimal_extraction_config = &config["OptimalOrderExtraction"];
     let configurations = &config["Configuration"];
     let flat_images_path = &config["MasterFlatImage"];
-    let optimal_image_paths = &config["OptimalOrderExtraction"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
-    let order_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutputpath").unwrap().as_str().unwrap();
-    let master_flat_path= project_root.to_owned() + flat_images_path.get("outputpath").unwrap().as_str().unwrap();
-    let science_paths = science_image_paths.get("outputpath").unwrap().as_sequence().unwrap();    
-    let output_directories = optimal_image_paths.get("outputpath").unwrap().as_sequence().unwrap();
+    let order_mask_path = project_root.to_owned() + two_dim_order_extraction_config.get("outputPathMask").unwrap().as_str().unwrap();
+    let master_flat_path= project_root.to_owned() + flat_images_path.get("outputPath").unwrap().as_str().unwrap();
+    let science_paths = optimal_extraction_config.get("inputPath").unwrap().as_sequence().unwrap();    
+    let output_paths = optimal_extraction_config.get("outputPath").unwrap().as_sequence().unwrap();
 
     // Open the order mask file. This file contains three images, one with the index of the maximum position,
     // one with the begin column index and one with the end column index of each order.
@@ -57,7 +56,7 @@ fn main() {
     let stdev_bias = hdu.read_key::<f32>(&mut fitsfile, "STD_BIAS").unwrap() as u32;
 
 
-    for (science_path, output_path) in izip!(science_paths, output_directories) {
+    for (science_path, output_path) in izip!(science_paths, output_paths) {
         
         let science_path = project_root.to_owned() + science_path.as_str().unwrap();
         let science_path = Path::new(&science_path);

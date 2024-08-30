@@ -98,8 +98,8 @@ def createCalibrationOutputPath(inputPaths):
         inputPaths: List of paths that correspond to raw bias/flat images
 
     Output:
-        output path for a master calibration image. 
-        Each type of calibration file (Bias, Flat, Dark, ThAr) has a unique output path. 
+        string: output path for a master calibration image. 
+                Each type of calibration file (Bias, Flat, Dark, ThAr) has a unique output path. 
     """
 
     # Combine the sorted list in one string to generate a unique hash
@@ -193,7 +193,7 @@ def createMaskOutputPathPrefix(masterFlatPath):
 
 
 
-def createScienceMaskOutputPath(scienceImagePaths):
+def createScience2DordersOutputPath(scienceImagePaths):
     """
     Create a list with the paths to the science mask.
 
@@ -213,18 +213,46 @@ def createScienceMaskOutputPath(scienceImagePaths):
 
 
 
-def createOptimalOrderExtractionOutputPath(scienceImagePaths):
+
+
+
+def createThAr2DordersOutputPath(masterThArPath):
+    """
+    Create a list with the paths to the ThAr 2D orders
+
+    Parameters:
+        masterThArPath: string: path to the masterThArPath
+
+    Output: 
+        string: path to the FITS file with the 2D orders of the master ThAr image
+    """
+    root = "Data/ProcessedData/ExtractedOrders/ThAr/"
+    outputPath = root + Path(masterThArPath).stem + "_2d_orders.fits"
+
+    return outputPath
+    
+
+
+
+
+
+
+
+def createOptimalOrderExtractionOutputPath(twoDimOrdersPaths):
     """
     Create the path for optimal order extraction output.
 
     Parameters:
-        scienceImagePaths: List of paths to the bias subtracted science images. 
+        twoDimOrdersPaths: List of paths to the fits files with the two dimensional orders
+
+    Output:
+        list of strings: paths to fits files with the extracted 1D orders
     """
 
     output_paths = [] 
     root = "Data/ProcessedData/OptimalExtraction/"
-    for path in scienceImagePaths:
-        fileStem = Path(path).stem.replace("_bias_subtracted", "_1d_orders")
+    for path in twoDimOrdersPaths:
+        fileStem = Path(path).stem.replace("_2d_orders", "_1d_orders")
         output_paths.append(root + fileStem + ".fits")
 
     return output_paths
@@ -280,49 +308,54 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
     masterBiasPath = createCalibrationOutputPath(yaml_input["rawBiasImages"])
     masterFlatPath = createCalibrationOutputPath(yaml_input["rawFlatImages"])
     masterThArPath = createCalibrationOutputPath(yaml_input["rawThArImages"])
-    calibratedSciencePath = createScienceOutputPath(yaml_input["rawScienceImages"])
+    biasSubtractedSciencePaths = createScienceOutputPath(yaml_input["rawScienceImages"])
 
     smoothMasterPath = createMaskOutputPathPrefix(masterFlatPath) + "_smoothed_master_flat.fits"
     maskPath     = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask.fits"
-    scienceMaskPath  = createScienceMaskOutputPath(calibratedSciencePath)
-    oneDOrderPath    = createOptimalOrderExtractionOutputPath(calibratedSciencePath)
-    etalonPeakFitParametersPath = createEtalonPeakFittingOutputPath(oneDOrderPath)
+    science2DordersPaths  = createScience2DordersOutputPath(biasSubtractedSciencePaths)
+    ThAr2DordersPath = createThAr2DordersOutputPath(masterThArPath)
+    oneDimScienceOrdersPaths    = createOptimalOrderExtractionOutputPath(science2DordersPaths)
+    oneDimThArOrdersPath = createOptimalOrderExtractionOutputPath([ThAr2DordersPath])              # Needs and outputs a list
+    etalonPeakFitParametersPath = createEtalonPeakFittingOutputPath(oneDimScienceOrdersPaths)
 
     param_yaml = {"MasterBiasImage" :
-                    { "inputpath" : yaml_input["rawBiasImages"],
-                      "outputpath" : masterBiasPath
+                  { "inputPath" : yaml_input["rawBiasImages"],
+                      "outputPath" : masterBiasPath
                     },
                   "MasterFlatImage" :
-                    { "inputpath" : yaml_input["rawFlatImages"],
-                      "outputpath" : masterFlatPath
+                    { "inputPath" : yaml_input["rawFlatImages"],
+                      "outputPath" : masterFlatPath
                     },
                   "MasterThArImage" :
-                    { "inputpath": yaml_input["rawThArImages"],
-                      "outputpath" : masterThArPath
+                    { "inputPath": yaml_input["rawThArImages"],
+                      "outputPath" : masterThArPath
                     }, 
-                  "CalibratedScienceImage" :
-                    { "inputpath" : yaml_input["rawScienceImages"],
-                      "outputpath" : calibratedSciencePath
+                  "BiasSubtractedScienceImage" :
+                    { "inputPath" : yaml_input["rawScienceImages"],
+                      "outputPath" : biasSubtractedSciencePaths
                     },
-                  "OrderImage" :
-                    { "smoothedMasterFlatPath" : smoothMasterPath,
-                      "maskOutputpath" : maskPath,
-                      "scienceOutputpath" : scienceMaskPath
+                  "TwoDimensionalOrderExtraction" :
+                    { "inputPath": biasSubtractedSciencePaths + [masterThArPath],
+                      "outputPathSmoothedMasterFlat" : smoothMasterPath,
+                      "outputPathMask" : maskPath,
+                      "outputPathTwoDimensionalOrders": science2DordersPaths + [ThAr2DordersPath]
                     },
                   "OptimalOrderExtraction" :
-                    { "outputpath" : oneDOrderPath
+                    { "inputPath": science2DordersPaths + [ThAr2DordersPath],
+                      "outputPath" : oneDimScienceOrdersPaths + oneDimThArOrdersPath
                     },
                   "EtalonPeakFitting":
-                    { "outputpath": etalonPeakFitParametersPath
+                    { "inputPath": oneDimScienceOrdersPaths,
+                      "outputPath": etalonPeakFitParametersPath
                     },
-                  "Configuration" :
-                    { "rootFolder" : home
+                  "Configuration":
+                    { "rootFolder": home
                     }
                  }
 
 
     file=open(dvc_param,"w")
-    yaml.dump(param_yaml,file)
+    yaml.dump(param_yaml,file, sort_keys=False)
     file.close()
 
 

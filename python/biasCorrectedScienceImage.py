@@ -87,17 +87,18 @@ if __name__ == "__main__":
     params   = yaml.safe_load(open("params.yaml"))
 
     root     = (params["Configuration"])["rootFolder"]
-    s_params = params["CalibratedScienceImage"]
-    b_params = params["MasterBiasImage"]
+    science_params = params["BiasSubtractedScienceImage"]
+    bias_params = params["MasterBiasImage"]
     
     # Bias corrected Science Image
 
-    rawSciencePath = [root+path for path in s_params["inputpath"]]
-    master_bias_path = root + b_params["outputpath"]
+    rawSciencePath = [root+path for path in science_params["inputPath"]]
+    master_bias_path = root + bias_params["outputPath"]
 
     calibration = BiasCorrectedScienceFrames(ScienceImages=rawSciencePath, BiasImages=master_bias_path)
-    calibration.run([root+path for path in s_params["outputpath"]])
+    calibration.run([root+path for path in science_params["outputPath"]])
 
     t2 = time.time()
 
     print(f"[{t2-t1}]")
+

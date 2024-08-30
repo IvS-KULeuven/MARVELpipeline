@@ -5,10 +5,10 @@ stages:
         - python/masterBias.py
         - python/pipeline.py
     params:
-        - MasterBiasImage.inputpath
-        - MasterBiasImage.outputpath
+        - MasterBiasImage.inputPath
+        - MasterBiasImage.outputPath
     outs:
-        - ${MasterBiasImage.outputpath}
+        - ${MasterBiasImage.outputPath}
   master flat:
     cmd: python python/masterFlat.py
     deps:
@@ -16,58 +16,59 @@ stages:
         - python/masterFlat.py
         - python/pipeline.py
     params:
-        - MasterFlatImage.inputpath
-        - MasterFlatImage.outputpath
-        - MasterBiasImage.outputpath
+        - MasterFlatImage.inputPath
+        - MasterFlatImage.outputPath
+        - MasterBiasImage.outputPath
     outs:
-        - ${MasterFlatImage.outputpath}
+        - ${MasterFlatImage.outputPath}
   master ThAr:
     cmd: python python/masterThAr.py
     deps:
         - Data/ProcessedData/masterThAr
         - python/masterThAr.py
     params:
-        - MasterThArImage.inputpath
-        - MasterThArImage.outputpath
-        - MasterBiasImage.outputpath
+        - MasterThArImage.inputPath
+        - MasterThArImage.outputPath
+        - MasterBiasImage.outputPath
     outs:
-        - ${MasterThArImage.outputpath}
+        - ${MasterThArImage.outputPath}
   bias subtraction:
     cmd: python python/biasCorrectedScienceImage.py
     deps:
         - Data/ProcessedData/MasterBias
     params:
-        - CalibratedScienceImage.inputpath
-        - CalibratedScienceImage.outputpath
-        - MasterBiasImage.outputpath
+        - BiasSubtractedScienceImage.inputPath
+        - BiasSubtractedScienceImage.outputPath
+        - MasterBiasImage.outputPath
   2D mask determination:
     cmd: ./pipeline/target/release/2dmaskdetermination
     deps:
         - Data/ProcessedData/MasterFlat
     params:
-        - MasterFlatImage.outputpath
-        - OrderImage.maskOutputpath
+        - MasterFlatImage.outputPath
+        - TwoDimensionalOrderExtraction.outputPathMask
     outs:
-        - ${OrderImage.maskOutputpath}
+        - ${TwoDimensionalOrderExtraction.outputPathMask}
   2D order extraction:
     cmd: ./pipeline/target/release/2dorderextraction
     deps:
         - Data/ProcessedData/ExtractedOrders/Mask
         - Data/ProcessedData/BiasSubtractedScience
+        - Data/ProcessedData/MasterThAr 
     params:
-        - OrderImage.maskOutputpath
-        - CalibratedScienceImage.outputpath
+        - TwoDimensionalOrderExtraction.outputPathMask
+        - BiasSubtractedScienceImage.outputPath
+        - MasterThArImage.outputPath
   1D flat-relative order extraction:
     cmd: ./pipeline/target/release/1dflatrelativeorderextraction
     deps:
         - Data/ProcessedData/ExtractedOrders/Mask
     params:
-        - OrderImage.maskOutputpath
-        - OrderImage.scienceOutputpath
+        - TwoDimensionalOrderExtraction.outputPathMask
+        - TwoDimensionalOrderExtraction.outputPathTwoDimensionalOrders
   Etalon peaks fitting:
     cmd: ./pipeline/target/release/fitetalonpeaks
     deps:
         - Data/ProcessedData/OptimalExtraction/ 
     params:
-        -  EtalonPeakFitting.outputpath
-
+        -  EtalonPeakFitting.outputPath

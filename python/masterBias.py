@@ -85,10 +85,10 @@ if __name__ == "__main__":
     params = yaml.safe_load(open("params.yaml"))
 
     root  = (params["Configuration"])["rootFolder"]
-    paths = (params["MasterBiasImage"])["inputpath"]
+    paths = (params["MasterBiasImage"])["inputPath"]
     
     paths = [ root+path for path in paths]
-    output = root + (params["MasterBiasImage"])["outputpath"]
+    output = root + (params["MasterBiasImage"])["outputPath"]
 
     # Master Bias Image
 

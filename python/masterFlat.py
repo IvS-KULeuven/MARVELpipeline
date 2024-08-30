@@ -110,11 +110,11 @@ if __name__ == "__main__":
     b_params = params["MasterBiasImage"]
 
     # Mater Flat Image
-    raw_flat_path = [ root+path for path in f_params["inputpath"] ]
-    master_bias_path = root + b_params["outputpath"]
+    raw_flat_path = [ root+path for path in f_params["inputPath"] ]
+    master_bias_path = root + b_params["outputPath"]
 
     masterF = MasterFlat(FlatImages=raw_flat_path, BiasImages=master_bias_path)
-    masterF.run(root+f_params["outputpath"])
+    masterF.run(root+f_params["outputPath"])
 
     t2 = time.time()
 

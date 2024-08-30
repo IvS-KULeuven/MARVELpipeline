@@ -89,11 +89,11 @@ if __name__ == "__main__":
     masterbias_params = params["MasterBiasImage"]
 
     # Mater Flat Image
-    raw_ThAr_paths = [ root+path for path in masterThAr_params["inputpath"] ]
-    master_bias_path = root + masterbias_params["outputpath"]
+    raw_ThAr_paths = [ root+path for path in masterThAr_params["inputPath"] ]
+    master_bias_path = root + masterbias_params["outputPath"]
 
     masterThAr = MasterThAr()
-    masterThAr.run(raw_ThAr_paths, master_bias_path, root + masterThAr_params["outputpath"])
+    masterThAr.run(raw_ThAr_paths, master_bias_path, root + masterThAr_params["outputPath"])
 
     t2 = time.time()
 
