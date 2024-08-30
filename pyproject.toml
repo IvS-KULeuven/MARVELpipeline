@@ -5,6 +5,7 @@ description = "The MARVEl spectrograph data processing pipeline"
 authors = ["Dries Seynaeve <dries.seynaeve@kuleuven.be>", "Joris De Ridder <joris.deridder@kuleuven.be>"]
 readme = "README.md"
 repository = "https://github.com/IvS-KULeuven/MARVELpipeline"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
