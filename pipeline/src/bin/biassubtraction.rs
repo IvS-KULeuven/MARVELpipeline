@@ -16,21 +16,21 @@ fn main() {
 
     let now = Instant::now();
 
-    // Load and parse the param.yaml file to get the paths from which we
+    // Load and parse the 'param.yaml' file to get the paths from which we
     // will load the files and to which we will save the output files.
 
     let config: serde_yaml::Value = parse_file();
 
     // Get all the paths rom which we will read/write
 
-    let science_image_paths = &config["rawScienceImage"];
-    let bias_image_paths = &config["rawBiasImage"];
-    let configurations = &config["configuration"];
+    let science_image_paths = &config["BiasSubtractedScienceImage"];
+    let bias_image_paths = &config["MasterBiasImage"];
+    let configurations = &config["Configuration"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
-    let master_bias_path = project_root.to_owned() + bias_image_paths.get("outpath").unwrap().as_str().unwrap();
-    let raw_science_paths = science_image_paths.get("path").unwrap().as_sequence().unwrap();
-    let cal_science_paths = science_image_paths.get("outpath").unwrap().as_sequence().unwrap();
+    let master_bias_path = project_root.to_owned() + bias_image_paths.get("outputPath").unwrap().as_str().unwrap();
+    let raw_science_paths = science_image_paths.get("inputPath").unwrap().as_sequence().unwrap();
+    let cal_science_paths = science_image_paths.get("outputPath").unwrap().as_sequence().unwrap();
     
 
     // Open the master bias file

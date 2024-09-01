@@ -1,22 +1,14 @@
 import errno
 import yaml
-import hashlib
 import os
 import sys
 from pathlib import Path
 
 
 
-def isCorrectPath(path):
-    return os.path.exists(path)
 
 
-
-
-
-
-
-def readInInputFile(filename):
+def readInputfile(filename):
     """
     Read in the user defined input file. This function checks that the
     input file is sensible and returns a dict with the values from the file.
@@ -26,6 +18,9 @@ def readInInputFile(filename):
 
     Output:
         dict with the values of the input file.
+
+    Example:
+        readInputfile("inputfile.yaml")
     """
     # check the file exicts
 
@@ -47,7 +42,7 @@ def readInInputFile(filename):
     # Check that the file has the right keys
     
     keys = set(yaml_input.keys())
-    expectedKeys = {'rawScienceImage', 'rawFlatImage', 'rawBiasImage'}
+    expectedKeys = {'rawScienceImages', 'rawFlatImages', 'rawBiasImages', 'rawThArImages'}
     if not keys == expectedKeys:
         raise Exception(f"\n\nExpected keys: {expectedKeys}\n Keys found in file are: {keys}")
         
@@ -66,18 +61,18 @@ def readInInputFile(filename):
 
         if isinstance(yaml_input[keyValue], list):
 
-            stripped_list = [ path for path in yaml_input[keyValue] if isCorrectPath(path) ]
+            stripped_list = [ path for path in yaml_input[keyValue] if os.path.exists(path) ]
 
             if len(stripped_list) == 0:
                 raise Exception(f"Files for {keyValue} do not exisits.")
 
             elif len(stripped_list) != len(yaml_input[keyValue]):
-                print(f"WARNING: Not every file specified in {keyValue} exists.\nWe continue the simulation with the files\n\n{stripped_list}")
+                print(f"WARNING: Not every file specified in {keyValue} exists.\nWe continue with the files\n\n{stripped_list}")
                 yaml_input[keyValue] = stripped_list
 
         elif isinstance(yaml_input[keyValue], str):
 
-            if not isCorrectPath(yaml_input[keyValue]):
+            if not os.path.exists(yaml_input[keyValue]):
                 raise Exception(f"File {yaml_input[keyValue]} for {keyValue} does not exists.")
 
             else:
@@ -94,83 +89,17 @@ def readInInputFile(filename):
 
 
 
-            
-        
-def create_dvc_file(yaml_input, dvc_param="params.yaml"):
-    """
-    Create the dvc input file that can be used to run dvc.
-
-    Parameters:
-        yaml_input: Dict with the paths to the raw calibration images and the
-                    science images.
-        dvc_param: Name of the path to the dvc input file. If none is give it
-                   uses the default params.yaml value.
-    """
-
-    home = os.getcwd() + "/"
-
-    masterBias        = createCalibrationOutputPath(yaml_input["rawBiasImage"])
-    masterFlat        = createCalibrationOutputPath(yaml_input["rawFlatImage"])
-    calibratedScience = createScienceOutputPath(yaml_input["rawScienceImage"])
-
-    smoothMaster = createMaskOutputPathPrefix(masterFlat) + "_smoothed_master_flat.fits"
-    maskPath     = createMaskOutputPathPrefix(masterFlat) + "_2d_mask.fits"
-    scienceMask  = createScienceMaskOutputPath(calibratedScience)
-    oneDOrder    = createOptimalOrderExtractionOutputPath(calibratedScience)
-    
-
-    param_yaml = {"rawBiasImage" :
-                    { "path" : yaml_input["rawBiasImage"],
-                      "outputpath" : masterBias
-                    },
-                  "rawFlatImage" :
-                    { "path" : yaml_input["rawFlatImage"],
-                      "outputpath" : masterFlat
-                    },
-                  "rawScienceImage" :
-                    { "path" : yaml_input["rawScienceImage"],
-                      "outputpath" : calibratedScience
-                    },
-                  "orderImage" :
-                    { "smoothMasterFlat" : smoothMaster,
-                      "maskOutputpath" : maskPath,
-                      "scienceOutputpath" : scienceMask
-                    },
-                  "optimalOrderExtraction" :
-                    { "outputpath" : oneDOrder
-                    },
-                  "configuration" :
-                    { "rootFolder" : home
-                    }
-                 }
-
-
-    file=open(dvc_param,"w")
-    yaml.dump(param_yaml,file)
-    file.close()
-
-    
-
-
-
-
-
-
-
-
-
-
-
 def createCalibrationOutputPath(inputPaths):
     """
-    Function that generates one output path given a list of calibration (either bias or flat) files.
+    Function that generates one output path given a list of calibration file. This can
+    be either Bias, Flatfield, Dark, or ThAr image files
 
     Parameters:
         inputPaths: List of paths that correspond to raw bias/flat images
 
     Output:
-        output path for a master bias/flat image. This should be unique for different
-        inputs.
+        string: output path for a master calibration image. 
+                Each type of calibration file (Bias, Flat, Dark, ThAr) has a unique output path. 
     """
 
     # Combine the sorted list in one string to generate a unique hash
@@ -192,6 +121,8 @@ def createCalibrationOutputPath(inputPaths):
         outputType = "MasterFlat"
     elif imageType == "DDDDD":
         outputType = "MasterDark"
+    elif imageType.startswith("T"):
+        outputType = "MasterThAr"
 
     # Get the root directory
 
@@ -262,7 +193,7 @@ def createMaskOutputPathPrefix(masterFlatPath):
 
 
 
-def createScienceMaskOutputPath(scienceImagePaths):
+def createScience2DordersOutputPath(scienceImagePaths):
     """
     Create a list with the paths to the science mask.
 
@@ -272,8 +203,8 @@ def createScienceMaskOutputPath(scienceImagePaths):
     output_paths = []
     root = "Data/ProcessedData/ExtractedOrders/Science/"
     for path in scienceImagePaths:
-        fileStem = Path(path).stem.replace("_bias_subtracted", "")
-        output_paths.append(root + fileStem + "_2d_orders.fits")
+        fileStem = Path(path).stem.replace("_bias_subtracted", "_2d_orders")
+        output_paths.append(root + fileStem + ".fits")
 
     return output_paths
     
@@ -282,19 +213,47 @@ def createScienceMaskOutputPath(scienceImagePaths):
 
 
 
-def createOptimalOrderExtractionOutputPath(scienceImagePaths):
+
+
+
+def createThAr2DordersOutputPath(masterThArPath):
+    """
+    Create a list with the paths to the ThAr 2D orders
+
+    Parameters:
+        masterThArPath: string: path to the masterThArPath
+
+    Output: 
+        string: path to the FITS file with the 2D orders of the master ThAr image
+    """
+    root = "Data/ProcessedData/ExtractedOrders/ThAr/"
+    outputPath = root + Path(masterThArPath).stem + "_2d_orders.fits"
+
+    return outputPath
+    
+
+
+
+
+
+
+
+def createOptimalOrderExtractionOutputPath(twoDimOrdersPaths):
     """
     Create the path for optimal order extraction output.
 
     Parameters:
-        scienceImagePaths: List of paths to the bias subtracted science images. 
+        twoDimOrdersPaths: List of paths to the fits files with the two dimensional orders
+
+    Output:
+        list of strings: paths to fits files with the extracted 1D orders
     """
 
     output_paths = [] 
     root = "Data/ProcessedData/OptimalExtraction/"
-    for path in scienceImagePaths:
-        fileStem = Path(path).stem.replace("_bias_subtracted", "")
-        output_paths.append(root + fileStem + "_1d_orders.fits")
+    for path in twoDimOrdersPaths:
+        fileStem = Path(path).stem.replace("_2d_orders", "_1d_orders")
+        output_paths.append(root + fileStem + ".fits")
 
     return output_paths
     
@@ -316,8 +275,8 @@ def createEtalonPeakFittingOutputPath(optimalExtracted1DspectrumPaths):
     root = "Data/ProcessedData/WaveCalibration/"
 
     for path in optimalExtracted1DspectrumPaths:
-        fileStem = Path(path).stem
-        output_paths.append(root + fileStem + "etalon_peak_fitparameters.fits")
+        fileStem = Path(path).stem.replace("_1d_orders", "_etalon_peak_fitparameters")
+        output_paths.append(root + fileStem + ".fits")
 
     return output_paths
 
@@ -329,17 +288,112 @@ def createEtalonPeakFittingOutputPath(optimalExtracted1DspectrumPaths):
 
 
 
+def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
+    """
+    Create the dvc input file that can be used to run dvc.
+
+    Parameters:
+        yaml_input: Dict with the paths to the raw calibration images and the
+                    science images.
+        dvc_param: Name of the path to the dvc input file. If none is give it
+                   uses the default params.yaml value.
+
+    Example:
+        create_dvc_inputfile("inputfile.yaml", dvc_param="params.yaml")
+        -> This will create a "params.yaml" file.
+    """
+
+    home = os.getcwd() + "/"
+
+    masterBiasPath = createCalibrationOutputPath(yaml_input["rawBiasImages"])
+    masterFlatPath = createCalibrationOutputPath(yaml_input["rawFlatImages"])
+    masterThArPath = createCalibrationOutputPath(yaml_input["rawThArImages"])
+    biasSubtractedSciencePaths = createScienceOutputPath(yaml_input["rawScienceImages"])
+
+    smoothMasterPath = createMaskOutputPathPrefix(masterFlatPath) + "_smoothed_master_flat.fits"
+    maskPath     = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask.fits"
+    science2DordersPaths  = createScience2DordersOutputPath(biasSubtractedSciencePaths)
+    ThAr2DordersPath = createThAr2DordersOutputPath(masterThArPath)
+    oneDimScienceOrdersPaths    = createOptimalOrderExtractionOutputPath(science2DordersPaths)
+    oneDimThArOrdersPath = createOptimalOrderExtractionOutputPath([ThAr2DordersPath])              # Needs and outputs a list
+    etalonPeakFitParametersPath = createEtalonPeakFittingOutputPath(oneDimScienceOrdersPaths)
+
+    param_yaml = {"Configuration":
+                  { 
+                    "rootFolder": home
+                  },
+
+                  "MasterBiasImage":
+                  { 
+                    "inputPath": yaml_input["rawBiasImages"],
+                    "outputPath": masterBiasPath
+                  },
+
+                  "MasterFlatImage":
+                  { 
+                    "inputPath": yaml_input["rawFlatImages"],
+                    "outputPath": masterFlatPath
+                  },
+
+                  "MasterThArImage":
+                  { 
+                    "inputPath": yaml_input["rawThArImages"],
+                    "outputPath" : masterThArPath
+                  }, 
+
+                  "BiasSubtractedScienceImage":
+                  {
+                    "inputPath" : yaml_input["rawScienceImages"],
+                    "outputPath" : biasSubtractedSciencePaths
+                  },
+
+                  "TwoDimensionalOrderExtraction":
+                  { 
+                    "inputPath": biasSubtractedSciencePaths + [masterThArPath],
+                    "outputPathSmoothedMasterFlat" : smoothMasterPath,
+                    "outputPathMask" : maskPath,
+                    "outputPathTwoDimensionalOrders": science2DordersPaths + [ThAr2DordersPath]
+                  },
+
+                  "OptimalOrderExtraction":
+                  { 
+                    "inputPath": science2DordersPaths + [ThAr2DordersPath],
+                    "outputPath" : oneDimScienceOrdersPaths + oneDimThArOrdersPath
+                  },
+
+                  "EtalonPeakFitting":
+                  { 
+                    "inputPath": oneDimScienceOrdersPaths,
+                    "outputPath": etalonPeakFitParametersPath
+                  }
+                 }
+
+
+    file=open(dvc_param,"w")
+    yaml.dump(param_yaml,file, sort_keys=False)
+    file.close()
+
+
+
+
+
+
+
+"""
+Example usage:
+    $ python configure.py inputfile.yaml
+"""
 if __name__ == "__main__":
 
     if len(sys.argv) == 1:
         raise TypeError("Expected 1 arguments, got 0.\nPlease provide input file argument as:\n\tpython marvel.py inputfile.yaml\nor\n\tpython marvel.py inputfile.yaml outputfile.yaml")
     else:
-        input = readInInputFile(sys.argv[1])
+        input = readInputfile(sys.argv[1])
 
     if len(sys.argv) == 2:
-        create_dvc_file(input)
+        create_dvc_inputfile(input)
     else:
-        create_dvc_file(input, sys.argv[2])
+        create_dvc_inputfile(input, sys.argv[2])
         
 
 

@@ -1,6 +1,5 @@
-from pipeline   import PipelineComponent
+from pipeline import PipelineComponent
 import yaml
-import os
 import tools
 import numpy as np
 import hashlib
@@ -14,8 +13,8 @@ import time
 
 class MasterFlat(PipelineComponent):
     """
-    Class that creates the master flat image. This image is
-    obtained by taking the median of multiple flat images.
+    Class that creates the master flat image. This image is obtained by taking the median of multiple flat images,
+    and then subtracting the master bias file.
     """
 
     def __init__(self, debug=0, **flatAndBiasPaths):
@@ -47,7 +46,7 @@ class MasterFlat(PipelineComponent):
 
     def run(self, outputFileName=None):
         """
-        We run through the alghoritm to create the master flat images.
+        We run through the algorithm to create the master flat images.
 
         Input:
             outputFileName: If None, nothing is saved. Otherwise, a string with the name of the outputfile,
@@ -106,17 +105,18 @@ if __name__ == "__main__":
 
     params   = yaml.safe_load(open("params.yaml"))
 
-    root     = (params["configuration"])["rootFolder"]
-    f_params = params["rawFlatImage"]
-    b_params = params["rawBiasImage"]
+    root     = (params["Configuration"])["rootFolder"]
+    f_params = params["MasterFlatImage"]
+    b_params = params["MasterBiasImage"]
 
     # Mater Flat Image
-    raw_flat_path = [ root+path for path in f_params["path"] ]
-    master_bias_path = root + b_params["outputpath"]
+    raw_flat_path = [ root+path for path in f_params["inputPath"] ]
+    master_bias_path = root + b_params["outputPath"]
 
     masterF = MasterFlat(FlatImages=raw_flat_path, BiasImages=master_bias_path)
-    masterF.run(root+f_params["outputpath"])
+    masterF.run(root+f_params["outputPath"])
 
     t2 = time.time()
 
     print(f"[{t2-t1}]")
+

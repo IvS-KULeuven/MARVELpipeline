@@ -5,10 +5,10 @@ stages:
         - python/masterBias.py
         - python/pipeline.py
     params:
-        - rawBiasImage.path
-        - rawBiasImage.outputpath
+        - MasterBiasImage.inputPath
+        - MasterBiasImage.outputPath
     outs:
-        - ${rawBiasImage.outputpath}
+        - ${MasterBiasImage.outputPath}
   master flat:
     cmd: python python/masterFlat.py
     deps:
@@ -16,38 +16,51 @@ stages:
         - python/masterFlat.py
         - python/pipeline.py
     params:
-        - rawFlatImage.path
-        - rawFlatImage.outputpath
-        - rawBiasImage.outputpath
+        - MasterFlatImage.inputPath
+        - MasterFlatImage.outputPath
+        - MasterBiasImage.outputPath
     outs:
-        - ${rawFlatImage.outputpath}
+        - ${MasterFlatImage.outputPath}
+  master ThAr:
+    cmd: python python/masterThAr.py
+    deps:
+        - Data/ProcessedData/masterThAr
+        - python/masterThAr.py
+    params:
+        - MasterThArImage.inputPath
+        - MasterThArImage.outputPath
+        - MasterBiasImage.outputPath
+    outs:
+        - ${MasterThArImage.outputPath}
   bias subtraction:
     cmd: python python/biasCorrectedScienceImage.py
     deps:
         - Data/ProcessedData/MasterBias
     params:
-        - rawScienceImage.path
-        - rawScienceImage.outputpath
-        - rawBiasImage.outputpath
+        - BiasSubtractedScienceImage.inputPath
+        - BiasSubtractedScienceImage.outputPath
+        - MasterBiasImage.outputPath
   2D mask determination:
     cmd: ./pipeline/target/release/2dmaskdetermination
     deps:
         - pipeline/src/bin/2dmaskdetermination.rs
         - Data/ProcessedData/MasterFlat
     params:
-        - rawFlatImage.outputpath
-        - orderImage.maskOutputpath
+        - MasterFlatImage.outputPath
+        - TwoDimensionalOrderExtraction.outputPathMask
     outs:
-        - ${orderImage.maskOutputpath}
+        - ${TwoDimensionalOrderExtraction.outputPathMask}
   2D order extraction:
     cmd: ./pipeline/target/release/2dorderextraction
     deps:
         - pipeline/src/bin/2dorderextraction.rs
         - Data/ProcessedData/ExtractedOrders/Mask
         - Data/ProcessedData/BiasSubtractedScience
+        - Data/ProcessedData/MasterThAr 
     params:
-        - orderImage.maskOutputpath
-        - rawScienceImage.outputpath
+        - TwoDimensionalOrderExtraction.outputPathMask
+        - BiasSubtractedScienceImage.outputPath
+        - MasterThArImage.outputPath
   1D flat-relative order extraction:
     cmd: ./pipeline/target/release/1dflatrelativeorderextraction
     deps:
@@ -55,6 +68,13 @@ stages:
         - Data/ProcessedData/ExtractedOrders/Science
         - Data/ProcessedData/ExtractedOrders/Mask
     params:
-        - orderImage.maskOutputpath
-        - orderImage.scienceOutputpath
+        - TwoDimensionalOrderExtraction.outputPathMask
+  Etalon peaks fitting:
+    cmd: ./pipeline/target/release/fitetalonpeaks
+    deps:
+        - Data/ProcessedData/OptimalExtraction/ 
+    params:
+        -  EtalonPeakFitting.outputPath
+        - TwoDimensionalOrderExtraction.outputPathTwoDimensionalOrders
+
 

@@ -24,14 +24,13 @@ fn main() {
 
     // Get all the paths from which we will read/write
 
-    let mask_image_paths = &config["orderImage"];
-    let science_image_paths = &config["rawScienceImage"];
-    let configurations = &config["configuration"];
+    let two_dim_extraction_config = &config["TwoDimensionalOrderExtraction"];
+    let configurations = &config["Configuration"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
-    let order_mask_path = project_root.to_owned() + mask_image_paths.get("maskOutputpath").unwrap().as_str().unwrap();
-    let c_science_paths = science_image_paths.get("outputpath").unwrap().as_sequence().unwrap();
-    let extracted_orders_paths = mask_image_paths.get("scienceOutputpath").unwrap().as_sequence().unwrap();
+    let order_mask_path = project_root.to_owned() + two_dim_extraction_config.get("outputPathMask").unwrap().as_str().unwrap();
+    let bias_subtracted_science_paths = two_dim_extraction_config.get("inputPath").unwrap().as_sequence().unwrap();
+    let extracted_orders_paths = two_dim_extraction_config.get("outputPathTwoDimensionalOrders").unwrap().as_sequence().unwrap();
 
 
     // Open the order mask file. This file contains three images, one with the index of the maximum position,
@@ -50,8 +49,8 @@ fn main() {
 
     // Loop over the science images
 
-    for (c_science_path, e_science_path) in izip!(c_science_paths, extracted_orders_paths) {
-        let science_path = project_root.to_owned() + c_science_path.as_str().unwrap();
+    for (bias_subtracted_science_path, e_science_path) in izip!(bias_subtracted_science_paths, extracted_orders_paths) {
+        let science_path = project_root.to_owned() + bias_subtracted_science_path.as_str().unwrap();
         let output_path = project_root.to_owned() + e_science_path.as_str().unwrap();
 
         // Open the calibrated science images
@@ -87,7 +86,7 @@ fn main() {
         let path = Path::new(&output_path);
         if path.exists() {                                     // Remove previous filefrom an older run
             fs::remove_file(&output_path).unwrap();
-        }  else if !path.parent().unwrap().is_dir() {         // Make sure parent directory exists
+        }  else if !path.parent().unwrap().is_dir() {          // Make sure parent directory exists
             fs::create_dir_all(path.parent().unwrap()).unwrap();}
 
         let description = ImageDescription {
@@ -105,3 +104,4 @@ fn main() {
     println!("[{:.1?}]", now.elapsed());
 
 }
+

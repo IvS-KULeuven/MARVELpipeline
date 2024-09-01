@@ -6,4 +6,5 @@ cargo build --bin 2dorderextraction --release
 cargo build --bin 1dflatrelativeorderextraction --release
 cargo build --bin biassubtraction --release
 cargo build --bin cosmicremoval --release
+cargo build --bin fitetalonpeaks --release
 cd ..
