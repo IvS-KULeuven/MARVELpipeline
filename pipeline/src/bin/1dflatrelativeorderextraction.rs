@@ -181,7 +181,7 @@ fn main() {
                     .create()
                     .unwrap();
 
-                let fiber_science_description = ColumnDescription::new("mean_spectrum")
+                let fiber_science_description = ColumnDescription::new("spectrum")
                     .with_type(ColumnDataType::Float)
                     .create()
                     .unwrap();
@@ -203,7 +203,7 @@ fn main() {
                 // Add the mean spectrum to the output fits file
 
                 hdu.write_col(&mut fitsfile, "x_pixel", &cropped_xpixel).unwrap();
-                hdu.write_col( &mut fitsfile, "mean_spectrum", &cropped_mean_spectrum).unwrap();
+                hdu.write_col( &mut fitsfile, "spectrum", &cropped_mean_spectrum).unwrap();
 
                 // Reset the arrays to accommodate the current order. Fiber == 1 is the wavelength calibration order, 
                 // so we can skip this one.

@@ -157,8 +157,8 @@ stages:
       nfiles: 2
     - path: pipeline/src/bin/1dflatrelativeorderextraction.rs
       hash: md5
-      md5: 1fbb14cd2d3e409192d5d7406fa48c2f
-      size: 10376
+      md5: 8ca47564e5da51c2642aa1c1f3243dfb
+      size: 10366
     params:
       params.yaml:
         TwoDimensionalOrderMaskTracing.outputPath: Data/ProcessedData/OrderMask/20230504_2d_mask.fits
@@ -167,7 +167,7 @@ stages:
     deps:
     - path: Data/ProcessedData/OptimalExtraction/
       hash: md5
-      md5: e65007da43f67412e22ffe9edd9cfff4.dir
+      md5: 7b4341d92c292513684656805e038471.dir
       size: 67570948
       nfiles: 3
     params:
