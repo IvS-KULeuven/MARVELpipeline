@@ -150,23 +150,18 @@ stages:
   1D flat-relative order extraction:
     cmd: ./pipeline/target/release/1dflatrelativeorderextraction
     deps:
-    - path: Data/ProcessedData/ExtractedOrders/Mask
+    - path: Data/ProcessedData/OrderMask
       hash: md5
       md5: 7bf36120e89ec4bdd1cfcbb90bf9d369.dir
       size: 243947520
       nfiles: 2
-    - path: Data/ProcessedData/ExtractedOrders/Science
-      hash: md5
-      md5: 99ac344fd77ad62392167571f0c1a53e.dir
-      size: 223036228
-      nfiles: 2
     - path: pipeline/src/bin/1dflatrelativeorderextraction.rs
       hash: md5
-      md5: 0d05dd00f8802606f80984c7a8ed2406
-      size: 10442
+      md5: 1fbb14cd2d3e409192d5d7406fa48c2f
+      size: 10376
     params:
       params.yaml:
-        TwoDimensionalOrderExtraction.outputPathMask: Data/ProcessedData/ExtractedOrders/Mask/20230504_2d_mask.fits
+        TwoDimensionalOrderMaskTracing.outputPath: Data/ProcessedData/OrderMask/20230504_2d_mask.fits
   Etalon peaks fitting:
     cmd: ./pipeline/target/release/fitetalonpeaks
     deps:
@@ -177,8 +172,36 @@ stages:
       nfiles: 3
     params:
       params.yaml:
+        EtalonPeakFitting.inputPath:
+        - Data/ProcessedData/OptimalExtraction/20230614T185728_ESSSS_H_0600_1d_orders.fits
         EtalonPeakFitting.outputPath:
         - Data/ProcessedData/WaveCalibration/20230614T185728_ESSSS_H_0600_etalon_peak_fitparameters.fits
-        TwoDimensionalOrderExtraction.outputPathTwoDimensionalOrders:
-        - Data/ProcessedData/ExtractedOrders/Science/20230614T185728_ESSSS_H_0600_2d_orders.fits
-        - Data/ProcessedData/ExtractedOrders/ThAr/20230504_MasterThAr_2d_orders.fits
+        OptimalOrderExtraction.outputPath:
+        - Data/ProcessedData/OptimalExtraction/20230614T185728_ESSSS_H_0600_1d_orders.fits
+        - Data/ProcessedData/OptimalExtraction/20230504_MasterThAr_1d_orders.fits
+  2D order mask determination:
+    cmd: ./pipeline/target/release/2dmaskdetermination
+    deps:
+    - path: Data/ProcessedData/MasterFlat
+      hash: md5
+      md5: af4497191fff0c32b52c608b83010a33.dir
+      size: 892117828
+      nfiles: 2
+    - path: pipeline/src/bin/2dmaskdetermination.rs
+      hash: md5
+      md5: b96f17f21ae4538a35a29f5057be5850
+      size: 11305
+    params:
+      params.yaml:
+        TwoDimensionalOrderMaskTracing.inputPath: Data/ProcessedData/MasterFlat/20230504_MasterFlat.fits
+        TwoDimensionalOrderMaskTracing.outputPath: Data/ProcessedData/OrderMask/20230504_2d_mask.fits
+        TwoDimensionalOrderMaskTracing.outputPathSmoothedMasterFlat: Data/ProcessedData/OrderMask/20230504_smoothed_master_flat.fits
+    outs:
+    - path: Data/ProcessedData/OrderMask/20230504_2d_mask.fits
+      hash: md5
+      md5: 485f41702cc13d388e22087fc7437938
+      size: 20917440
+    - path: Data/ProcessedData/OrderMask/20230504_smoothed_master_flat.fits
+      hash: md5
+      md5: 278e868c24fd81ef83d909a5911c87ef
+      size: 223030080
