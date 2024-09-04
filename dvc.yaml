@@ -40,41 +40,32 @@ stages:
         - BiasSubtractedScienceImage.inputPath
         - BiasSubtractedScienceImage.outputPath
         - MasterBiasImage.outputPath
-  2D mask determination:
+  2D order mask determination:
     cmd: ./pipeline/target/release/2dmaskdetermination
     deps:
         - pipeline/src/bin/2dmaskdetermination.rs
         - Data/ProcessedData/MasterFlat
     params:
-        - MasterFlatImage.outputPath
-        - TwoDimensionalOrderExtraction.outputPathMask
+        - TwoDimensionalOrderMaskTracing.inputPath
+        - TwoDimensionalOrderMaskTracing.outputPath
+        - TwoDimensionalOrderMaskTracing.outputPathSmoothedMasterFlat
     outs:
-        - ${TwoDimensionalOrderExtraction.outputPathMask}
-  2D order extraction:
-    cmd: ./pipeline/target/release/2dorderextraction
-    deps:
-        - pipeline/src/bin/2dorderextraction.rs
-        - Data/ProcessedData/ExtractedOrders/Mask
-        - Data/ProcessedData/BiasSubtractedScience
-        - Data/ProcessedData/MasterThAr 
-    params:
-        - TwoDimensionalOrderExtraction.outputPathMask
-        - BiasSubtractedScienceImage.outputPath
-        - MasterThArImage.outputPath
+        - ${TwoDimensionalOrderMaskTracing.outputPath}
+        - ${TwoDimensionalOrderMaskTracing.outputPathSmoothedMasterFlat}
   1D flat-relative order extraction:
     cmd: ./pipeline/target/release/1dflatrelativeorderextraction
     deps:
         - pipeline/src/bin/1dflatrelativeorderextraction.rs
-        - Data/ProcessedData/ExtractedOrders/Science
-        - Data/ProcessedData/ExtractedOrders/Mask
+        - Data/ProcessedData/OrderMask 
     params:
-        - TwoDimensionalOrderExtraction.outputPathMask
+        - TwoDimensionalOrderMaskTracing.outputPath
   Etalon peaks fitting:
     cmd: ./pipeline/target/release/fitetalonpeaks
     deps:
         - Data/ProcessedData/OptimalExtraction/ 
     params:
-        -  EtalonPeakFitting.outputPath
-        - TwoDimensionalOrderExtraction.outputPathTwoDimensionalOrders
+        - EtalonPeakFitting.inputPath
+        - EtalonPeakFitting.outputPath
+        - OptimalOrderExtraction.outputPath
 
 

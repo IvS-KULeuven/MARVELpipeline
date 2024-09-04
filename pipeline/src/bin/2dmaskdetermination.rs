@@ -24,14 +24,13 @@ fn main() {
 
     // Get all the paths from which we will read/write
 
-    let flat_image_paths = &config["MasterFlatImage"];
-    let mask_image_paths = &config["TwoDimensionalOrderExtraction"];
+    let order_tracing_config = &config["TwoDimensionalOrderMaskTracing"];
     let configurations = &config["Configuration"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
-    let master_flat_path = project_root.to_owned() + flat_image_paths.get("outputPath").unwrap().as_str().unwrap();
-    let orders_mask_path = project_root.to_owned() + mask_image_paths.get("outputPathMask").unwrap().as_str().unwrap();
-    let smoothed_master_flat_path = project_root.to_owned() + mask_image_paths.get("outputPathSmoothedMasterFlat").unwrap().as_str().unwrap();
+    let master_flat_path = project_root.to_owned() + order_tracing_config.get("inputPath").unwrap().as_str().unwrap();
+    let orders_mask_path = project_root.to_owned() + order_tracing_config.get("outputPath").unwrap().as_str().unwrap();
+    let smoothed_master_flat_path = project_root.to_owned() + order_tracing_config.get("outputPathSmoothedMasterFlat").unwrap().as_str().unwrap();
 
 
     // Open the master flat file

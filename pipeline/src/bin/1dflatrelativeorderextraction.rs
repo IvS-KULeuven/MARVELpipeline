@@ -23,13 +23,12 @@ fn main() {
     // Get all the paths from which we will read/write
 
     let configurations = &config["Configuration"];
-    let master_flat_config = &config["MasterFlatImage"];
-    let two_dim_order_extraction_config = &config["TwoDimensionalOrderExtraction"];
+    let two_dim_order_mask_config = &config["TwoDimensionalOrderMaskTracing"];
     let optimal_order_extraction_config = &config["OptimalOrderExtraction"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
-    let order_mask_path = project_root.to_owned() + two_dim_order_extraction_config.get("outputPathMask").unwrap().as_str().unwrap();
-    let master_flat_path= project_root.to_owned() + master_flat_config.get("outputPath").unwrap().as_str().unwrap();
+    let master_flat_path= project_root.to_owned() + two_dim_order_mask_config.get("inputPath").unwrap().as_str().unwrap();
+    let order_mask_path = project_root.to_owned() + two_dim_order_mask_config.get("outputPath").unwrap().as_str().unwrap();
     let science_paths = optimal_order_extraction_config.get("inputPath").unwrap().as_sequence().unwrap();    
     let output_directories = optimal_order_extraction_config.get("outputPath").unwrap().as_sequence().unwrap();
 

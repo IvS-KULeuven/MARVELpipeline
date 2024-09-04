@@ -174,7 +174,7 @@ def createMaskOutputPathPrefix(masterFlatPath):
 
     # Root of the file
 
-    root = "Data/ProcessedData/ExtractedOrders/Mask/"
+    root = "Data/ProcessedData/OrderMask/"
 
     # Get date of the files
 
@@ -238,12 +238,12 @@ def createThAr2DordersOutputPath(masterThArPath):
 
 
 
-def createOptimalOrderExtractionOutputPath(twoDimOrdersPaths):
+def createScienceOptimalOrderExtractionOutputPath(bias_subtracted_paths):
     """
     Create the path for optimal order extraction output.
 
     Parameters:
-        twoDimOrdersPaths: List of paths to the fits files with the two dimensional orders
+        bias_subtracted_paths: List of paths to the fits files with the two dimensional orders
 
     Output:
         list of strings: paths to fits files with the extracted 1D orders
@@ -251,14 +251,34 @@ def createOptimalOrderExtractionOutputPath(twoDimOrdersPaths):
 
     output_paths = [] 
     root = "Data/ProcessedData/OptimalExtraction/"
-    for path in twoDimOrdersPaths:
-        fileStem = Path(path).stem.replace("_2d_orders", "_1d_orders")
+    for path in bias_subtracted_paths:
+        fileStem = Path(path).stem.replace("_bias_subtracted", "_1d_orders")
         output_paths.append(root + fileStem + ".fits")
 
     return output_paths
     
     
     
+
+
+
+
+def createThArOptimalOrderExtractionOutputPath(thar_master_path):
+    """
+    Create the path for optimal order extraction output.
+
+    Parameters:
+        twoDimOrdersPaths: List of paths to the fits files with the two dimensional orders
+
+    Output:
+        string: path to fits files with the extracted 1D orders of the ThAr master file
+    """
+
+    root = "Data/ProcessedData/OptimalExtraction/"
+    output_path = root + Path(thar_master_path).stem + "_1d_orders.fits"
+    return output_path
+    
+
 
 
 
@@ -310,12 +330,10 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
     masterThArPath = createCalibrationOutputPath(yaml_input["rawThArImages"])
     biasSubtractedSciencePaths = createScienceOutputPath(yaml_input["rawScienceImages"])
 
-    smoothMasterPath = createMaskOutputPathPrefix(masterFlatPath) + "_smoothed_master_flat.fits"
-    maskPath     = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask.fits"
-    science2DordersPaths  = createScience2DordersOutputPath(biasSubtractedSciencePaths)
-    ThAr2DordersPath = createThAr2DordersOutputPath(masterThArPath)
-    oneDimScienceOrdersPaths    = createOptimalOrderExtractionOutputPath(science2DordersPaths)
-    oneDimThArOrdersPath = createOptimalOrderExtractionOutputPath([ThAr2DordersPath])              # Needs and outputs a list
+    smoothMasterPath            = createMaskOutputPathPrefix(masterFlatPath) + "_smoothed_master_flat.fits"
+    maskPath                    = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask.fits"
+    oneDimScienceOrdersPaths    = createScienceOptimalOrderExtractionOutputPath(biasSubtractedSciencePaths)
+    oneDimThArOrdersPath        = createThArOptimalOrderExtractionOutputPath(masterThArPath)
     etalonPeakFitParametersPath = createEtalonPeakFittingOutputPath(oneDimScienceOrdersPaths)
 
     param_yaml = {"Configuration":
@@ -347,18 +365,17 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
                     "outputPath" : biasSubtractedSciencePaths
                   },
 
-                  "TwoDimensionalOrderExtraction":
+                  "TwoDimensionalOrderMaskTracing":
                   { 
-                    "inputPath": biasSubtractedSciencePaths + [masterThArPath],
-                    "outputPathSmoothedMasterFlat" : smoothMasterPath,
-                    "outputPathMask" : maskPath,
-                    "outputPathTwoDimensionalOrders": science2DordersPaths + [ThAr2DordersPath]
+                    "inputPath": masterFlatPath,
+                    "outputPath": maskPath,
+                    "outputPathSmoothedMasterFlat": smoothMasterPath
                   },
 
                   "OptimalOrderExtraction":
                   { 
-                    "inputPath": science2DordersPaths + [ThAr2DordersPath],
-                    "outputPath" : oneDimScienceOrdersPaths + oneDimThArOrdersPath
+                    "inputPath": biasSubtractedSciencePaths + [masterThArPath],
+                    "outputPath": oneDimScienceOrdersPaths + [oneDimThArOrdersPath]
                   },
 
                   "EtalonPeakFitting":
