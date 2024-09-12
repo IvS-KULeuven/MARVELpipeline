@@ -137,6 +137,8 @@ fn main() {
                     //       in the weights.
                     // Fiber 5 is the etalon emission spectrum. No 4σ thresholding there, because then we wouldn't have the close-to-zero flux 
                     // in between the etalon lines.
+                    // WARNING: if a sky/straylight background was subtracted, the corresponding photon readout_noise
+                    //          should also be taken into account here.
 
                     let weights = if fiber == 1 {
                         science_cross_order_slice.mapv(|x| 1.0 / (readout_noise*readout_noise + x)) 
