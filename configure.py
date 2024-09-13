@@ -42,7 +42,7 @@ def readInputfile(filename):
     # Check that the file has the right keys
     
     keys = set(yaml_input.keys())
-    expectedKeys = {'rawScienceImages', 'rawFlatImages', 'rawBiasImages', 'rawThArImages'}
+    expectedKeys = {'rawScienceImages', 'rawFlatImages', 'rawBiasImages', 'rawDarkImages', 'rawThArImages'}
     if not keys == expectedKeys:
         raise Exception(f"\n\nExpected keys: {expectedKeys}\n Keys found in file are: {keys}")
         
@@ -108,13 +108,16 @@ def createCalibrationOutputPath(inputPaths):
 
     # We use the date of the earliest file
 
-    fileName = inputPaths[0].split("/")[-1]
-    dateTime = fileName.split("_")[0]
+    fileStem = Path(inputPaths[0]).stem
+    parts = fileStem.split("_")
+    dateTime = parts[0]
+    imageType = parts[1]
+    fiberType = parts[2]
+    exposureTime = parts[3]
     date = dateTime.split("T")[0]
     
     # Specify the type of file
 
-    imageType = fileName.split("_")[1]
     if imageType == "BBBBB":
         outputType = "MasterBias"
     elif imageType == "FFFFF":
@@ -124,9 +127,15 @@ def createCalibrationOutputPath(inputPaths):
     elif imageType.startswith("T"):
         outputType = "MasterThAr"
 
-    # Get the root directory
+    # Create the output path
+    
+    outputPath = "Data/ProcessedData/" + outputType + "/" + date + "_" + outputType 
+    if outputType == "MasterThAr":
+        outputPath += "_" + fiberType 
+    elif outputType == "MasterDark":
+        outputPath += "_" + exposureTime 
 
-    outputPath = "Data/ProcessedData/" + outputType + "/" + date + "_" + outputType + ".fits"
+    outputPath += ".fits"
 
     return outputPath
 
@@ -326,6 +335,7 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
     home = os.getcwd() + "/"
 
     masterBiasPath = createCalibrationOutputPath(yaml_input["rawBiasImages"])
+    masterDarkPath = createCalibrationOutputPath(yaml_input["rawDarkImages"])
     masterFlatPath = createCalibrationOutputPath(yaml_input["rawFlatImages"])
     masterThArPath = createCalibrationOutputPath(yaml_input["rawThArImages"])
     biasSubtractedSciencePaths = createScienceOutputPath(yaml_input["rawScienceImages"])
@@ -345,6 +355,12 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
                   { 
                     "inputPath": yaml_input["rawBiasImages"],
                     "outputPath": masterBiasPath
+                  },
+
+                  "MasterDarkImage":
+                  { 
+                    "inputPath": yaml_input["rawDarkImages"],
+                    "outputPath": masterDarkPath
                   },
 
                   "MasterFlatImage":

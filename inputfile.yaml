@@ -4,6 +4,12 @@ rawBiasImages:
   - Data/RawData/CalibrationImages/Bias/20230504T135644_BBBBB_H_0000.fits
   - Data/RawData/CalibrationImages/Bias/20230504T135648_BBBBB_H_0000.fits
   - Data/RawData/CalibrationImages/Bias/20230504T135652_BBBBB_H_0000.fits
+rawDarkImages:
+  - Data/RawData/CalibrationImages/Dark/20230507T083111_DDDDD_H_0900.fits
+  - Data/RawData/CalibrationImages/Dark/20230507T083119_DDDDD_H_0900.fits
+  - Data/RawData/CalibrationImages/Dark/20230507T083123_DDDDD_H_0900.fits
+  - Data/RawData/CalibrationImages/Dark/20230507T083125_DDDDD_H_0900.fits
+  - Data/RawData/CalibrationImages/Dark/20230507T083127_DDDDD_H_0900.fits
 rawFlatImages:
   - Data/RawData/CalibrationImages/Flat/20230504T142007_FFFFF_H_0001.fits
   - Data/RawData/CalibrationImages/Flat/20230504T142402_FFFFF_H_0001.fits

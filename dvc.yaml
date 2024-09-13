@@ -9,6 +9,16 @@ stages:
         - MasterBiasImage.outputPath
     outs:
         - ${MasterBiasImage.outputPath}
+  master dark:
+    cmd: python python/masterDark.py
+    deps:
+        - python/masterDark.py
+        - python/pipeline.py
+    params:
+        - MasterDarkImage.inputPath
+        - MasterDarkImage.outputPath
+    outs:
+        - ${MasterDarkImage.outputPath}
   master flat:
     cmd: python python/masterFlat.py
     deps:
