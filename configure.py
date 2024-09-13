@@ -156,12 +156,12 @@ def createScienceOutputPath(inputPaths):
         list of paths to be used to save bias subtracted science images
     """
 
-    root = "Data/ProcessedData/BiasSubtractedScience/"
+    root = "Data/ProcessedData/BiasAndDarkSubtractedScience/"
     output_paths = []
 
     for path in inputPaths:
         fileStem = Path(path).stem
-        output_paths.append(root + fileStem + "_bias_subtracted.fits")
+        output_paths.append(root + fileStem + "_biasdark_subtracted.fits")
 
     return output_paths
 
@@ -212,7 +212,7 @@ def createScience2DordersOutputPath(scienceImagePaths):
     output_paths = []
     root = "Data/ProcessedData/ExtractedOrders/Science/"
     for path in scienceImagePaths:
-        fileStem = Path(path).stem.replace("_bias_subtracted", "_2d_orders")
+        fileStem = Path(path).stem.replace("_biasdark_subtracted", "_2d_orders")
         output_paths.append(root + fileStem + ".fits")
 
     return output_paths
@@ -261,7 +261,7 @@ def createScienceOptimalOrderExtractionOutputPath(bias_subtracted_paths):
     output_paths = [] 
     root = "Data/ProcessedData/OptimalExtraction/"
     for path in bias_subtracted_paths:
-        fileStem = Path(path).stem.replace("_bias_subtracted", "_1d_orders")
+        fileStem = Path(path).stem.replace("_biasdark_subtracted", "_1d_orders")
         output_paths.append(root + fileStem + ".fits")
 
     return output_paths
@@ -338,11 +338,11 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
     masterDarkPath = createCalibrationOutputPath(yaml_input["rawDarkImages"])
     masterFlatPath = createCalibrationOutputPath(yaml_input["rawFlatImages"])
     masterThArPath = createCalibrationOutputPath(yaml_input["rawThArImages"])
-    biasSubtractedSciencePaths = createScienceOutputPath(yaml_input["rawScienceImages"])
+    biasAndDarkSubtractedSciencePaths = createScienceOutputPath(yaml_input["rawScienceImages"])
 
     smoothMasterPath            = createMaskOutputPathPrefix(masterFlatPath) + "_smoothed_master_flat.fits"
     maskPath                    = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask.fits"
-    oneDimScienceOrdersPaths    = createScienceOptimalOrderExtractionOutputPath(biasSubtractedSciencePaths)
+    oneDimScienceOrdersPaths    = createScienceOptimalOrderExtractionOutputPath(biasAndDarkSubtractedSciencePaths)
     oneDimThArOrdersPath        = createThArOptimalOrderExtractionOutputPath(masterThArPath)
     etalonPeakFitParametersPath = createEtalonPeakFittingOutputPath(oneDimScienceOrdersPaths)
 
@@ -375,10 +375,10 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
                     "outputPath" : masterThArPath
                   }, 
 
-                  "BiasSubtractedScienceImage":
+                  "BiasAndDarkSubtractedScienceImage":
                   {
                     "inputPath" : yaml_input["rawScienceImages"],
-                    "outputPath" : biasSubtractedSciencePaths
+                    "outputPath" : biasAndDarkSubtractedSciencePaths
                   },
 
                   "TwoDimensionalOrderMaskTracing":
@@ -390,7 +390,7 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
 
                   "OptimalOrderExtraction":
                   { 
-                    "inputPath": biasSubtractedSciencePaths + [masterThArPath],
+                    "inputPath": biasAndDarkSubtractedSciencePaths + [masterThArPath],
                     "outputPath": oneDimScienceOrdersPaths + [oneDimThArOrdersPath]
                   },
 

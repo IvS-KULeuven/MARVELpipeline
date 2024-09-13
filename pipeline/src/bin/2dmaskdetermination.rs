@@ -8,7 +8,7 @@ use ndarray_ndimage::{gaussian_filter, BorderMode};
 use configuration::parse_file;
 
 
-type CCDImageType = ArrayD<u32>;
+type CCDImageType = ArrayD<i32>;
 
 
 

@@ -1,9 +1,11 @@
-from pipeline import PipelineComponent
+import os
 import yaml
 import tools
 import numpy as np
 import hashlib
 import time
+from pathlib import Path
+from astropy.io import fits
 
 
 
@@ -11,21 +13,14 @@ import time
 
 
 
-class MasterFlat(PipelineComponent):
+class MasterFlat:
     """
     Class that creates the master flat image. This image is obtained by taking the median of multiple flat images,
-    and then subtracting the master bias file.
+    and then subtracting the master bias file and the rescaled master dark file.
     """
 
-    def __init__(self, debug=0, **flatAndBiasPaths):
-
-        self.imageTypes = ["FlatImages", "BiasImages"]
-        super().__init__(**flatAndBiasPaths)
-        flatAndBiasPaths = self.inputPaths
-        self.debug = debug
-
-        self.masterBiasPath = flatAndBiasPaths["BiasImages"]
-        self.rawFlatPath  = flatAndBiasPaths["FlatImages"]
+    def __init__(self):
+        pass
 
 
 
@@ -36,46 +31,66 @@ class MasterFlat(PipelineComponent):
 
 
 
-
-
-
-
-
-
-
-
-    def run(self, outputFileName=None):
+    def run(self, rawFlatImagePaths, masterBiasPath, masterDarkPath, outputFilePath=None):
         """
-        We run through the algorithm to create the master flat images.
+        Create a master flat field
 
         Input:
-            outputFileName: If None, nothing is saved. Otherwise, a string with the name of the outputfile,
-                            incl. the extension ".fits".
+            rawFlatImagePaths: list of strings containing the full path of the 2D raw flatfield CCD FITs files
+            masterBiasPath:    string containing the full path of the 2D master bias FITS file
+            masterDarkPath:    string containing the full path of the 2D master dark FITS file
+            outputFilePath:    If None, nothing is saved. Otherwise, a string with the name of the outputfile,
+                               incl. the extension ".fits".
 
         Output:
-            masterFlat:     master flat image [ADU]
+            masterFlat: 2D numpy array:  master flatfield image [ADU]
         """
 
-        # Get all the fits files corresponding to these hashes
+        # Get all the relevant CCD images
 
-        flats = tools.getImages(self.rawFlatPath)
-        bias  = tools.getImage(self.masterBiasPath)
-        stdBias = tools.getStdBias(self.masterBiasPath)
-        meanBias = np.mean(bias)
+        masterBias = tools.getImage(masterBiasPath)
+        masterDark = tools.getImage(masterDarkPath)
+        flatImages = tools.getImages(rawFlatImagePaths)
 
-        # Use the image in the fits files, and use mean_combining to obtain the the master image
+        # Take the median of all flat images
 
-        masterFlat = np.median(flats, axis=0) - bias
+        masterFlat = np.median(flatImages, axis=0)
 
-        # Add offset so that all the values in the MasterFlat are positive
+        # Find out the exposure time for the flat images 
 
-        if np.min(masterFlat) < 0:
-                  masterFlat = masterFlat -np.min(masterFlat)
+        flatFileStem = Path(rawFlatImagePaths[0]).stem
+        flatExposureTime = float(flatFileStem[-4:])
 
-        if outputFileName is not None:
-            self.saveImage(masterFlat, outputFileName, std_bias=stdBias, m_bias=meanBias)
-            if (self.debug > 1):
-                print("Master flat image saved to fits file")
+        # Find out the exposure time for the master dark image
+
+        darkFileStem = Path(masterDarkPath).stem
+        darkExposureTime = float(darkFileStem[-4:])
+
+        # Correct the master flat for the bias and the dark current
+        # Note that the masterDark was already corrected for the bias level
+
+        darkLevel = np.median(masterDark)
+        biasLevel = np.median(masterBias)
+        masterFlat = masterFlat - biasLevel - darkLevel / darkExposureTime * flatExposureTime
+
+        # Zero all negative values 
+
+        masterFlat[masterFlat < 0] = 0
+
+        # If required, save to a FITS file
+
+        if outputFilePath is not None:
+            num_row, num_col = masterFlat.shape
+            hdr = fits.Header()
+            hdr["rows"] = num_row
+            hdr["cols"] = num_col
+            hdr["std_bias"] = np.std(masterBias)
+            hdr["m_bias"] = np.mean(masterBias)            # FIXME: change m_bias to mean_bias
+            outputParentPath = Path(outputFilePath).parent.absolute()
+            if not os.path.exists(outputParentPath):
+                os.makedirs(outputParentPath)
+            hdu = fits.PrimaryHDU(masterFlat, header=hdr)
+            hdu.writeto(outputFilePath, overwrite=True)
 
         # That's it!
 
@@ -87,34 +102,34 @@ class MasterFlat(PipelineComponent):
 
 
 
-    def getHashOfOutputfile(self, imageHash=None):
-        """
-        The function returns the hash id for the output file.
-        This hash is made from the hash files that are used as input.
 
-        Ouput:
-           hash. string containing the output hash
-        """
-        hash = hashlib.sha256(bytes("".join(self.rawFlatPath) + self.masterBiasPath, 'utf-8')).hexdigest()
-        return hash
+
+
+
+
+
+
 
 
 if __name__ == "__main__":
 
     t1 = time.time()
 
-    params   = yaml.safe_load(open("params.yaml"))
+    params = yaml.safe_load(open("params.yaml"))
 
-    root     = (params["Configuration"])["rootFolder"]
-    f_params = params["MasterFlatImage"]
-    b_params = params["MasterBiasImage"]
+    root = (params["Configuration"])["rootFolder"]
+    flat_params = params["MasterFlatImage"]
+    bias_params = params["MasterBiasImage"]
+    dark_params = params["MasterDarkImage"]
 
     # Mater Flat Image
-    raw_flat_path = [ root+path for path in f_params["inputPath"] ]
-    master_bias_path = root + b_params["outputPath"]
+    raw_flat_paths = [ root+path for path in flat_params["inputPath"] ]
+    master_bias_path = root + bias_params["outputPath"]
+    master_dark_path = root + dark_params["outputPath"]
+    master_flat_path = root + flat_params["outputPath"] 
 
-    masterF = MasterFlat(FlatImages=raw_flat_path, BiasImages=master_bias_path)
-    masterF.run(root+f_params["outputPath"])
+    masterFlat = MasterFlat()
+    masterFlat.run(raw_flat_paths, master_bias_path, master_dark_path, outputFilePath=master_flat_path)
 
     t2 = time.time()
 

@@ -23,33 +23,39 @@ stages:
     cmd: python python/masterFlat.py
     deps:
         - Data/ProcessedData/MasterBias
+        - Data/ProcessedData/MasterDark
         - python/masterFlat.py
         - python/pipeline.py
     params:
         - MasterFlatImage.inputPath
         - MasterFlatImage.outputPath
         - MasterBiasImage.outputPath
+        - MasterDarkImage.outputPath
     outs:
         - ${MasterFlatImage.outputPath}
   master ThAr:
     cmd: python python/masterThAr.py
     deps:
-        - Data/ProcessedData/masterThAr
+        - Data/ProcessedData/masterBias
+        - Data/ProcessedData/MasterDark
         - python/masterThAr.py
     params:
         - MasterThArImage.inputPath
         - MasterThArImage.outputPath
         - MasterBiasImage.outputPath
+        - MasterDarkImage.outputPath
     outs:
         - ${MasterThArImage.outputPath}
-  bias subtraction:
-    cmd: python python/biasCorrectedScienceImage.py
+  bias and dark subtraction:
+    cmd: python python/biasAndDarkCorrection.py
     deps:
         - Data/ProcessedData/MasterBias
+        - Data/ProcessedData/MasterDark
     params:
-        - BiasSubtractedScienceImage.inputPath
-        - BiasSubtractedScienceImage.outputPath
+        - BiasAndDarkSubtractedScienceImage.inputPath
+        - BiasAndDarkSubtractedScienceImage.outputPath
         - MasterBiasImage.outputPath
+        - MasterDarkImage.outputPath
   2D order mask determination:
     cmd: ./pipeline/target/release/2dmaskdetermination
     deps:

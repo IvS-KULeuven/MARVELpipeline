@@ -7,7 +7,7 @@ use ndarray::{ArrayD, Array1, Axis, s};
 use itertools::izip;
 use configuration::parse_file;
 
-type CCDImageType = ArrayD<u32>;
+type CCDImageType = ArrayD<i32>;
 
 
 
@@ -57,10 +57,12 @@ fn main() {
 
     for (science_path, output_path) in izip!(science_paths, output_directories) {
         
+        println!("{}", science_path.as_str().unwrap());
+
         let science_path = project_root.to_owned() + science_path.as_str().unwrap();
         let science_path = Path::new(&science_path);
 
-        // Open the bias subtracted science image.
+        // Open the bias and dark subtracted science image.
 
         let mut fitsfile = FitsFile::open(science_path).unwrap();
         let mut hdu = fitsfile.primary_hdu().unwrap();
@@ -128,17 +130,17 @@ fn main() {
                     let flat_cross_order_slice = master_flat.slice(slice);
                 
                     // The following numbers came from Nich
+                    // FIXME: don't hardcode the following numbers
                 
                     let readout_noise = 5.0;                                   // [e-/pix]
                     let gain = 3.0;                                            // [e-/ADU] 
                     let readout_noise = readout_noise / gain;                  // [ADU/pix]
 
-                    // Note: if a skybackground would have been subtracted, we would also need to take into account its photon noise
-                    //       in the weights.
-                    // Fiber 5 is the etalon emission spectrum. No 4σ thresholding there, because then we wouldn't have the close-to-zero flux 
-                    // in between the etalon lines.
-                    // WARNING: if a sky/straylight background was subtracted, the corresponding photon readout_noise
-                    //          should also be taken into account here.
+                    // WARNING: if a skybackground would have been subtracted, we would also need to take 
+                    //          into account its photon noise in the weights.
+
+                    // Fiber 1 is the wavelength calibration spectrum. No 4σ thresholding there, 
+                    // because then we wouldn't have the close-to-zero flux in between the emission lines.
 
                     let weights = if fiber == 1 {
                         science_cross_order_slice.mapv(|x| 1.0 / (readout_noise*readout_noise + x)) 
@@ -161,6 +163,7 @@ fn main() {
                     spectrum.push( (science_cross_order_slice * flat_cross_order_slice * &weights).sum()
                         / (&flat_cross_order_slice * &flat_cross_order_slice * &weights).sum() );
                     xpixel.push(irow as u32);
+
                 }
 
             }

@@ -25,46 +25,63 @@ class MasterThAr:
 
 
 
-    def run(self, rawThArImagePaths, masterBiasPath, outputFileName=None):
+    def run(self, rawThArImagePaths, masterBiasPath, masterDarkPath, outputFilePath=None):
         """
-        We run through the algorithm to create the master ThAr images.
+        Create the ThAr master image
 
         Input:
             rawThArImagePaths: list of strings containing the full path of the 2D raw ThAr CCD FITs files
             masterBiasPath:    string containing the full path of the 2D master bias FITS file
-            outputFileName:    If None, nothing is saved. Otherwise, a string with the name of the outputfile,
+            masterDarkPath:    string containing the full path of the 2D master dark FITS file
+            outputFilePath:    If None, nothing is saved. Otherwise, a string with the name of the outputfile,
                                incl. the extension ".fits".
 
         Output:
-            masterFlat:     master flat image [ADU]
+            masterThAr: 2D numpy array:  master ThAr image [ADU]
         """
 
-        # Get all the fits files corresponding to these hashes
+        # Get all the relevant CCD images
 
-        masterBias  = tools.getImage(masterBiasPath)
+        masterBias = tools.getImage(masterBiasPath)
+        masterDark = tools.getImage(masterDarkPath)
         ThArImages = tools.getImages(rawThArImagePaths)
 
-        # Use the image in the fits files, and use mean_combining to obtain the the master image
+        # Take the median of all ThAr images
 
-        masterThAr = np.median(ThArImages, axis=0) - masterBias
+        masterThAr = np.median(ThArImages, axis=0)
 
-        # Add offset so that all the values in the master ThAr image are positive
+        # Find out the exposure time for the ThAr images 
 
-        if np.min(masterThAr) < 0:
-                  masterThAr = masterThAr - np.min(masterThAr)
+        ThArFileStem = Path(rawThArImagePaths[0]).stem
+        ThArExposureTime = float(ThArFileStem[-4:])
 
+        # Find out the exposure time for the master dark image
+
+        darkFileStem = Path(masterDarkPath).stem
+        darkExposureTime = float(darkFileStem[-4:])
+
+        # Correct the master ThAr for the bias and the dark current
+
+        darkLevel = np.median(masterDark)
+        biasLevel = np.median(masterBias)
+        masterThAr = masterThAr - biasLevel - darkLevel / darkExposureTime * ThArExposureTime
+
+        # Zero all negative values 
+
+        masterThAr[masterThAr < 0] = 0
+        
         # If required, save to a FITS file
 
-        if outputFileName is not None:
+        if outputFilePath is not None:
             num_row, num_col = masterThAr.shape
             hdr = fits.Header()
             hdr["rows"] = num_row
             hdr["cols"] = num_col
-            outputParentPath = Path(outputFileName).parent.absolute()
+            outputParentPath = Path(outputFilePath).parent.absolute()
             if not os.path.exists(outputParentPath):
                 os.makedirs(outputParentPath)
             hdu = fits.PrimaryHDU(masterThAr, header=hdr)
-            hdu.writeto(outputFileName, overwrite=True)
+            hdu.writeto(outputFilePath, overwrite=True)
 
         # That's it!
 
@@ -87,13 +104,15 @@ if __name__ == "__main__":
     root     = (params["Configuration"])["rootFolder"]
     masterThAr_params = params["MasterThArImage"]
     masterbias_params = params["MasterBiasImage"]
+    masterdark_params = params["MasterDarkImage"]
 
-    # Mater Flat Image
     raw_ThAr_paths = [ root+path for path in masterThAr_params["inputPath"] ]
     master_bias_path = root + masterbias_params["outputPath"]
+    master_dark_path = root + masterdark_params["outputPath"]
+    ThAr_output_path = root + masterThAr_params["outputPath"]
 
     masterThAr = MasterThAr()
-    masterThAr.run(raw_ThAr_paths, master_bias_path, root + masterThAr_params["outputPath"])
+    masterThAr.run(raw_ThAr_paths, master_bias_path, master_dark_path, ThAr_output_path)
 
     t2 = time.time()
 
