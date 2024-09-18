@@ -86,7 +86,7 @@ fn main() {
     let mut icol_maxima: Vec::<usize> = Vec::new();
 
     for icol in 1..num_cols_ccd-1 {
-        if (middle_row[icol] > 10 * stdev_bias) && (middle_row[icol] > middle_row[icol-1]) && (middle_row[icol] > middle_row[icol+1]) { 
+        if (middle_row[icol] > 10 * stdev_bias) && (middle_row[icol] >= middle_row[icol-1]) && (middle_row[icol] > middle_row[icol+1]) { 
                 icol_maxima.push(icol);
         }
     }
