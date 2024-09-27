@@ -23,11 +23,13 @@ fn main() {
     // Get all the paths from which we will read/write
 
     let configurations = &config["Configuration"];
+    let master_dark_config = &config["MasterDarkImage"];
     let two_dim_order_mask_config = &config["TwoDimensionalOrderMaskTracing"];
     let optimal_order_extraction_config = &config["OptimalOrderExtraction"];
 
     let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
-    let master_flat_path= project_root.to_owned() + two_dim_order_mask_config.get("inputPath").unwrap().as_str().unwrap();
+    let master_flat_path = project_root.to_owned() + two_dim_order_mask_config.get("inputPath").unwrap().as_str().unwrap();
+    let master_dark_path = project_root.to_owned() + master_dark_config.get("outputPath").unwrap().as_str().unwrap();
     let order_mask_path = project_root.to_owned() + two_dim_order_mask_config.get("outputPath").unwrap().as_str().unwrap();
     let science_paths = optimal_order_extraction_config.get("inputPath").unwrap().as_sequence().unwrap();    
     let output_directories = optimal_order_extraction_config.get("outputPath").unwrap().as_sequence().unwrap();
@@ -47,12 +49,17 @@ fn main() {
     let num_spectra: usize = max_ridge.len_of(Axis(0));
     let num_rows_ccd: usize = max_ridge.len_of(Axis(1));
 
+    // Open the master dark file 
+
+    let mut fitsfile = FitsFile::open(master_dark_path).unwrap();
+    let hdu = fitsfile.primary_hdu().unwrap();
+    let stdev_dark = hdu.read_key::<f32>(&mut fitsfile, "STD_DARK").unwrap() as u32;
+
     // Open the master flat file.
 
     let mut fitsfile = FitsFile::open(master_flat_path).unwrap();
     let hdu = fitsfile.primary_hdu().unwrap();
     let master_flat: ArrayD<f64>  = hdu.read_image(&mut fitsfile).unwrap();
-    let stdev_bias = hdu.read_key::<f32>(&mut fitsfile, "STD_BIAS").unwrap() as u32;
 
 
     for (science_path, output_path) in izip!(science_paths, output_directories) {
@@ -146,7 +153,7 @@ fn main() {
                         science_cross_order_slice.mapv(|x| 1.0 / (readout_noise*readout_noise + x)) 
                     } else {
                         science_cross_order_slice.mapv(|x| 
-                            if x > (4*stdev_bias) as f64 { 
+                            if x > (1*stdev_dark) as f64 { 
                                 1.0 / (readout_noise*readout_noise + x)
                             } else { 
                                 0.0 
