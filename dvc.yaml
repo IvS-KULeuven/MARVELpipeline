@@ -68,6 +68,13 @@ stages:
     outs:
         - ${TwoDimensionalOrderMaskTracing.outputPath}
         - ${TwoDimensionalOrderMaskTracing.outputPathSmoothedMasterFlat}
+  2D order mask visualization:
+    cmd: python python/mask_fits_image.py
+    params: 
+        - TwoDimensionalOrderMaskTracing.outputPath
+    outs:
+        - ${TwoDimensionalOrderMaskVisualisation.outputPath}
+
   1D flat-relative order extraction:
     cmd: ./pipeline/target/release/1dflatrelativeorderextraction
     deps:
