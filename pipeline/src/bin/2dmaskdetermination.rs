@@ -65,7 +65,7 @@ fn main() {
 
     let smoothed_master_flat_path = Path::new(&smoothed_master_flat_path);
     if smoothed_master_flat_path.exists() {
-        fs::remove_file(&smoothed_master_flat_path).unwrap();
+        fs::remove_file(smoothed_master_flat_path).unwrap();
     } else if !smoothed_master_flat_path.parent().unwrap().is_dir() {
         fs::create_dir_all(smoothed_master_flat_path.parent().unwrap()).unwrap();
     }
