@@ -247,6 +247,8 @@ fn main() {
                 let fitted_sigma_err  = variance_nonlinear_params[1].sqrt();
                 let fitted_height_err = variance_linear_params[1].sqrt();
 
+                // Only include the line in the list, if there are no counter indications that the fit succeeded. 
+
                 if (fitted_sigma < 3.0) && (fitted_height > 0.0) && (fitted_mu_err != 0.0) && (fitted_sigma_err != 0.0)
                     && (fitted_mu_err < 0.2 * fitted_mu) && (fitted_sigma_err < 0.2 * fitted_sigma) {
                     offset.push(fitted_offset);
