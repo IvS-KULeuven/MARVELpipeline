@@ -23,27 +23,3 @@ serde_yaml      = "0.9"
 name = "configuration"
 path = "src/configuration.rs"
 
-[[bin]]
-name = "biassubtraction"                               # cargo run --bin biassubtraction
-src = "src/bin/biassubtraction.rs"
-
-[[bin]]
-name = "2dmaskdetermination"              
-src = "src/bin/2dmaskdetermination.rs"
-
-[[bin]]
-name = "2dorderextraction"
-src = "src/bin/2dorderextraction.rs"
-
-[[bin]]
-name = "cosmicremoval"
-src = "src/bin/cosmicremoval.rs"
-
-[[bin]]
-name = "1dflatrelativeorderextraction"
-src = "src/bin/1dflatrelativeorderextraction.rs"
-
-[[bin]]
-name = "fitetalonpeaks"
-src = "src/bin/fitetalonpeaks.rs"
-
