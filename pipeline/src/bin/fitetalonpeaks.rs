@@ -178,9 +178,8 @@ fn main() {
 
             let mut ipeaks: Vec::<usize> = Vec::new();
             for n in 6..xpixel.len()-6 {
-                let minvalue = min(&flux[n-5..=n+5]);         // the lowest value in the local neighborhood
                 if (flux[n-2] < flux[n]) && (flux[n-1] < flux[n]) && (flux[n] >= flux[n+1]) && (flux[n] >= flux[n+2])
-                   && (flux[n]-minvalue > 0.27) && (flux[n] > 0.0) {
+                   && (flux[n] > 0.1) {
                     ipeaks.push(n);
                 }
             } 
