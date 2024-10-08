@@ -155,7 +155,7 @@ fn main() {
 
             // If this does not concern fiber 1, then simply skip this HDU
 
-            if order_fiber_id[1] != "fiber: 1" {
+            if order_fiber_id[1] != " fiber: 1" {
                 continue;
             }
 
