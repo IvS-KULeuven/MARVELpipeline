@@ -64,15 +64,13 @@ fn main() {
     let general_config = &config["Configuration"];
     let project_root = general_config.get("rootFolder").unwrap().as_str().unwrap();
 
-    let optimalextraction_config = &config["OptimalOrderExtraction"];
-    let input_paths = optimalextraction_config.get("outputPath").unwrap().as_sequence().unwrap();
-
     let etalon_config = &config["EtalonPeakFitting"];
-    let etalon_peak_fitparameters_output_paths = etalon_config.get("outputPath").unwrap().as_sequence().unwrap();
+    let input_paths = etalon_config.get("inputPath").unwrap().as_sequence().unwrap();
+    let output_paths = etalon_config.get("outputPath").unwrap().as_sequence().unwrap();
 
     // Loop over all science frames, the output of the peak fitting will be written to a separate FITS file.
 
-    for (input_path, output_path) in izip!(input_paths, etalon_peak_fitparameters_output_paths) {
+    for (input_path, output_path) in izip!(input_paths, output_paths) {
 
         // Construct the absolute path of the input FITS file containing the 1D optimal extracted orders
 
