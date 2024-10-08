@@ -210,6 +210,8 @@ fn main() {
                 // The constant background is necessary as the flat-relative etalon spectrum may be 
                 // curved upwards at the edges.
 
+                let error_message = format!("Problem fitting peak # {} in {}", i, order_fiber_id[0]);
+
                 let model = SeparableModelBuilder::<f64>::new(["mu", "sigmasq"])
                     .invariant_function(|x| DVector::from_element(x.nrows(), 1.0))
                     .function(&["mu", "sigmasq"], gaussian)
@@ -218,12 +220,12 @@ fn main() {
                     .independent_variable(x_onepeak)
                     .initial_parameters(vec![xpixel[ipeaks[i]], 1.0])
                     .build()
-                    .unwrap();
+                    .expect(&error_message);
 
                 let problem = LevMarProblemBuilder::new(model)
                     .observations(flux_onepeak)
                     .build()
-                    .unwrap();
+                    .expect(&error_message);
 
                 let (fit_result, fit_statistics) = LevMarSolver::new()
                     .fit_with_statistics(problem)
