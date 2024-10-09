@@ -341,7 +341,8 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
     biasAndDarkSubtractedSciencePaths = createScienceOutputPath(yaml_input["rawScienceImages"])
 
     smoothMasterPath            = createMaskOutputPathPrefix(masterFlatPath) + "_smoothed_master_flat.fits"
-    maskPath                    = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask.fits"
+    maskBoundariesPath                    = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask_boundaries.fits"
+    maskVisualisationImagePath  = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask_image.fits"
     oneDimScienceOrdersPaths    = createScienceOptimalOrderExtractionOutputPath(biasAndDarkSubtractedSciencePaths)
     oneDimThArOrdersPath        = createThArOptimalOrderExtractionOutputPath(masterThArPath)
     etalonPeakFitParametersPath = createEtalonPeakFittingOutputPath(oneDimScienceOrdersPaths)
@@ -384,8 +385,14 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
                   "TwoDimensionalOrderMaskTracing":
                   { 
                     "inputPath": masterFlatPath,
-                    "outputPath": maskPath,
+                    "outputPath": maskBoundariesPath,
                     "outputPathSmoothedMasterFlat": smoothMasterPath
+                  },
+
+                  "TwoDimensionalOrderMaskVisualisation":
+                  {
+                      "inputPath": maskBoundariesPath,
+                      "outputPath": maskVisualisationImagePath,
                   },
 
                   "OptimalOrderExtraction":

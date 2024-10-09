@@ -47,6 +47,14 @@ class MasterDark:
         biasLevel = np.median(masterBias)
         masterDark = np.median(darkImages, axis=0) - biasLevel
 
+        # We assume all darks have the same exposure time. Use the one of the
+        # first raw dark to extract it, so that we can store it in the master dark as well.
+
+        hdulist = fits.open(rawDarkImagePaths[0])
+        hdu = hdulist[0]
+        darkExposureTime = float(hdu.header['EXPTIME'])
+
+
         # If required, save to a FITS file
 
         if outputFileName is not None:
@@ -54,6 +62,8 @@ class MasterDark:
             hdr = fits.Header()
             hdr["rows"] = num_row
             hdr["cols"] = num_col
+            hdr["std_dark"] = np.std(masterDark)
+            hdr["exptime"] = darkExposureTime
             outputParentPath = Path(outputFileName).parent.absolute()
             if not os.path.exists(outputParentPath):
                 os.makedirs(outputParentPath)

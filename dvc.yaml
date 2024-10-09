@@ -1,87 +1,100 @@
 stages:
-  master bias:
-    cmd: python python/masterBias.py
-    deps:
-        - python/masterBias.py
-        - python/pipeline.py
-    params:
-        - MasterBiasImage.inputPath
-        - MasterBiasImage.outputPath
-    outs:
-        - ${MasterBiasImage.outputPath}
-  master dark:
-    cmd: python python/masterDark.py
-    deps:
-        - python/masterDark.py
-        - python/pipeline.py
-    params:
-        - MasterDarkImage.inputPath
-        - MasterDarkImage.outputPath
-    outs:
-        - ${MasterDarkImage.outputPath}
-  master flat:
-    cmd: python python/masterFlat.py
-    deps:
-        - Data/ProcessedData/MasterBias
-        - Data/ProcessedData/MasterDark
-        - python/masterFlat.py
-        - python/pipeline.py
-    params:
-        - MasterFlatImage.inputPath
-        - MasterFlatImage.outputPath
-        - MasterBiasImage.outputPath
-        - MasterDarkImage.outputPath
-    outs:
-        - ${MasterFlatImage.outputPath}
-  master ThAr:
-    cmd: python python/masterThAr.py
-    deps:
-        - Data/ProcessedData/masterBias
-        - Data/ProcessedData/MasterDark
-        - python/masterThAr.py
-    params:
-        - MasterThArImage.inputPath
-        - MasterThArImage.outputPath
-        - MasterBiasImage.outputPath
-        - MasterDarkImage.outputPath
-    outs:
-        - ${MasterThArImage.outputPath}
-  bias and dark subtraction:
-    cmd: python python/biasAndDarkCorrection.py
-    deps:
-        - Data/ProcessedData/MasterBias
-        - Data/ProcessedData/MasterDark
-    params:
-        - BiasAndDarkSubtractedScienceImage.inputPath
-        - BiasAndDarkSubtractedScienceImage.outputPath
-        - MasterBiasImage.outputPath
-        - MasterDarkImage.outputPath
-  2D order mask determination:
-    cmd: ./pipeline/target/release/2dmaskdetermination
-    deps:
-        - pipeline/src/bin/2dmaskdetermination.rs
-        - Data/ProcessedData/MasterFlat
-    params:
-        - TwoDimensionalOrderMaskTracing.inputPath
-        - TwoDimensionalOrderMaskTracing.outputPath
-        - TwoDimensionalOrderMaskTracing.outputPathSmoothedMasterFlat
-    outs:
-        - ${TwoDimensionalOrderMaskTracing.outputPath}
-        - ${TwoDimensionalOrderMaskTracing.outputPathSmoothedMasterFlat}
-  1D flat-relative order extraction:
-    cmd: ./pipeline/target/release/1dflatrelativeorderextraction
-    deps:
-        - pipeline/src/bin/1dflatrelativeorderextraction.rs
-        - Data/ProcessedData/OrderMask 
-    params:
-        - TwoDimensionalOrderMaskTracing.outputPath
-  Etalon peaks fitting:
-    cmd: ./pipeline/target/release/fitetalonpeaks
-    deps:
-        - Data/ProcessedData/OptimalExtraction/ 
-    params:
-        - EtalonPeakFitting.inputPath
-        - EtalonPeakFitting.outputPath
-        - OptimalOrderExtraction.outputPath
+    master bias:
+        cmd: python python/masterBias.py
+        deps:
+            - python/masterBias.py
+            - python/pipeline.py
+        params:
+            - MasterBiasImage.inputPath
+            - MasterBiasImage.outputPath
+        outs:
+            - ${MasterBiasImage.outputPath}
 
+    master dark:
+        cmd: python python/masterDark.py
+        deps:
+            - python/masterDark.py
+            - python/pipeline.py
+        params:
+            - MasterDarkImage.inputPath
+            - MasterDarkImage.outputPath
+        outs:
+            - ${MasterDarkImage.outputPath}
+  
+    master flat:
+        cmd: python python/masterFlat.py
+        deps:
+            - Data/ProcessedData/MasterBias
+            - Data/ProcessedData/MasterDark
+            - python/masterFlat.py
+            - python/pipeline.py
+        params:
+            - MasterFlatImage.inputPath
+            - MasterFlatImage.outputPath
+            - MasterBiasImage.outputPath
+            - MasterDarkImage.outputPath
+        outs:
+            - ${MasterFlatImage.outputPath}
+  
+    master ThAr:
+        cmd: python python/masterThAr.py
+        deps:
+            - Data/ProcessedData/masterBias
+            - Data/ProcessedData/MasterDark
+            - python/masterThAr.py
+        params:
+            - MasterThArImage.inputPath
+            - MasterThArImage.outputPath
+            - MasterBiasImage.outputPath
+            - MasterDarkImage.outputPath
+        outs:
+            - ${MasterThArImage.outputPath}
+  
+    bias and dark subtraction:
+       cmd: python python/biasAndDarkCorrection.py
+       deps:
+           - Data/ProcessedData/MasterBias
+           - Data/ProcessedData/MasterDark
+       params:
+           - BiasAndDarkSubtractedScienceImage.inputPath
+           - BiasAndDarkSubtractedScienceImage.outputPath
+           - MasterBiasImage.outputPath
+           - MasterDarkImage.outputPath
+  
+    2D order mask determination:
+        cmd: ./pipeline/target/release/2dmaskdetermination
+        deps:
+            - pipeline/src/bin/2dmaskdetermination.rs
+            - Data/ProcessedData/MasterFlat
+        params:
+            - TwoDimensionalOrderMaskTracing.inputPath
+            - TwoDimensionalOrderMaskTracing.outputPath
+            - TwoDimensionalOrderMaskTracing.outputPathSmoothedMasterFlat
+        outs:
+            - ${TwoDimensionalOrderMaskTracing.outputPath}
+            - ${TwoDimensionalOrderMaskTracing.outputPathSmoothedMasterFlat}
+  
+    2D order mask visualization:
+        cmd: python python/mask_fits_image.py
+        params: 
+            - TwoDimensionalOrderMaskTracing.outputPath
+        outs:
+            - ${TwoDimensionalOrderMaskVisualisation.outputPath}
+  
+    1D flat-relative order extraction:
+        cmd: ./pipeline/target/release/1dflatrelativeorderextraction
+        deps:
+            - pipeline/src/bin/1dflatrelativeorderextraction.rs
+            - Data/ProcessedData/OrderMask 
+        params:
+            - TwoDimensionalOrderMaskTracing.outputPath
+  
+    Etalon peaks fitting:
+        cmd: ./pipeline/target/release/fitetalonpeaks
+        deps:
+            - Data/ProcessedData/OptimalExtraction/ 
+        params:
+            - EtalonPeakFitting.inputPath
+            - EtalonPeakFitting.outputPath
+            - OptimalOrderExtraction.outputPath
 

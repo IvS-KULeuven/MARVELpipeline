@@ -39,17 +39,16 @@ fn main() {
     let hdu = fitsfile.primary_hdu().unwrap();
     let master_flat: CCDImageType = hdu.read_image(&mut fitsfile).unwrap();
 
-    let stdev_bias = hdu.read_key::<f32>(&mut fitsfile, "STD_BIAS").unwrap() as u32;
+    let stdev_dark = hdu.read_key::<f32>(&mut fitsfile, "STD_DARK").unwrap() as u32;
     let num_rows_ccd = hdu.read_key::<f32>(&mut fitsfile, "ROWS").unwrap() as usize;
     let num_cols_ccd = hdu.read_key::<f32>(&mut fitsfile, "COLS").unwrap() as usize;
 
 
     // Smooth the master flat
 
-
     let master_flat = master_flat.mapv(|elem| elem as f64);
     let stdev = 0.7;
-    let order = 0;                                                                                             // convolve with Gaussian 
+    let order = 0;                   
     let truncate = 3;
     let smoothed_master_flat = gaussian_filter(&master_flat, stdev, order, BorderMode::Reflect, truncate);
     let smoothed_master_flat = smoothed_master_flat.mapv(|elem| elem as u32);
@@ -65,7 +64,7 @@ fn main() {
 
     let smoothed_master_flat_path = Path::new(&smoothed_master_flat_path);
     if smoothed_master_flat_path.exists() {
-        fs::remove_file(&smoothed_master_flat_path).unwrap();
+        fs::remove_file(smoothed_master_flat_path).unwrap();
     } else if !smoothed_master_flat_path.parent().unwrap().is_dir() {
         fs::create_dir_all(smoothed_master_flat_path.parent().unwrap()).unwrap();
     }
@@ -86,14 +85,13 @@ fn main() {
     let mut icol_maxima: Vec::<usize> = Vec::new();
 
     for icol in 1..num_cols_ccd-1 {
-        if (middle_row[icol] > 10 * stdev_bias) && (middle_row[icol] >= middle_row[icol-1]) && (middle_row[icol] > middle_row[icol+1]) { 
-                icol_maxima.push(icol);
+        if (middle_row[icol] > 10 * stdev_dark) && (middle_row[icol] >= middle_row[icol-1]) && (middle_row[icol] > middle_row[icol+1]) { 
+            icol_maxima.push(icol);
         }
     }
 
 
     // Creating the order masks
-
 
     // Loop over all orders/fibers
 
@@ -147,21 +145,21 @@ fn main() {
             // If the maximum is high enough above the noise level search for the order boundaries
             // If not, then we stop the order tracing on this end.
 
-            if smoothed_master_flat[[irow, icol_max_of_current_row]] >= 10 * stdev_bias {
+            if smoothed_master_flat[[irow, icol_max_of_current_row]] >= 10 * stdev_dark {
 
                 max_ridge[[ispectrum, irow]] = icol_max_of_current_row as u32;
 
                 // Search for the left boundary of the order 
 
                 let mut icol_left_boundary = icol_max_of_current_row;
-                while (smoothed_master_flat[[irow, icol_left_boundary]] > 5 * stdev_bias) & (icol_left_boundary > 0) {
+                while (smoothed_master_flat[[irow, icol_left_boundary]] > 5 * stdev_dark) & (icol_left_boundary > 0) {
                     icol_left_boundary -= 1;
                 }
 
                 // Search for the right boundary of the order 
 
                 let mut icol_right_boundary = icol_max_of_current_row;
-                while (smoothed_master_flat[[irow, icol_right_boundary]] > 5 * stdev_bias) & (icol_right_boundary < num_cols_ccd-1) {
+                while (smoothed_master_flat[[irow, icol_right_boundary]] > 5 * stdev_dark) & (icol_right_boundary < num_cols_ccd-1) {
                     icol_right_boundary += 1;
                 }
 
@@ -212,21 +210,21 @@ fn main() {
 
             // If the maximum is high enough above the noise level search for the order boundaries
             
-            if smoothed_master_flat[[irow, icol_max_of_current_row]] >= 10 * stdev_bias {
+            if smoothed_master_flat[[irow, icol_max_of_current_row]] >= 10 * stdev_dark {
 
                 max_ridge[[ispectrum, irow]] = icol_max_of_current_row as u32;
 
                 // Search for the left boundary of the order 
 
                 let mut icol_left_boundary = icol_max_of_current_row;
-                while (smoothed_master_flat[[irow, icol_left_boundary]] > 5 * stdev_bias) & (icol_left_boundary > 0) {
+                while (smoothed_master_flat[[irow, icol_left_boundary]] > 5 * stdev_dark) & (icol_left_boundary > 0) {
                     icol_left_boundary -= 1;
                 }
 
                 // Search for the right boundary of the order 
 
                 let mut icol_right_boundary = icol_max_of_current_row;
-                while (smoothed_master_flat[[irow, icol_right_boundary]] > 5 * stdev_bias) & (icol_right_boundary < num_cols_ccd-1) {
+                while (smoothed_master_flat[[irow, icol_right_boundary]] > 5 * stdev_dark) & (icol_right_boundary < num_cols_ccd-1) {
                     icol_right_boundary += 1;
                 }
 

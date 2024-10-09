@@ -64,15 +64,13 @@ fn main() {
     let general_config = &config["Configuration"];
     let project_root = general_config.get("rootFolder").unwrap().as_str().unwrap();
 
-    let optimalextraction_config = &config["OptimalOrderExtraction"];
-    let input_paths = optimalextraction_config.get("outputPath").unwrap().as_sequence().unwrap();
-
     let etalon_config = &config["EtalonPeakFitting"];
-    let etalon_peak_fitparameters_output_paths = etalon_config.get("outputPath").unwrap().as_sequence().unwrap();
+    let input_paths = etalon_config.get("inputPath").unwrap().as_sequence().unwrap();
+    let output_paths = etalon_config.get("outputPath").unwrap().as_sequence().unwrap();
 
     // Loop over all science frames, the output of the peak fitting will be written to a separate FITS file.
 
-    for (input_path, output_path) in izip!(input_paths, etalon_peak_fitparameters_output_paths) {
+    for (input_path, output_path) in izip!(input_paths, output_paths) {
 
         // Construct the absolute path of the input FITS file containing the 1D optimal extracted orders
 
@@ -157,7 +155,7 @@ fn main() {
 
             // If this does not concern fiber 1, then simply skip this HDU
 
-            if order_fiber_id[1] != "fiber: 1" {
+            if order_fiber_id[1] != " fiber: 1" {
                 continue;
             }
 
@@ -180,9 +178,8 @@ fn main() {
 
             let mut ipeaks: Vec::<usize> = Vec::new();
             for n in 6..xpixel.len()-6 {
-                let minvalue = min(&flux[n-5..=n+5]);         // the lowest value in the local neighborhood
                 if (flux[n-2] < flux[n]) && (flux[n-1] < flux[n]) && (flux[n] >= flux[n+1]) && (flux[n] >= flux[n+2])
-                   && (flux[n]-minvalue > 0.27) && (flux[n] > 0.0) {
+                   && (flux[n] > 0.1) {
                     ipeaks.push(n);
                 }
             } 
@@ -213,6 +210,8 @@ fn main() {
                 // The constant background is necessary as the flat-relative etalon spectrum may be 
                 // curved upwards at the edges.
 
+                let error_message = format!("Problem fitting peak # {} in {}", i, order_fiber_id[0]);
+
                 let model = SeparableModelBuilder::<f64>::new(["mu", "sigmasq"])
                     .invariant_function(|x| DVector::from_element(x.nrows(), 1.0))
                     .function(&["mu", "sigmasq"], gaussian)
@@ -221,12 +220,12 @@ fn main() {
                     .independent_variable(x_onepeak)
                     .initial_parameters(vec![xpixel[ipeaks[i]], 1.0])
                     .build()
-                    .unwrap();
+                    .expect(&error_message);
 
                 let problem = LevMarProblemBuilder::new(model)
                     .observations(flux_onepeak)
                     .build()
-                    .unwrap();
+                    .expect(&error_message);
 
                 let (fit_result, fit_statistics) = LevMarSolver::new()
                     .fit_with_statistics(problem)
@@ -247,6 +246,8 @@ fn main() {
                 let fitted_mu_err     = variance_nonlinear_params[0].sqrt();
                 let fitted_sigma_err  = variance_nonlinear_params[1].sqrt();
                 let fitted_height_err = variance_linear_params[1].sqrt();
+
+                // Only include the line in the list, if there are no counter indications that the fit succeeded. 
 
                 if (fitted_sigma < 3.0) && (fitted_height > 0.0) && (fitted_mu_err != 0.0) && (fitted_sigma_err != 0.0)
                     && (fitted_mu_err < 0.2 * fitted_mu) && (fitted_sigma_err < 0.2 * fitted_sigma) {
