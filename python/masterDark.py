@@ -44,8 +44,7 @@ class MasterDark:
 
         # Compute the master dark as the median of the raw dark images, then subtract the electronic offset
 
-        biasLevel = np.median(masterBias)
-        masterDark = np.median(darkImages, axis=0) - biasLevel
+        masterDark = np.median(darkImages, axis=0) - masterBias
 
         # We assume all darks have the same exposure time. Use the one of the
         # first raw dark to extract it, so that we can store it in the master dark as well.
@@ -53,7 +52,6 @@ class MasterDark:
         hdulist = fits.open(rawDarkImagePaths[0])
         hdu = hdulist[0]
         darkExposureTime = float(hdu.header['EXPTIME'])
-
 
         # If required, save to a FITS file
 

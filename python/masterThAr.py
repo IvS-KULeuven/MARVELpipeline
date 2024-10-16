@@ -62,9 +62,7 @@ class MasterThAr:
 
         # Correct the master ThAr for the bias and the dark current
 
-        darkLevel = np.median(masterDark)
-        biasLevel = np.median(masterBias)
-        masterThAr = masterThAr - biasLevel - darkLevel / darkExposureTime * ThArExposureTime
+        masterThAr = masterThAr - masterBias - masterDark / darkExposureTime * ThArExposureTime
 
         # Zero all negative values 
 

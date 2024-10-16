@@ -67,11 +67,9 @@ class MasterFlat:
         darkExposureTime = float(darkFileStem[-4:])
 
         # Correct the master flat for the bias and the dark current
-        # Note that the masterDark was already corrected for the bias level
+        # Note that the masterDark was already corrected for the bias 
 
-        darkLevel = np.median(masterDark)
-        biasLevel = np.median(masterBias)
-        masterFlat = masterFlat - biasLevel - darkLevel / darkExposureTime * flatExposureTime
+        masterFlat = masterFlat - masterBias - masterDark / darkExposureTime * flatExposureTime
 
         # Zero all negative values 
 
