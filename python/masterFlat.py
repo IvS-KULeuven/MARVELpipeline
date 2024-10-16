@@ -84,8 +84,6 @@ class MasterFlat:
             hdr = fits.Header()
             hdr["rows"] = num_row
             hdr["cols"] = num_col
-            hdr["std_bias"] = np.std(masterBias)
-            hdr["m_bias"] = np.mean(masterBias)            # FIXME: change m_bias to mean_bias
             hdr["std_dark"] = np.std(masterDark)
             outputParentPath = Path(outputFilePath).parent.absolute()
             if not os.path.exists(outputParentPath):
