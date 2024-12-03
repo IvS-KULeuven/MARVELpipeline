@@ -87,11 +87,12 @@ if __name__ == "__main__":
 
     params   = yaml.safe_load(open("params.yaml"))
 
-    root     = (params["Configuration"])["rootFolder"]
+
+    rootFolderProcessedData = params["Configuration"]["rootFolderProcessedData"]
     mask_visualization_params = params["TwoDimensionalOrderMaskVisualisation"]
 
-    inputPath = root + mask_visualization_params["inputPath"]
-    outputPath = root + mask_visualization_params["outputPath"]
+    inputPath = rootFolderProcessedData + mask_visualization_params["inputPath"]
+    outputPath = rootFolderProcessedData + mask_visualization_params["outputPath"]
 
     maskImageCreator = MaskImageCreator()
     maskImageCreator.run(inputPath, outputPath)

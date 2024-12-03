@@ -84,16 +84,18 @@ if __name__ == "__main__":
     
     params = yaml.safe_load(open("params.yaml"))
 
-    root  = (params["Configuration"])["rootFolder"]
-    paths = (params["MasterBiasImage"])["inputPath"]
+    rootFolderRawData  = params["Configuration"]["rootFolderRawData"]
+    rootFolderProcessedData = params["Configuration"]["rootFolderProcessedData"]
+
+    relativeBiasImagePaths = params["MasterBiasImage"]["inputPath"]
     
-    paths = [ root+path for path in paths]
-    output = root + (params["MasterBiasImage"])["outputPath"]
+    absoluteBiasImagePaths = [ rootFolderRawData + path for path in relativeBiasImagePaths]
+    absoluteMasterBiasImagePath = rootFolderProcessedData + params["MasterBiasImage"]["outputPath"]
 
     # Master Bias Image
 
-    masterB = MasterBias(BiasImages=paths)
-    masterB.run(output)
+    masterB = MasterBias(BiasImages=absoluteBiasImagePaths)
+    masterB.run(absoluteMasterBiasImagePath)
 
     t2 = time.time()
     print(f"[{t2-t1}]")

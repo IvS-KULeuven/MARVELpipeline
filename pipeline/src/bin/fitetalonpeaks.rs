@@ -62,7 +62,7 @@ fn main() {
     // Get all the paths from which we will read/write
 
     let general_config = &config["Configuration"];
-    let project_root = general_config.get("rootFolder").unwrap().as_str().unwrap();
+    let root_folder_processed_data = general_config.get("rootFolderProcessedData").unwrap().as_str().unwrap();
 
     let etalon_config = &config["EtalonPeakFitting"];
     let input_paths = etalon_config.get("inputPath").unwrap().as_sequence().unwrap();
@@ -74,12 +74,12 @@ fn main() {
 
         // Construct the absolute path of the input FITS file containing the 1D optimal extracted orders
 
-        let input_path = project_root.to_owned() + input_path.as_str().unwrap();
+        let input_path = root_folder_processed_data.to_owned() + input_path.as_str().unwrap();
 
         // Construct the absolute path of the output FITS file that will contain the etalon peak fit parameters 
         // If the output file already exists, delete the file.
 
-        let output_path = project_root.to_owned() + output_path.as_str().unwrap();
+        let output_path = root_folder_processed_data.to_owned() + output_path.as_str().unwrap();
         let output_path = Path::new(&output_path);
         if output_path.exists() {                                           // Remove previous file from an older run
             fs::remove_file(output_path).unwrap();

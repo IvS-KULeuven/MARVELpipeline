@@ -99,15 +99,16 @@ if __name__ == "__main__":
 
     params   = yaml.safe_load(open("params.yaml"))
 
-    root     = (params["Configuration"])["rootFolder"]
+    rootFolderRawData  = params["Configuration"]["rootFolderRawData"]
+    rootFolderProcessedData = params["Configuration"]["rootFolderProcessedData"]
     masterThAr_params = params["MasterThArImage"]
     masterbias_params = params["MasterBiasImage"]
     masterdark_params = params["MasterDarkImage"]
 
-    raw_ThAr_paths = [ root+path for path in masterThAr_params["inputPath"] ]
-    master_bias_path = root + masterbias_params["outputPath"]
-    master_dark_path = root + masterdark_params["outputPath"]
-    ThAr_output_path = root + masterThAr_params["outputPath"]
+    raw_ThAr_paths = [ rootFolderRawData + path for path in masterThAr_params["inputPath"] ]
+    master_bias_path = rootFolderProcessedData + masterbias_params["outputPath"]
+    master_dark_path = rootFolderProcessedData + masterdark_params["outputPath"]
+    ThAr_output_path = rootFolderProcessedData + masterThAr_params["outputPath"]
 
     masterThAr = MasterThAr()
     masterThAr.run(raw_ThAr_paths, master_bias_path, master_dark_path, ThAr_output_path)

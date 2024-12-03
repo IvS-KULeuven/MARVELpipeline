@@ -5,10 +5,11 @@ stages:
             - python/masterBias.py
             - python/pipeline.py
         params:
+            - Configuration.rootFolderProcessedData
             - MasterBiasImage.inputPath
             - MasterBiasImage.outputPath
         outs:
-            - ${MasterBiasImage.outputPath}
+          - ${Configuration.rootFolderProcessedData}/${MasterBiasImage.outputPath}
 
     master dark:
         cmd: python python/masterDark.py
@@ -16,10 +17,11 @@ stages:
             - python/masterDark.py
             - python/pipeline.py
         params:
+            - Configuration.rootFolderProcessedData
             - MasterDarkImage.inputPath
             - MasterDarkImage.outputPath
         outs:
-            - ${MasterDarkImage.outputPath}
+            - ${Configuration.rootFolderProcessedData}/${MasterDarkImage.outputPath}
   
     master flat:
         cmd: python python/masterFlat.py
@@ -29,12 +31,13 @@ stages:
             - python/masterFlat.py
             - python/pipeline.py
         params:
+            - Configuration.rootFolderProcessedData
             - MasterFlatImage.inputPath
             - MasterFlatImage.outputPath
             - MasterBiasImage.outputPath
             - MasterDarkImage.outputPath
         outs:
-            - ${MasterFlatImage.outputPath}
+            - ${Configuration.rootFolderProcessedData}/${MasterFlatImage.outputPath}
   
     master ThAr:
         cmd: python python/masterThAr.py
@@ -43,23 +46,25 @@ stages:
             - Data/ProcessedData/MasterDark
             - python/masterThAr.py
         params:
+            - Configuration.rootFolderProcessedData
             - MasterThArImage.inputPath
             - MasterThArImage.outputPath
             - MasterBiasImage.outputPath
             - MasterDarkImage.outputPath
         outs:
-            - ${MasterThArImage.outputPath}
+            - ${Configuration.rootFolderProcessedData}/${MasterThArImage.outputPath}
   
     bias and dark subtraction:
        cmd: python python/biasAndDarkCorrection.py
        deps:
-           - Data/ProcessedData/MasterBias
-           - Data/ProcessedData/MasterDark
+            - Data/ProcessedData/MasterBias
+            - Data/ProcessedData/MasterDark
        params:
-           - BiasAndDarkSubtractedScienceImage.inputPath
-           - BiasAndDarkSubtractedScienceImage.outputPath
-           - MasterBiasImage.outputPath
-           - MasterDarkImage.outputPath
+            - Configuration.rootFolderProcessedData
+            - BiasAndDarkSubtractedScienceImage.inputPath
+            - BiasAndDarkSubtractedScienceImage.outputPath
+            - MasterBiasImage.outputPath
+            - MasterDarkImage.outputPath
   
     2D order mask determination:
         cmd: ./pipeline/target/release/2dmaskdetermination
@@ -67,19 +72,21 @@ stages:
             - pipeline/src/bin/2dmaskdetermination.rs
             - Data/ProcessedData/MasterFlat
         params:
+            - Configuration.rootFolderProcessedData
             - TwoDimensionalOrderMaskTracing.inputPath
             - TwoDimensionalOrderMaskTracing.outputPath
             - TwoDimensionalOrderMaskTracing.outputPathSmoothedMasterFlat
         outs:
-            - ${TwoDimensionalOrderMaskTracing.outputPath}
-            - ${TwoDimensionalOrderMaskTracing.outputPathSmoothedMasterFlat}
+            - ${Configuration.rootFolderProcessedData}/${TwoDimensionalOrderMaskTracing.outputPath}
+            - ${Configuration.rootFolderProcessedData}/${TwoDimensionalOrderMaskTracing.outputPathSmoothedMasterFlat}
   
     2D order mask visualization:
         cmd: python python/mask_fits_image.py
         params: 
+            - Configuration.rootFolderProcessedData
             - TwoDimensionalOrderMaskTracing.outputPath
         outs:
-            - ${TwoDimensionalOrderMaskVisualisation.outputPath}
+            - ${Configuration.rootFolderProcessedData}/${TwoDimensionalOrderMaskVisualisation.outputPath}
   
     1D flat-relative order extraction:
         cmd: ./pipeline/target/release/1dflatrelativeorderextraction
@@ -87,14 +94,16 @@ stages:
             - pipeline/src/bin/1dflatrelativeorderextraction.rs
             - Data/ProcessedData/OrderMask 
         params:
+            - Configuration.rootFolderProcessedData
             - TwoDimensionalOrderMaskTracing.outputPath
   
-    Etalon peaks fitting:
-        cmd: ./pipeline/target/release/fitetalonpeaks
-        deps:
-            - Data/ProcessedData/OptimalExtraction/ 
-        params:
-            - EtalonPeakFitting.inputPath
-            - EtalonPeakFitting.outputPath
-            - OptimalOrderExtraction.outputPath
+    # Etalon peaks fitting:
+    #     cmd: ./pipeline/target/release/fitetalonpeaks
+    #     deps:
+    #         - Data/ProcessedData/OptimalExtraction/ 
+    #     params:
+    #         - Configuration.rootFolderProcessedData
+    #         - EtalonPeakFitting.inputPath
+    #         - EtalonPeakFitting.outputPath
+    #         - OptimalOrderExtraction.outputPath
 

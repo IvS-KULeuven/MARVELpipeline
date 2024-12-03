@@ -117,15 +117,16 @@ if __name__ == "__main__":
 
     params   = yaml.safe_load(open("params.yaml"))
 
-    root     = (params["Configuration"])["rootFolder"]
+    rootFolderRawData  = params["Configuration"]["rootFolderRawData"]
+    rootFolderProcessedData = params["Configuration"]["rootFolderProcessedData"]
     science_params = params["BiasAndDarkSubtractedScienceImage"]
     bias_params = params["MasterBiasImage"]
     dark_params = params["MasterDarkImage"]
 
-    raw_science_paths = [root+path for path in science_params["inputPath"]]
-    master_bias_path = root + bias_params["outputPath"]
-    master_dark_path = root + dark_params["outputPath"]
-    output_science_paths = [root + path for path in science_params["outputPath"]]
+    raw_science_paths = [rootFolderRawData + path for path in science_params["inputPath"]]
+    master_bias_path = rootFolderProcessedData + bias_params["outputPath"]
+    master_dark_path = rootFolderProcessedData + dark_params["outputPath"]
+    output_science_paths = [rootFolderProcessedData + path for path in science_params["outputPath"]]
 
     calibration = BiasAndDarkCorrectedScienceFrames()
     calibration.run(raw_science_paths, master_bias_path, master_dark_path, outputPaths=output_science_paths)

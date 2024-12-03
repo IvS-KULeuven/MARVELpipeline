@@ -114,16 +114,17 @@ if __name__ == "__main__":
 
     params = yaml.safe_load(open("params.yaml"))
 
-    root = (params["Configuration"])["rootFolder"]
+    rootFolderRawData  = params["Configuration"]["rootFolderRawData"]
+    rootFolderProcessedData = params["Configuration"]["rootFolderProcessedData"]
     flat_params = params["MasterFlatImage"]
     bias_params = params["MasterBiasImage"]
     dark_params = params["MasterDarkImage"]
 
     # Mater Flat Image
-    raw_flat_paths = [ root+path for path in flat_params["inputPath"] ]
-    master_bias_path = root + bias_params["outputPath"]
-    master_dark_path = root + dark_params["outputPath"]
-    master_flat_path = root + flat_params["outputPath"] 
+    raw_flat_paths = [ rootFolderRawData + path for path in flat_params["inputPath"] ]
+    master_bias_path = rootFolderProcessedData + bias_params["outputPath"]
+    master_dark_path = rootFolderProcessedData + dark_params["outputPath"]
+    master_flat_path = rootFolderProcessedData + flat_params["outputPath"] 
 
     masterFlat = MasterFlat()
     masterFlat.run(raw_flat_paths, master_bias_path, master_dark_path, outputFilePath=master_flat_path)

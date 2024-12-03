@@ -27,10 +27,10 @@ fn main() {
     let order_tracing_config = &config["TwoDimensionalOrderMaskTracing"];
     let configurations = &config["Configuration"];
 
-    let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
-    let master_flat_path = project_root.to_owned() + order_tracing_config.get("inputPath").unwrap().as_str().unwrap();
-    let orders_mask_path = project_root.to_owned() + order_tracing_config.get("outputPath").unwrap().as_str().unwrap();
-    let smoothed_master_flat_path = project_root.to_owned() + order_tracing_config.get("outputPathSmoothedMasterFlat").unwrap().as_str().unwrap();
+    let root_folder_processed_data = configurations.get("rootFolderProcessedData").unwrap().as_str().unwrap();
+    let master_flat_path = root_folder_processed_data.to_owned() + order_tracing_config.get("inputPath").unwrap().as_str().unwrap();
+    let orders_mask_path = root_folder_processed_data.to_owned() + order_tracing_config.get("outputPath").unwrap().as_str().unwrap();
+    let smoothed_master_flat_path = root_folder_processed_data.to_owned() + order_tracing_config.get("outputPathSmoothedMasterFlat").unwrap().as_str().unwrap();
 
 
     // Open the master flat file

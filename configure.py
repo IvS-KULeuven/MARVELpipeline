@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 
-def readInputfile(filename):
+def readInputfile(filename, rootFolderRawData):
     """
     Read in the user defined input file. This function checks that the
     input file is sensible and returns a dict with the values from the file.
@@ -61,10 +61,11 @@ def readInputfile(filename):
 
         if isinstance(yaml_input[keyValue], list):
 
-            stripped_list = [ path for path in yaml_input[keyValue] if os.path.exists(path) ]
+            stripped_list = [rootFolderRawData + "/" + path for path in yaml_input[keyValue]    \
+                             if os.path.exists(rootFolderRawData + "/" + path) ]    
 
             if len(stripped_list) == 0:
-                raise Exception(f"Files for {keyValue} do not exisits.")
+                raise Exception(f"File(s) for {keyValue} do not exists.")
 
             elif len(stripped_list) != len(yaml_input[keyValue]):
                 print(f"WARNING: Not every file specified in {keyValue} exists.\nWe continue with the files\n\n{stripped_list}")
@@ -129,7 +130,7 @@ def createCalibrationOutputPath(inputPaths):
 
     # Create the output path
     
-    outputPath = "Data/ProcessedData/" + outputType + "/" + date + "_" + outputType 
+    outputPath = "/ProcessedData/" + outputType + "/" + date + "_" + outputType 
     if outputType == "MasterThAr":
         outputPath += "_" + fiberType 
     elif outputType == "MasterDark":
@@ -156,7 +157,7 @@ def createScienceOutputPath(inputPaths):
         list of paths to be used to save bias subtracted science images
     """
 
-    root = "Data/ProcessedData/BiasAndDarkSubtractedScience/"
+    root = "/ProcessedData/BiasAndDarkSubtractedScience/"
     output_paths = []
 
     for path in inputPaths:
@@ -183,7 +184,7 @@ def createMaskOutputPathPrefix(masterFlatPath):
 
     # Root of the file
 
-    root = "Data/ProcessedData/OrderMask/"
+    root = "/ProcessedData/OrderMask/"
 
     # Get date of the files
 
@@ -210,7 +211,7 @@ def createScience2DordersOutputPath(scienceImagePaths):
         scienceImagePaths: List with (absolute or relative) paths to bias subtracted science images.
     """
     output_paths = []
-    root = "Data/ProcessedData/ExtractedOrders/Science/"
+    root = "/ProcessedData/ExtractedOrders/Science/"
     for path in scienceImagePaths:
         fileStem = Path(path).stem.replace("_biasdark_subtracted", "_2d_orders")
         output_paths.append(root + fileStem + ".fits")
@@ -235,7 +236,7 @@ def createThAr2DordersOutputPath(masterThArPath):
     Output: 
         string: path to the FITS file with the 2D orders of the master ThAr image
     """
-    root = "Data/ProcessedData/ExtractedOrders/ThAr/"
+    root = "/ProcessedData/ExtractedOrders/ThAr/"
     outputPath = root + Path(masterThArPath).stem + "_2d_orders.fits"
 
     return outputPath
@@ -259,7 +260,7 @@ def createScienceOptimalOrderExtractionOutputPath(bias_subtracted_paths):
     """
 
     output_paths = [] 
-    root = "Data/ProcessedData/OptimalExtraction/"
+    root = "/ProcessedData/OptimalExtraction/"
     for path in bias_subtracted_paths:
         fileStem = Path(path).stem.replace("_biasdark_subtracted", "_1d_orders")
         output_paths.append(root + fileStem + ".fits")
@@ -283,7 +284,7 @@ def createThArOptimalOrderExtractionOutputPath(thar_master_path):
         string: path to fits files with the extracted 1D orders of the ThAr master file
     """
 
-    root = "Data/ProcessedData/OptimalExtraction/"
+    root = "/ProcessedData/OptimalExtraction/"
     output_path = root + Path(thar_master_path).stem + "_1d_orders.fits"
     return output_path
     
@@ -301,7 +302,7 @@ def createEtalonPeakFittingOutputPath(optimalExtracted1DspectrumPaths):
     """
 
     output_paths = []
-    root = "Data/ProcessedData/WaveCalibration/"
+    root = "/ProcessedData/WaveCalibration/"
 
     for path in optimalExtracted1DspectrumPaths:
         fileStem = Path(path).stem.replace("_1d_orders", "_etalon_peak_fitparameters")
@@ -317,13 +318,15 @@ def createEtalonPeakFittingOutputPath(optimalExtracted1DspectrumPaths):
 
 
 
-def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
+def create_dvc_inputfile(yaml_input, rootFolderRawData, rootFolderProcessedData, dvc_param="params.yaml"):
     """
     Create the dvc input file that can be used to run dvc.
 
     Parameters:
         yaml_input: Dict with the paths to the raw calibration images and the
                     science images.
+        rootFolderRawData: Full path to the base folder of the raw images. 
+        rootFolderProcessedData: Full path to the base folder of the outputfiles. 
         dvc_param: Name of the path to the dvc input file. If none is give it
                    uses the default params.yaml value.
 
@@ -332,8 +335,6 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
         -> This will create a "params.yaml" file.
     """
 
-    home = os.getcwd() + "/"
-
     masterBiasPath = createCalibrationOutputPath(yaml_input["rawBiasImages"])
     masterDarkPath = createCalibrationOutputPath(yaml_input["rawDarkImages"])
     masterFlatPath = createCalibrationOutputPath(yaml_input["rawFlatImages"])
@@ -341,7 +342,7 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
     biasAndDarkSubtractedSciencePaths = createScienceOutputPath(yaml_input["rawScienceImages"])
 
     smoothMasterPath            = createMaskOutputPathPrefix(masterFlatPath) + "_smoothed_master_flat.fits"
-    maskBoundariesPath                    = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask_boundaries.fits"
+    maskBoundariesPath          = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask_boundaries.fits"
     maskVisualisationImagePath  = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask_image.fits"
     oneDimScienceOrdersPaths    = createScienceOptimalOrderExtractionOutputPath(biasAndDarkSubtractedSciencePaths)
     oneDimThArOrdersPath        = createThArOptimalOrderExtractionOutputPath(masterThArPath)
@@ -349,7 +350,8 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
 
     param_yaml = {"Configuration":
                   { 
-                    "rootFolder": home
+                    "rootFolderRawData": rootFolderRawData,
+                    "rootFolderProcessedData": rootFolderProcessedData,
                   },
 
                   "MasterBiasImage":
@@ -421,20 +423,24 @@ def create_dvc_inputfile(yaml_input, dvc_param="params.yaml"):
 
 """
 Example usage:
-    $ python configure.py inputfile.yaml
+
+    $ python configure.py inputfile.yaml  /Users/joris/MARVELpipeline/Data/  /Users/joris/MARVELpipeline/Data/
+
+The raw data will then be looked for in /Users/joris/MARVELpipeline/Data/RawData  and the output files of the 
+pipeline will be written in /Users/joris/MARVELpipeline/Data/ProcessedData. The input and output folder can be 
+specified to be different.
 """
 if __name__ == "__main__":
 
-    if len(sys.argv) == 1:
-        raise TypeError("Expected 1 arguments, got 0.\nPlease provide input file argument as:\n\tpython marvel.py inputfile.yaml\nor\n\tpython marvel.py inputfile.yaml outputfile.yaml")
+    if len(sys.argv) != 4:
+        print("Usage: python configure.py <inputfile.yaml> <root folder raw images> <root folder output files>")
+        exit(0)
     else:
-        input = readInputfile(sys.argv[1])
+        rootFolderRawData = sys.argv[2]
+        rootFolderProcessedData = sys.argv[3]
+        yamlInputFile = readInputfile(sys.argv[1], rootFolderRawData)
 
-    if len(sys.argv) == 2:
-        create_dvc_inputfile(input)
-    else:
-        create_dvc_inputfile(input, sys.argv[2])
-        
+    create_dvc_inputfile(yamlInputFile, rootFolderRawData, rootFolderProcessedData)
 
 
 

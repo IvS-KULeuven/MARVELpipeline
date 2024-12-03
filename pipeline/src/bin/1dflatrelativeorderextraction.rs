@@ -27,10 +27,10 @@ fn main() {
     let two_dim_order_mask_config = &config["TwoDimensionalOrderMaskTracing"];
     let optimal_order_extraction_config = &config["OptimalOrderExtraction"];
 
-    let project_root = configurations.get("rootFolder").unwrap().as_str().unwrap();
-    let master_flat_path = project_root.to_owned() + two_dim_order_mask_config.get("inputPath").unwrap().as_str().unwrap();
-    let master_dark_path = project_root.to_owned() + master_dark_config.get("outputPath").unwrap().as_str().unwrap();
-    let order_mask_path = project_root.to_owned() + two_dim_order_mask_config.get("outputPath").unwrap().as_str().unwrap();
+    let root_folder_processed_data = configurations.get("rootFolderProcessedData").unwrap().as_str().unwrap();
+    let master_flat_path = root_folder_processed_data.to_owned() + two_dim_order_mask_config.get("inputPath").unwrap().as_str().unwrap();
+    let master_dark_path = root_folder_processed_data.to_owned() + master_dark_config.get("outputPath").unwrap().as_str().unwrap();
+    let order_mask_path = root_folder_processed_data.to_owned() + two_dim_order_mask_config.get("outputPath").unwrap().as_str().unwrap();
     let science_paths = optimal_order_extraction_config.get("inputPath").unwrap().as_sequence().unwrap();    
     let output_directories = optimal_order_extraction_config.get("outputPath").unwrap().as_sequence().unwrap();
 
@@ -64,9 +64,7 @@ fn main() {
 
     for (science_path, output_path) in izip!(science_paths, output_directories) {
         
-        println!("{}", science_path.as_str().unwrap());
-
-        let science_path = project_root.to_owned() + science_path.as_str().unwrap();
+        let science_path = root_folder_processed_data.to_owned() + science_path.as_str().unwrap();
         let science_path = Path::new(&science_path);
 
         // Open the bias and dark subtracted science image.
@@ -83,7 +81,7 @@ fn main() {
 
         // Set up the output directory
 
-        let output_path = project_root.to_owned() + output_path.as_str().unwrap();
+        let output_path = root_folder_processed_data.to_owned() + output_path.as_str().unwrap();
         let output_path = Path::new(&output_path);
 
         if !output_path.parent().unwrap().is_dir(){                // Create directory if needed.
