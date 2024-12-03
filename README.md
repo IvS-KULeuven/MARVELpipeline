@@ -27,7 +27,7 @@ Before starting to install the packages, we recommend using a software tool to m
 conda create -n marvelpipeline [python=<python version>]
 ```
 
-where the `<python-version>` should be higher than Python 3.8. We can then activate the environment with
+where the `<python-version>` should be higher than Python 3.9. We can then activate the environment with
 
 ```
 conda activate marvelpipeline
