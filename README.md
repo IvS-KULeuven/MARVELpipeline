@@ -61,15 +61,22 @@ In `inputfile.yaml` you can specify which CCD image FITS files (raw bias images,
 #### The `params.yaml` file
 
 `params.yaml` is the inputfile that the DVC pipeline will use to process the MARVEL images. It contains both the input FITS files as
-well as the output directory names and the output file names. `params.yaml` can be auto-generated from `inputfile.yaml` using the
+well as the output directory names and the output file names. `params.yaml` should be auto-generated from `inputfile.yaml` using the
 `configure.py` script:
 
 ```
-python configure.py inputfile.yaml
+python configure.py inputfile.yaml <root folder to raw data> <root folder to processed data>
 ```
 
-If you are happy with the default output file names and locations, you're now ready to run the pipeline. If not, you can edit the
-`params.yaml` file and change the output locations.
+For example:
+```
+python configure.py inputfile.yaml /home/marvel/rawdata/  /home/marvel/processeddata/
+
+```
+
+All folder locations of raw MARVEL data files mentioned in the params.yaml file are relative to the specified root folder of raw data.
+Similarly, all folder locations of a pipeline product mentioned in the params.yaml file are relative to the specified root folder of
+processed data.
 
 
 #### The `dvc.yaml` file
