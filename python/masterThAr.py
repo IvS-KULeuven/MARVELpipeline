@@ -87,33 +87,3 @@ class MasterThAr:
 
 
 
-
-
-
-
-
-
-if __name__ == "__main__":
-
-    t1 = time.time()
-
-    params   = yaml.safe_load(open("params.yaml"))
-
-    rootFolderRawData  = params["Configuration"]["rootFolderRawData"]
-    rootFolderProcessedData = params["Configuration"]["rootFolderProcessedData"]
-    masterThAr_params = params["MasterThArImage"]
-    masterbias_params = params["MasterBiasImage"]
-    masterdark_params = params["MasterDarkImage"]
-
-    raw_ThAr_paths = [ rootFolderRawData + path for path in masterThAr_params["inputPath"] ]
-    master_bias_path = rootFolderProcessedData + masterbias_params["outputPath"]
-    master_dark_path = rootFolderProcessedData + masterdark_params["outputPath"]
-    ThAr_output_path = rootFolderProcessedData + masterThAr_params["outputPath"]
-
-    masterThAr = MasterThAr()
-    masterThAr.run(raw_ThAr_paths, master_bias_path, master_dark_path, ThAr_output_path)
-
-    t2 = time.time()
-
-    print(f"[{t2-t1}]")
-

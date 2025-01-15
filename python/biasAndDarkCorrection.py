@@ -106,31 +106,3 @@ class BiasAndDarkCorrectedScienceFrames(PipelineComponent):
 
 
 
-
-
-
-
-
-if __name__ == "__main__":
-
-    t1 = time.time()
-
-    params   = yaml.safe_load(open("params.yaml"))
-
-    rootFolderRawData  = params["Configuration"]["rootFolderRawData"]
-    rootFolderProcessedData = params["Configuration"]["rootFolderProcessedData"]
-    science_params = params["BiasAndDarkSubtractedScienceImage"]
-    bias_params = params["MasterBiasImage"]
-    dark_params = params["MasterDarkImage"]
-
-    raw_science_paths = [rootFolderRawData + path for path in science_params["inputPath"]]
-    master_bias_path = rootFolderProcessedData + bias_params["outputPath"]
-    master_dark_path = rootFolderProcessedData + dark_params["outputPath"]
-    output_science_paths = [rootFolderProcessedData + path for path in science_params["outputPath"]]
-
-    calibration = BiasAndDarkCorrectedScienceFrames()
-    calibration.run(raw_science_paths, master_bias_path, master_dark_path, outputPaths=output_science_paths)
-    t2 = time.time()
-
-    print(f"[{t2-t1}]")
-

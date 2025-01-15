@@ -73,31 +73,3 @@ class MaskImageCreator:
 
         return maskImage
 
-
-
-
-
-
-
-
-
-if __name__ == "__main__":
-
-    t1 = time.time()
-
-    params   = yaml.safe_load(open("params.yaml"))
-
-
-    rootFolderProcessedData = params["Configuration"]["rootFolderProcessedData"]
-    mask_visualization_params = params["TwoDimensionalOrderMaskVisualisation"]
-
-    inputPath = rootFolderProcessedData + mask_visualization_params["inputPath"]
-    outputPath = rootFolderProcessedData + mask_visualization_params["outputPath"]
-
-    maskImageCreator = MaskImageCreator()
-    maskImageCreator.run(inputPath, outputPath)
-
-    t2 = time.time()
-
-    print(f"[{t2-t1}]")
-

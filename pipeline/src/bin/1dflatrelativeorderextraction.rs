@@ -1,24 +1,33 @@
 use std::path::Path;
 use std::fs;
-use std::time::Instant;
 use fitsio::FitsFile;
 use fitsio::tables::{ColumnDescription, ColumnDataType};
 use ndarray::{ArrayD, Array1, Axis, s};
 use itertools::izip;
+use clap::Parser;
 use configuration::parse_file;
 
 type CCDImageType = ArrayD<i32>;
 
 
 
+// Create a struct for the command line arguments
+
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(short, long)]
+    configpath: String,
+}
+
+
+
 fn main() {
     
-    let now = Instant::now();
-
     // Load and parse the param.yaml file to get the paths from which we
     // will load the files and to which we will save the output files.
 
-    let config: serde_yaml::Value = parse_file();
+    let args = Args::parse();
+    let config: serde_yaml::Value = parse_file(&args.configpath);
 
     // Get all the paths from which we will read/write
 
@@ -235,5 +244,4 @@ fn main() {
         
 
     }
-    println!("[{:.1?}]", now.elapsed());
 }

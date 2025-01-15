@@ -14,10 +14,9 @@ The pipeline is made out of different components that can run one after the othe
 ### Rust and DVC
 
 The pipeline components are written in [Python](https://www.python.org/) or [rust](https://foundation.rust-lang.org/). 
-To manage the pipeline we use a command line tool called [DVC](https://dvc.org/). 
 In the following section, we explain how to install the Python packages using poetry. 
-To [install rust](https://www.rust-lang.org/tools/install) and [DVC](https://dvc.org/#get-started-dvc) we recommend 
-following the official installation guide given on their respective websites. 
+To [install rust](https://www.rust-lang.org/tools/install) we recommend 
+following the official installation guide given on its website. 
 
 ### Python dependencies
 
@@ -55,58 +54,92 @@ As the computationally heavy parts of the pipeline are written in Rust, you need
 
 #### The `inputfile.yaml` file
 
-In `inputfile.yaml` you can specify which CCD image FITS files (raw bias images, raw flat images, and raw science images) should be processed. 
+In `inputfile.yaml` you can specify which CCD image FITS files (raw bias images, raw dark images, raw flat images, and raw science images) should be processed. The paths specified are relative to a root path that is given later.
 
 
-#### The `params.yaml` file
+#### The `config.yaml` file
 
-`params.yaml` is the inputfile that the DVC pipeline will use to process the MARVEL images. It contains both the input FITS files as
-well as the output directory names and the output file names. `params.yaml` should be auto-generated from `inputfile.yaml` using the
+`config.yaml` is the inputfile that the pipeline will use to process the MARVEL images. It contains both the paths to the input FITS files as
+well as the paths to the ouput file names. `config.yaml` can be auto-generated from `inputfile.yaml` using the
 `configure.py` script:
 
 ```
-python configure.py inputfile.yaml <root folder to raw data> <root folder to processed data>
+python configure.py inputfile.yaml config.yaml <root folder to raw data> <root folder to processed data>
 ```
 
 For example:
 ```
-python configure.py inputfile.yaml /home/marvel/rawdata/  /home/marvel/processeddata/
+python configure.py inputfile.yaml config.yaml /home/marvel/rawdata/  /home/marvel/processeddata/
 
 ```
 
-All folder locations of raw MARVEL data files mentioned in the params.yaml file are relative to the specified root folder of raw data.
-Similarly, all folder locations of a pipeline product mentioned in the params.yaml file are relative to the specified root folder of
+All folder locations of raw MARVEL data files mentioned in the config.yaml file are relative to the specified root folder of raw data.
+Similarly, all folder locations of a pipeline product mentioned in the config.yaml file are relative to the specified root folder of
 processed data.
-
-
-#### The `dvc.yaml` file
-
-In the file `dvc.yaml` the you can specify what parts of the pipeline should be run. As a user you most likely do not want to touch this 
-file, unless you want to experiment with different algorithms.
 
 
 
 ## Running the pipeline
 
-The pipeline can be run on the command line using DVC:
+The pipeline can be run on the command line using `marvelpipe.py`. It has a convenient help function:
 
 ```
-dvc repro
+python marvelpipe.py -h
 ```
 
-DVC will search for the `params.yaml` inputfile and use it to process the MARVEL CCD images, specified in it. 
-Note that dvc is intelligent enough to detect whether a pipeline step needs to be rerun or not. For example, if the bias and flat field 
-frames did not change from a previous run, and only the input science frames changed, it will not rerun the computation of the master bias 
-or the master flat field images if it can still find them in their output directories. If you want to enforce a complete rerun of the entire pipeline, you can use
+listing the different pipeline steps and the options:
 
 ```
-dvc repro -f
+usage: marvelpipe.py [-h] [-f FIRST] [-l LAST] configfile
+
+MARVEL Data Reduction Pipeline Steps:
+
+ 1) Compute master bias image
+ 2) Compute master dark image
+ 3) Compute master flat image
+ 4) Compute master ThAr image
+ 5) Correct CCD images for bias and dark
+ 6) Determine 2D mask of the orders
+ 7) Extract 1D orders
+
+positional arguments:
+  configfile                YAML configuration file
+
+options:
+  -h, --help                Show this help message and exit
+  -f FIRST, --first FIRST   First pipeline step to execute (default: 1)
+  -l LAST, --last LAST      Last pipeline step to execute (default: 7)
+
+Examples:
+   $ python marvelpipe.py config.yaml              - Run all pipeline steps on the files specified in config.yaml
+   $ python marvelpipe.py -f 3 config.yaml         - Run pipeline steps 3, 4, ... until the end
+   $ python marvelpipe.py -f 3 -l 6 config.yaml    - Run pipeline steps 3, 4, 5, and 6
+
 ```
 
+If you want to run the entire pipeline, simply run:
 
-## The pipeline output
+```
+python marvelpipe.py config.yaml
+```
 
-The results of the pipeline are stored in the `Data/ProcessedData/` directory. It contains the following subdirectories:
+If some of the pipeline steps were computed before, and you don't want to recompute them, you can specify
+the first and/or the last pipeline step you want to execute. For example:
+
+```
+python marvelpipe.py -f 3 config.yaml
+```
+skips the first two steps and starts with the 3rd step, while:
+```
+python marvelpipe.py -f 3 -l 6 config.yaml
+
+```
+only executes steps 3, 4, 5, and 6.
+
+
+## The pipeline output folders
+
+The results of the pipeline are stored in the `ProcessedData/` directory inside the root folder you specified. It contains the following subdirectories:
 
 - `MasterBias/`: contains the master bias FITS file: a median of several raw bias images.
 - `MasterFlat/`: contains the master flat FITS file: a median of several raw flat images, bias subtracted.
@@ -119,6 +152,9 @@ The results of the pipeline are stored in the `Data/ProcessedData/` directory. I
 - `OptimalExtraction/`: for each bias subtracted science frame, the `*_1d_orders.fits` file contains the 1D flat-relative extracted orders. These 1D orders are the ratio of the stellar spectrum divided by the flatfield lamp spectrum. As both the stellar spectrum and the flatfield spectrum experience the same blaze function, the ratio should be free of the blaze function. For each order a flat-normalized flux as a function of pixel coordinate is stored. The orders are not merged.
 - `WaveCalibration/`: TBD
  
-	
+
+## The pipeline output files
+
+TBW
 
 

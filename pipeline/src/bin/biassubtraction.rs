@@ -5,10 +5,20 @@ use fitsio::FitsFile;
 use fitsio::images::{ImageType, ImageDescription};
 use ndarray::{ArrayD, Axis};
 use itertools::izip;
+use clap::Parser;
 
 use configuration::parse_file;
 
 type CCDImageType = ArrayD<u32>;
+
+
+// Create a struct for the command line arguments
+
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(short, long)]
+    config_path: String,
+}
 
 
 
@@ -19,7 +29,8 @@ fn main() {
     // Load and parse the 'param.yaml' file to get the paths from which we
     // will load the files and to which we will save the output files.
 
-    let config: serde_yaml::Value = parse_file();
+    let args = Args::parse();
+    let config: serde_yaml::Value = parse_file(&args.config_path);
 
     // Get all the paths rom which we will read/write
 

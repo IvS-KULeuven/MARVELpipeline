@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 
-def readInputfile(filename, rootFolderRawData):
+def verifyInputfiles(filename, rootFolderRawData):
     """
     Read in the user defined input file. This function checks that the
     input file is sensible and returns a dict with the values from the file.
@@ -318,7 +318,7 @@ def createEtalonPeakFittingOutputPath(optimalExtracted1DspectrumPaths):
 
 
 
-def create_dvc_inputfile(yaml_input, rootFolderRawData, rootFolderProcessedData, dvc_param="params.yaml"):
+def create_yaml_configfile(yaml_input, rootFolderRawData, rootFolderProcessedData, outputfile="config.yaml"):
     """
     Create the dvc input file that can be used to run dvc.
 
@@ -327,12 +327,12 @@ def create_dvc_inputfile(yaml_input, rootFolderRawData, rootFolderProcessedData,
                     science images.
         rootFolderRawData: Full path to the base folder of the raw images. 
         rootFolderProcessedData: Full path to the base folder of the outputfiles. 
-        dvc_param: Name of the path to the dvc input file. If none is give it
-                   uses the default params.yaml value.
+        outputfile: Name of the path to the pipeline config file. If none is give it
+                   uses the default "config.yaml" name.
 
     Example:
-        create_dvc_inputfile("inputfile.yaml", dvc_param="params.yaml")
-        -> This will create a "params.yaml" file.
+        create_dvc_inputfile("inputfile.yaml", outputfile="config.yaml")
+        -> This will create a "config.yaml" file.
     """
 
     masterBiasPath = createCalibrationOutputPath(yaml_input["rawBiasImages"])
@@ -348,7 +348,7 @@ def create_dvc_inputfile(yaml_input, rootFolderRawData, rootFolderProcessedData,
     oneDimThArOrdersPath        = createThArOptimalOrderExtractionOutputPath(masterThArPath)
     etalonPeakFitParametersPath = createEtalonPeakFittingOutputPath(oneDimScienceOrdersPaths)
 
-    param_yaml = {"Configuration":
+    config_yaml = {"Configuration":
                   { 
                     "rootFolderRawData": rootFolderRawData,
                     "rootFolderProcessedData": rootFolderProcessedData,
@@ -411,8 +411,8 @@ def create_dvc_inputfile(yaml_input, rootFolderRawData, rootFolderProcessedData,
                  }
 
 
-    file=open(dvc_param,"w")
-    yaml.dump(param_yaml,file, sort_keys=False)
+    file=open(outputfile, "w")
+    yaml.dump(config_yaml,file, sort_keys=False)
     file.close()
 
 
@@ -424,23 +424,24 @@ def create_dvc_inputfile(yaml_input, rootFolderRawData, rootFolderProcessedData,
 """
 Example usage:
 
-    $ python configure.py inputfile.yaml  /Users/joris/MARVELpipeline/Data/  /Users/joris/MARVELpipeline/Data/
+    $ python configure.py inputfile.yaml config.yaml /Users/joris/MARVELpipeline/Data/  /Users/joris/MARVELpipeline/Data/
 
 The raw data will then be looked for in /Users/joris/MARVELpipeline/Data/RawData  and the output files of the 
-pipeline will be written in /Users/joris/MARVELpipeline/Data/ProcessedData. The input and output folder can be 
-specified to be different.
+pipeline will be written in /Users/joris/MARVELpipeline/Data/ProcessedData. The paths in inputfile.yaml and
+config.yaml are relative to these root paths. 
 """
 if __name__ == "__main__":
 
-    if len(sys.argv) != 4:
-        print("Usage: python configure.py <inputfile.yaml> <root folder raw images> <root folder output files>")
+    if len(sys.argv) != 5:
+        print("Usage: python configure.py <inputfile.yaml> <outputfile.yaml> <root folder raw images> <root folder output files>")
         exit(0)
     else:
-        rootFolderRawData = sys.argv[2]
-        rootFolderProcessedData = sys.argv[3]
-        yamlInputFile = readInputfile(sys.argv[1], rootFolderRawData)
+        rootFolderRawData = sys.argv[3]
+        rootFolderProcessedData = sys.argv[4]
+        yamlInput = verifyInputfiles(sys.argv[1], rootFolderRawData)
+        yamlOutputFile = sys.argv[2]
 
-    create_dvc_inputfile(yamlInputFile, rootFolderRawData, rootFolderProcessedData)
+    create_yaml_configfile(yamlInput, rootFolderRawData, rootFolderProcessedData, outputfile=yamlOutputFile)
 
 
 

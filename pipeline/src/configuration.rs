@@ -6,9 +6,9 @@ use std::env;
 // Load and parse the param.yaml file to get the paths from which we
 // will load the files and to which we will save the output files.
 
-pub fn parse_file () -> serde_yaml::Value {
+pub fn parse_file(config_path: &str) -> serde_yaml::Value {
     let path = env::current_dir().unwrap();
-    let filename = path.join("params.yaml");
+    let filename = path.join(config_path);
     let filename = filename.as_path();
 
     let config: serde_yaml::Value = match File::open(filename) {

@@ -28,11 +28,6 @@ class MasterBias(PipelineComponent):
 
 
 
-
-
-
-
-
     def run(self, outputFileName=None):
         """
         We run through the alghoritm to create the master bias images.
@@ -74,29 +69,4 @@ class MasterBias(PipelineComponent):
         hash = hashlib.sha256(bytes("".join(self.rawBiasPaths), 'utf-8')).hexdigest()
         return hash
 
-
-
-
-
-if __name__ == "__main__":
-
-    t1 = time.time()
-    
-    params = yaml.safe_load(open("params.yaml"))
-
-    rootFolderRawData  = params["Configuration"]["rootFolderRawData"]
-    rootFolderProcessedData = params["Configuration"]["rootFolderProcessedData"]
-
-    relativeBiasImagePaths = params["MasterBiasImage"]["inputPath"]
-    
-    absoluteBiasImagePaths = [ rootFolderRawData + path for path in relativeBiasImagePaths]
-    absoluteMasterBiasImagePath = rootFolderProcessedData + params["MasterBiasImage"]["outputPath"]
-
-    # Master Bias Image
-
-    masterB = MasterBias(BiasImages=absoluteBiasImagePaths)
-    masterB.run(absoluteMasterBiasImagePath)
-
-    t2 = time.time()
-    print(f"[{t2-t1}]")
 

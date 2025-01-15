@@ -73,33 +73,3 @@ class MasterDark:
         return masterDark
 
 
-
-
-
-
-
-
-
-if __name__ == "__main__":
-
-    t1 = time.time()
-
-    params   = yaml.safe_load(open("params.yaml"))
-
-    rootFolderRawData  = params["Configuration"]["rootFolderRawData"]
-    rootFolderProcessedData = params["Configuration"]["rootFolderProcessedData"]
-
-    master_dark_params = params["MasterDarkImage"]
-    master_bias_params = params["MasterBiasImage"]
-
-    raw_dark_paths = [ rootFolderRawData + path for path in master_dark_params["inputPath"] ]
-    master_bias_path = rootFolderProcessedData + master_bias_params["outputPath"]
-
-    masterDark = MasterDark()
-    masterDark.run(raw_dark_paths, master_bias_path, rootFolderProcessedData + master_dark_params["outputPath"])
-
-    t2 = time.time()
-
-    print(f"[{t2-t1}]")
-
-
