@@ -1,8 +1,6 @@
 import tools
 import numpy as np
 import hashlib
-import time
-import yaml
 
 from pipeline import PipelineComponent
 
