@@ -1,13 +1,13 @@
 use std::fs;
 use std::path::Path;
 use itertools::izip;
-use std::time::Instant;
 use fitsio::FitsFile;
 use fitsio::tables::{ColumnDescription, ColumnDataType};
 use nalgebra::DVector;
 use varpro::prelude::*;
 use varpro::solvers::levmar::{LevMarProblemBuilder, LevMarSolver};
 use clap::Parser;
+use quantiles::ckms::CKMS;
 use configuration::parse_file;
 
 
@@ -56,7 +56,7 @@ pub fn stdev(y: &[f64], mean: f64) -> f64 {
 #[derive(Parser, Debug)]
 struct Args {
     #[arg(short, long)]
-    config_path: String,
+    configpath: String,
 }
 
 
@@ -65,14 +65,10 @@ struct Args {
 
 fn main() {
 
-    // Starting timing this pipeline module so that we can report how long it takes
-
-    let now = Instant::now();
-
     // Load and parse the param.yaml file to get the paths of the FITS files we need to process. 
 
     let args = Args::parse();
-    let config: serde_yaml::Value = parse_file(&args.config_path);
+    let config: serde_yaml::Value = parse_file(&args.configpath);
 
     // Get all the paths from which we will read/write
 
@@ -90,6 +86,13 @@ fn main() {
         // Construct the absolute path of the input FITS file containing the 1D optimal extracted orders
 
         let input_path = root_folder_processed_data.to_owned() + input_path.as_str().unwrap();
+
+        // Check if the science frame was taken with an etalon calibrator rather than a ThAr calibrator
+        // If not, skip this file, the module only deals with etalon peaks.
+
+        if !input_path.contains("ESSSS") {
+            continue;
+        }
 
         // Construct the absolute path of the output FITS file that will contain the etalon peak fit parameters 
         // If the output file already exists, delete the file.
@@ -181,20 +184,32 @@ fn main() {
             let xpixel: Vec<f64> = xpixel.iter().map(|&value| value as f64).collect();
             let flux:   Vec<f64> = hdu.read_col(&mut input_fits_file, "spectrum").unwrap();
 
-            // Find all the peaks of the etalon emission lines. We need to take care not to erronously identify 
-            // an emission line as two lines in the rare cases that:
+            // Before we locate all the peaks we compute a quantile level of the spectrum,
+            // which will allow us to set a threshold on what local maximum really is an etalon peak
+            // rather than a noise peak. To save time we only use the first 1000 points of the spectrum.
+
+            let mut quant_comp = CKMS::<f64>::new(0.01);    // Compute quantile with an error bound of 0.01
+            for i in 1..1001 {
+                quant_comp.insert(flux[i]);
+            }
+
+            let peak_threshold_level = match quant_comp.query(0.9) {
+                Some((_rank, quantile)) => quantile,
+                None => 0.2,
+            };
+
+            // Find all the peaks of the etalon emission lines. We need to take care not to erronously 
+            // identify one emission line as two lines in the rare cases that:
             //     a) the top of the line is a plateau of 2 points 
             //     b) the top of the line are 2 neighboring peaks (3 points: up-down-up) 
             // In the case of a plateau we select the left most point.
             // We start from n=6 because we're not interested in half peaks at the edges of the etalon spectrum. 
-            // The thresholding with respect to the minimum flux in the local neighborhood is to avoid the small 
-            // peaks in the continuum in between the emission lines. We can't take a global minimum because the 
-            // etalon spectrum may not be perfectly normalized and can be curved upwards at the edges.
+            // The thresholding serves to avoid the small peaks in the continuum in between the emission lines. 
 
             let mut ipeaks: Vec::<usize> = Vec::new();
             for n in 6..xpixel.len()-6 {
                 if (flux[n-2] < flux[n]) && (flux[n-1] < flux[n]) && (flux[n] >= flux[n+1]) && (flux[n] >= flux[n+2])
-                   && (flux[n] > 0.1) {
+                   && (flux[n] > peak_threshold_level) {
                     ipeaks.push(n);
                 }
             } 
@@ -225,8 +240,6 @@ fn main() {
                 // The constant background is necessary as the flat-relative etalon spectrum may be 
                 // curved upwards at the edges.
 
-                let error_message = format!("Problem fitting peak # {} in {}", i, order_fiber_id[0]);
-
                 let model = SeparableModelBuilder::<f64>::new(["mu", "sigmasq"])
                     .invariant_function(|x| DVector::from_element(x.nrows(), 1.0))
                     .function(&["mu", "sigmasq"], gaussian)
@@ -234,17 +247,28 @@ fn main() {
                     .partial_deriv("sigmasq", gaussian_dsigmasq)
                     .independent_variable(x_onepeak)
                     .initial_parameters(vec![xpixel[ipeaks[i]], 1.0])
-                    .build()
-                    .expect(&error_message);
+                    .build();
+
+                let model = match model {
+                    Ok(res) => res,
+                    Err(_err) => continue,          // Something went wrong, move on to the next peak
+                };
 
                 let problem = LevMarProblemBuilder::new(model)
                     .observations(flux_onepeak)
-                    .build()
-                    .expect(&error_message);
+                    .build();
 
-                let (fit_result, fit_statistics) = LevMarSolver::new()
-                    .fit_with_statistics(problem)
-                    .expect("Problem with fitting the etalon lines");
+                let problem = match problem {
+                    Ok(res) => res,
+                    Err(_err) => continue,          // Something went wrong, move on to the next peak
+                };
+
+
+                let solution = LevMarSolver::new().fit_with_statistics(problem);
+                let (fit_result, fit_statistics) = match solution {
+                    Ok(res) => res,
+                    Err(_err) => continue,
+                };
 
                 let nonlinear_params = fit_result.nonlinear_parameters();
                 let linear_params    = fit_result.linear_coefficients().unwrap();
@@ -290,10 +314,6 @@ fn main() {
 
         }
     }
-
-    // Print out how long this pipeline module took to execute
-
-    println!("[{:.1?}]", now.elapsed());
 }
 
 

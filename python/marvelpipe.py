@@ -108,10 +108,20 @@ def maskDetermination(config):
 
 
 def oneDimOrderExtraction(config):
-    subprocess.run(["./pipeline/target/release/1dflatrelativeorderextraction", "--configpath", config['origin']])
+    capture = subprocess.run(["./pipeline/target/release/1dflatrelativeorderextraction", "--configpath", config['origin']], \
+                             capture_output=True, text=True)
+    # Uncomment the following lines to debug
+    # print(capture.stdout)
+    # print(capture.stderr)
 
 
 
+def etalonPeakFitting(config):
+    capture = subprocess.run(["./pipeline/target/release/fitetalonpeaks", "--configpath", config['origin']],  \
+                             capture_output=True, text=True)
+    # Uncomment the following lines to debug
+    print(capture.stdout)
+    print(capture.stderr)
 
 
 
@@ -130,7 +140,8 @@ if __name__ == "__main__":
                         4: [masterThAr,            'Compute master ThAr image'],
                         5: [biasAndDarkCorrection, 'Correct CCD images for bias and dark'],
                         6: [maskDetermination,     'Determine 2D mask of the orders'],
-                        7: [oneDimOrderExtraction, 'Extract 1D orders']}
+                        7: [oneDimOrderExtraction, 'Extract 1D orders'],
+                        8: [etalonPeakFitting,     'Fit etalon peaks']}
 
 
     # Create some help text when the --help or -h option was specified
@@ -194,9 +205,9 @@ if __name__ == "__main__":
     print("\nRunning pipeline:")
 
     for istep in range(args.first, args.last+1):
-        pipeline_step = pipeline_steps[istep][0]
+        pipeline_step, description = pipeline_steps[istep]
 
-        print("Step {0}: {1}".format(istep, pipeline_steps[istep][1]).ljust(50, ' '), end=' ')
+        print("Step {0}: {1}".format(istep, description).ljust(50, ' '), end=' ')
         t1 = time.time()
         pipeline_step(config)
         t2 = time.time()
