@@ -94,6 +94,8 @@ fn main() {
             continue;
         }
 
+        // println!("Inputfile: {:?}", input_path);
+
         // Construct the absolute path of the output FITS file that will contain the etalon peak fit parameters 
         // If the output file already exists, delete the file.
 
@@ -177,6 +179,8 @@ fn main() {
                 continue;
             }
 
+            // println!("{:?}", order_fiber_id[0]);
+
             // Read the relevant columns. Convert the pixel coordinates from integers to floats,
             // as they will be used in a fitting algorithm.
 
@@ -186,17 +190,19 @@ fn main() {
 
             // Before we locate all the peaks we compute a quantile level of the spectrum,
             // which will allow us to set a threshold on what local maximum really is an etalon peak
-            // rather than a noise peak. To save time we only use the first 1000 points of the spectrum.
+            // rather than a noise peak. To save time we only use the first 2000 points of the spectrum.
 
             let mut quant_comp = CKMS::<f64>::new(0.01);    // Compute quantile with an error bound of 0.01
-            for i in 1..1001 {
+            for i in 1..2001 {
                 quant_comp.insert(flux[i]);
             }
 
-            let peak_threshold_level = match quant_comp.query(0.9) {
+            let typical_peak_level = match quant_comp.query(0.95) {
                 Some((_rank, quantile)) => quantile,
                 None => 0.2,
             };
+
+            // println!("Threshold level: {:?}", peak_threshold_level);
 
             // Find all the peaks of the etalon emission lines. We need to take care not to erronously 
             // identify one emission line as two lines in the rare cases that:
@@ -209,7 +215,7 @@ fn main() {
             let mut ipeaks: Vec::<usize> = Vec::new();
             for n in 6..xpixel.len()-6 {
                 if (flux[n-2] < flux[n]) && (flux[n-1] < flux[n]) && (flux[n] >= flux[n+1]) && (flux[n] >= flux[n+2])
-                   && (flux[n] > peak_threshold_level) {
+                   && (flux[n] > 0.5 * typical_peak_level) {
                     ipeaks.push(n);
                 }
             } 
@@ -228,6 +234,8 @@ fn main() {
             // Fit each of the peaks with a Gaussian profile
 
             for i in 0..ipeaks.len() {
+
+                // println!("pixel coordinate of peak: {:?}", xpixel[ipeaks[i]]);
 
                 // The fitting module expects nalgebra matrices rather than built-in vectors, so convert.
                 // Only select the part relevant for the current emission line to fit.
@@ -286,10 +294,9 @@ fn main() {
                 let fitted_sigma_err  = variance_nonlinear_params[1].sqrt();
                 let fitted_height_err = variance_linear_params[1].sqrt();
 
-                // Only include the line in the list, if there are no counter indications that the fit succeeded. 
+                // Only include the line in the list if there are no counter indications that the fit succeeded. 
 
-                if (fitted_sigma < 3.0) && (fitted_height > 0.0) && (fitted_mu_err != 0.0) && (fitted_sigma_err != 0.0)
-                    && (fitted_mu_err < 0.2 * fitted_mu) && (fitted_sigma_err < 0.2 * fitted_sigma) {
+                if (fitted_height > 0.0) && (fitted_mu_err != 0.0) && (fitted_sigma_err != 0.0) {
                     offset.push(fitted_offset);
                     mu.push(fitted_mu);
                     sigma.push(fitted_sigma);
@@ -301,6 +308,8 @@ fn main() {
                     height_err.push(fitted_height_err);
                 }   
             }
+
+            // Write the fit parameters to a FITS file 
 
             let fits_table = output_fits_file.create_table(order_fiber_id[0], &descriptions).unwrap();
             fits_table.write_col(&mut output_fits_file, "offset", &offset).unwrap();
