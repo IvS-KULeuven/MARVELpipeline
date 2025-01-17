@@ -108,20 +108,23 @@ def maskDetermination(config):
 
 
 def oneDimOrderExtraction(config):
-    capture = subprocess.run(["./pipeline/target/release/1dflatrelativeorderextraction", "--configpath", config['origin']], \
-                             capture_output=True, text=True)
-    # Uncomment the following lines to debug
-    # print(capture.stdout)
-    # print(capture.stderr)
+    capture = subprocess.run(["./pipeline/target/release/1dflatrelativeorderextraction", "--configpath",  \
+                              config['origin']], capture_output=True, text=True)
+    if capture.stdout != "":
+        print(capture.stdout)
+    if capture.stderr != "":
+        print(capture.stderr)
+
 
 
 
 def etalonPeakFitting(config):
     capture = subprocess.run(["./pipeline/target/release/fitetalonpeaks", "--configpath", config['origin']],  \
                              capture_output=True, text=True)
-    # Uncomment the following lines to debug
-    print(capture.stdout)
-    print(capture.stderr)
+    if capture.stdout != "":
+        print(capture.stdout)
+    if capture.stderr != "":
+        print(capture.stderr)
 
 
 
