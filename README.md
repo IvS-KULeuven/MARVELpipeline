@@ -11,7 +11,7 @@ The pipeline is made out of different components that can run one after the othe
 
 ## Dependencies
 
-### Rust and DVC
+### Python and Rust 
 
 The pipeline components are written in [Python](https://www.python.org/) or [rust](https://foundation.rust-lang.org/). 
 In the following section, we explain how to install the Python packages using poetry. 
