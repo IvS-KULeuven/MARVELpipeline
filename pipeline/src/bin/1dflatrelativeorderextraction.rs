@@ -43,7 +43,7 @@ fn main() {
     let science_paths = optimal_order_extraction_config.get("inputPath").unwrap().as_sequence().unwrap();    
     let output_directories = optimal_order_extraction_config.get("outputPath").unwrap().as_sequence().unwrap();
 
-    // Open the order mask file. This file contains three images, one with the index of the maximum position,
+    // Open the order mask file. This file contains three images, one with the column index of the maximum position,
     // one with the begin column index and one with the end column index of each order.
 
     let mut fitsfile = FitsFile::open(order_mask_path).unwrap();
