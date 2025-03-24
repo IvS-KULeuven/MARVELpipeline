@@ -1,9 +1,6 @@
 import os
-import yaml
 import tools
 import numpy as np
-import hashlib
-import time
 from pathlib import Path
 from astropy.io import fits
 
