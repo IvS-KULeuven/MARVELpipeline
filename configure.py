@@ -272,6 +272,26 @@ def createScienceOptimalOrderExtractionOutputPath(bias_subtracted_paths):
 
 
 
+def createOneDimOrderExtractedMasterFlatPath(master_flat_path):
+    """
+    Create the path for the 1D order-extracted master flat field.
+
+    Parameters:
+        master_flat_path: (relative) path to the 2D master field image
+
+    Output:
+        path the FITS file containing the 1D order-extracted master flat field
+    """
+
+    root = "/ProcessedData/MasterFlat/"
+    output_path = Path(master_flat_path).stem.replace("MasterFlat", "1d_order_MasterFlat")
+    output_path = root + output_path + ".fits"
+    return output_path
+
+
+
+
+
 
 def createThArOptimalOrderExtractionOutputPath(thar_master_path):
     """
@@ -345,6 +365,7 @@ def create_yaml_configfile(yaml_input, rootFolderRawData, rootFolderProcessedDat
     maskBoundariesPath          = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask_boundaries.fits"
     maskVisualisationImagePath  = createMaskOutputPathPrefix(masterFlatPath) + "_2d_mask_image.fits"
     oneDimScienceOrdersPaths    = createScienceOptimalOrderExtractionOutputPath(biasAndDarkSubtractedSciencePaths)
+    oneDimOrderExtractedMasterFlatPath = createOneDimOrderExtractedMasterFlatPath(masterFlatPath)
     oneDimThArOrdersPath        = createThArOptimalOrderExtractionOutputPath(masterThArPath)
     etalonPeakFitParametersPath = createEtalonPeakFittingOutputPath(oneDimScienceOrdersPaths)
 
@@ -401,6 +422,13 @@ def create_yaml_configfile(yaml_input, rootFolderRawData, rootFolderProcessedDat
                   { 
                     "inputPath": biasAndDarkSubtractedSciencePaths + [masterThArPath],
                     "outputPath": oneDimScienceOrdersPaths + [oneDimThArOrdersPath]
+                  },
+
+                  "OneDimensionalOrderExtractedMasterFlat":
+                  {
+                    "inputPathMasterFlat": masterFlatPath,
+                    "inputPathMask": maskBoundariesPath,
+                    "outputPath": oneDimOrderExtractedMasterFlatPath,
                   },
 
                   "EtalonPeakFitting":

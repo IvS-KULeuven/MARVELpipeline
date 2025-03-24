@@ -11,7 +11,9 @@ from masterFlat import MasterFlat
 from masterThAr import MasterThAr
 from biasAndDarkCorrection import BiasAndDarkCorrectedScienceFrames
 from mask_fits_image import MaskImageCreator
+from masterFlatOneDimOrders import MasterFlatOneDimOrders
 
+    
 
 
 def masterBias(config):
@@ -107,6 +109,22 @@ def maskDetermination(config):
 
 
 
+
+
+def oneDimFlatExtraction(config):
+
+    rootFolderProcessedData = config["Configuration"]["rootFolderProcessedData"]
+    master_flat_path = rootFolderProcessedData + config["OneDimensionalOrderExtractedMasterFlat"]["inputPathMasterFlat"]
+    onedim_flat_outputpath = rootFolderProcessedData + config["OneDimensionalOrderExtractedMasterFlat"]["outputPath"]
+    twodim_mask_path = rootFolderProcessedData + config["OneDimensionalOrderExtractedMasterFlat"]["inputPathMask"]
+    oneDimOrderFlatExtractor = MasterFlatOneDimOrders()
+    oneDimOrderFlatExtractor.run(master_flat_path, twodim_mask_path, onedim_flat_outputpath)
+
+
+
+
+
+
 def oneDimOrderExtraction(config):
     capture = subprocess.run(["./pipeline/target/release/1dflatrelativeorderextraction", "--configpath",  \
                               config['origin']], capture_output=True, text=True)
@@ -114,6 +132,8 @@ def oneDimOrderExtraction(config):
         print(capture.stdout)
     if capture.stderr != "":
         print(capture.stderr)
+
+
 
 
 
@@ -132,19 +152,29 @@ def etalonPeakFitting(config):
 
 
 
+def thArPeakFitting(config):
+    pass
+
+
+
+
+# To get help, run with:
+#    $ python marvelpipe -h
 
 if __name__ == "__main__":
 
     # These are the different steps of the MARVEL data reduction pipeline 
 
-    pipeline_steps = {  1: [masterBias,            'Compute master bias image'],
-                        2: [masterDark,            'Compute master dark image'],
-                        3: [masterFlat,            'Compute master flat image'],
-                        4: [masterThAr,            'Compute master ThAr image'],
-                        5: [biasAndDarkCorrection, 'Correct CCD images for bias and dark'],
-                        6: [maskDetermination,     'Determine 2D mask of the orders'],
-                        7: [oneDimOrderExtraction, 'Extract 1D orders'],
-                        8: [etalonPeakFitting,     'Fit etalon peaks']}
+    pipeline_steps = {   1: [masterBias,            'Compute master bias image'],
+                         2: [masterDark,            'Compute master dark image'],
+                         3: [masterFlat,            'Compute master flat image'],
+                         4: [masterThAr,            'Compute master ThAr image'],
+                         5: [biasAndDarkCorrection, 'Correct CCD images for bias and dark'],
+                         6: [maskDetermination,     'Determine 2D mask of the orders'],
+                         7: [oneDimOrderExtraction, 'Extract 1D orders of each fiber of science spectra'],
+                         8: [oneDimFlatExtraction,  'Extract 1D flat profiles from master flat'],
+                         9: [etalonPeakFitting,     'Fit etalon peaks'],
+                        10: [thArPeakFitting,       'Fit ThAr peaks in Master ThAr']}
 
 
     # Create some help text when the --help or -h option was specified
@@ -210,7 +240,7 @@ if __name__ == "__main__":
     for istep in range(args.first, args.last+1):
         pipeline_step, description = pipeline_steps[istep]
 
-        print("Step {0}: {1}".format(istep, description).ljust(50, ' '), end=' ')
+        print("Step {0:2d}: {1}".format(istep, description).ljust(70, ' '), end=' ')
         t1 = time.time()
         pipeline_step(config)
         t2 = time.time()
