@@ -125,18 +125,20 @@ fn main() {
                 // The curvature of the order is so mild that we only need to look in the neighbouring
                 // pixels of the maximum of the previous row
 
-                let mut max = smoothed_master_flat[[irow, icol_max_of_current_row]];
+                let mut max = smoothed_master_flat[[irow, icol_max_of_current_row]];        // maximum at the ridge
                 
                 let icol_min_range: usize =
-                    if icol_max_of_current_row != 0 {
-                        icol_max_of_current_row-1} else {0};
+                    if icol_max_of_current_row >= 2 {
+                        icol_max_of_current_row-2
+                    } else {0};
 
                 let icol_max_range: usize =
-                    if icol_max_of_current_row != num_cols_ccd {
-                        icol_max_of_current_row+1} else {num_cols_ccd};
+                    if icol_max_of_current_row <= num_cols_ccd-2 {
+                        icol_max_of_current_row+2
+                    } else {num_cols_ccd};
 
                 
-                for icol in [icol_min_range, icol_max_range] {
+                for icol in icol_min_range..icol_max_range {
                     
                     // The orders can hit the left edge of the CCD as well as the top/bottom edge, depending on the
                     // order, so we need to check if icol is not negative. Since icol has type uint, this means checking
@@ -198,17 +200,22 @@ fn main() {
             let mut max = smoothed_master_flat[[irow, icol_max_of_current_row]];
 
             let icol_min_range: usize =
-                if icol_max_of_current_row != 0 {
-                    icol_max_of_current_row-1} else {0};
+                if icol_max_of_current_row >= 2 {
+                    icol_max_of_current_row-2
+                } else {0};
 
             let icol_max_range: usize =
-                if icol_max_of_current_row != num_cols_ccd {
-                    icol_max_of_current_row+1} else {num_cols_ccd};
+                if icol_max_of_current_row <= num_cols_ccd-2 {
+                    icol_max_of_current_row+2
+                } else {num_cols_ccd};
 
-            for icol in [icol_min_range, icol_max_range] {
+
+            for icol in icol_min_range..icol_max_range {
+
                 // The orders can hit the left edge of the CCD as well as the top/bottom edge, depending on the order.
                 // So we need to check if icol is not negative. Since icol has type uint, this means checking
                 // whether it didn't wrap around and became a huge value.
+
                 if (icol < num_cols_ccd) && (smoothed_master_flat[[irow, icol]] > max) {
                         max = smoothed_master_flat[[irow, icol]];
                         icol_max_of_current_row = icol;
